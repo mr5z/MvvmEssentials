@@ -10,6 +10,7 @@ public static class NavigationServiceCollectionExtension
 		Action<NavigationOptions> configure)
 	{
 		services.Configure(configure);
+		services.AddSingleton<IWindowEventHandler, WindowEventHandler>();
 		services.AddSingleton<INavigationService, NavigationService>();
 		return services;
 	}
