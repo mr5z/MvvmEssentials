@@ -21,7 +21,7 @@ jobs:
     - name: Clone dependency (CrossUtility)
       # The key part: move one directory up before cloning
       run: |
-        cd ..
+        cd ../../
         git clone https://github.com/mr5z/CrossUtility
 
     - name: Restore dependencies
