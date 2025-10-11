@@ -14,7 +14,7 @@ public static class MauiProgram
             registry.MapPage<LandingPage, LandingViewModel>()
                 .MapPage<MainPage, MainViewModel>()
                 .MapPage<LoginPage, LoginViewModel>()
-                .MapPage<LoginPage, LoginViewModel>()
+                .MapPage<SettingsPage, SettingsViewModel>()
                 // ..
                 ;
         });
