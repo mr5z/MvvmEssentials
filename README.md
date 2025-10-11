@@ -39,6 +39,7 @@ public partial class App
     {
         _navigationService = navigationService;
         _windowEvent = windowEvent;
+
         InitializeComponent();
     }
 
