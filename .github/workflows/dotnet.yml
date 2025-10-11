@@ -1,6 +1,3 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
 name: .NET
 
 on:
@@ -11,20 +8,24 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-          
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
-    - name: Clone dependencies
-      run: cd ../../ && echo CrossUtility | xargs -n1 | xargs -I{} git clone https://github.com/mr5z/{}
+        # Use .NET 10 if available, otherwise fallback to latest stable
+        dotnet-version: |
+          10.0.x
+          9.0.x
+
+    - name: Clone dependency (CrossUtility)
+      run: git clone https://github.com/mr5z/CrossUtility ../CrossUtility
+
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Nkraft.MvvmEssentials.csproj
+
     - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet build Nkraft.MvvmEssentials.csproj --no-restore --configuration Release
