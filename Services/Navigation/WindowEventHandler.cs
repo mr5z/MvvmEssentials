@@ -1,6 +1,6 @@
 ﻿namespace Nkraft.MvvmEssentials.Services.Navigation;
 
-internal interface IWindowEventHandler
+public interface IWindowEventHandler
 {
 	event EventHandler? Created;
 	event EventHandler? Destroying;
