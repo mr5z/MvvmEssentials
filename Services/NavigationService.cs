@@ -157,7 +157,7 @@ internal class NavigationService : INavigationService
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occured while trying to perform page navigation (Path: {Path})";
+			const string error = "An error occurred while trying to perform page navigation (Path: {Path})";
 			_logger.LogError(ex, error, path);
 			return Result.Fail(ErrorCode.Unknown, error);
 		}

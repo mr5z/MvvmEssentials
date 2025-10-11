@@ -8,9 +8,9 @@
 
   <PropertyGroup>
     <Company>Nkraft</Company>
-    <Authors>Mark Laureta</Authors>
+    <Authors>Mark L</Authors>
     <AssemblyVersion>1.0.0</AssemblyVersion>
-    <Copyright>Copyright (c) 2025 Mark Laureta. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2025 Mark L. All rights reserved.</Copyright>
     <FileVersion>1.0.0</FileVersion>
     <Version>1.0.0</Version>
   </PropertyGroup>
