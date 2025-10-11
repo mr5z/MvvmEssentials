@@ -16,13 +16,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        # Use .NET 10 if available, otherwise fallback to latest stable
-        dotnet-version: |
-          10.0.x
-          9.0.x
+        dotnet-version: 9.0.x
 
     - name: Clone dependency (CrossUtility)
-      run: git clone https://github.com/mr5z/CrossUtility ../CrossUtility
+      # The key part: move one directory up before cloning
+      run: |
+        cd ..
+        git clone https://github.com/mr5z/CrossUtility
 
     - name: Restore dependencies
       run: dotnet restore Nkraft.MvvmEssentials.csproj
