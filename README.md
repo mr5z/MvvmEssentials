@@ -84,7 +84,7 @@ internal class LandingViewModel(INavigationService navigationService) : PageView
 {
     private readonly INavigationService _navigationService = navigationService;
 
-    public override Task OnInitializedAsync()
+    public override async Task OnInitializedAsync()
     {
         awwait GoToLoginAsync();
     }
