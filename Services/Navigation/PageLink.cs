@@ -27,7 +27,7 @@ internal class PageWithQuery(string? pageName)
 	}
 }
 
-internal interface IPageLink
+public interface IPageLink
 {
 	string FullPath { get; }
 

@@ -6,7 +6,7 @@ using Nkraft.CrossUtility.Helpers;
 
 namespace Nkraft.MvvmEssentials.Extensions;
 
-internal static class NavigationExtension
+public static class NavigationExtension
 {
 	private const string KnownViewModelPattern = "ViewModel";
 	private const string KnownPagePattern = "Page";
