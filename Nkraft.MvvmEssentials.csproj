@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Company>Nkraft</Company>
+    <Authors>Mark Laureta</Authors>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <Copyright>Copyright (c) 2025 Mark Laureta. All rights reserved.</Copyright>
+    <FileVersion>1.0.0</FileVersion>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.110" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
+  </ItemGroup>
+
+</Project>
