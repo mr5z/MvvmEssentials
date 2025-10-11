@@ -42,25 +42,24 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 {
 	private readonly List<PageWithQuery> _pages = [];
 
-	public PageLink(INavigationService navigationService, string? start) : this(navigationService)
+	public PageLink(INavigationService navigationService, string? rootPage) : this(navigationService)
 	{
-		if (string.IsNullOrEmpty(start))
-		{ 
-			_pages.Add(new PageWithQuery(start));
-		}
+		AppendSegmentImplied(rootPage, null, null);
 	}
 
-	IPageLink IPageLink.AppendSegment(string pageName, object? parameters)
+	IPageLink IPageLink.AppendSegment(string? pageName, object? parameters)
 	{
-		return AppendSegmentImplied(pageName, null, parameters);
+		AppendSegmentImplied(pageName, null, parameters);
+		return this;
 	}
 
-	IPageLink IPageLink.AppendSegment(string pageName, Type? pageType, object? parameters)
+	IPageLink IPageLink.AppendSegment(string? pageName, Type? pageType, object? parameters)
 	{
-		return AppendSegmentImplied(pageName, pageType, parameters);
+		AppendSegmentImplied(pageName, pageType, parameters);
+		return this;
 	}
 
-	private PageLink AppendSegmentImplied(string pageName, Type? pageType, object? parameters)
+	private void AppendSegmentImplied(string? pageName, Type? pageType, object? parameters)
 	{
 		if (string.IsNullOrEmpty(pageName) == false)
 		{
@@ -69,7 +68,6 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 				Parameters = parameters
 			});
 		}
-		return this;
 	}
 
 	public INavigationService NavigationService { get; private set; } = navigationService;
