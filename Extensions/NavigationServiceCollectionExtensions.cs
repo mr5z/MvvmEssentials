@@ -3,7 +3,7 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Extensions;
 
-internal static class NavigationServiceCollectionExtension
+public static class NavigationServiceCollectionExtension
 {
 	public static IServiceCollection AddNavigationService(
 		this IServiceCollection services,
