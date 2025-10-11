@@ -6,7 +6,7 @@ public interface IPageRegistry
 {
 	IPageRegistry MapPage<TPage, TViewModel>()
 		where TViewModel : PageViewModel
-		where TPage : PageViewModel;
+		where TPage : Page;
 
 	Type? ResolveViewModelType(Type pageType);
 }
