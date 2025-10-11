@@ -1,3 +1,6 @@
+# Installation
+`dotnet add package Nkraft.MvvmEssentials --version 1.0.0`
+
 # Setup
 
 1. Follow the code setup below:
