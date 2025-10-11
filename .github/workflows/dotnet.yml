@@ -24,7 +24,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Clone dependencies
-      run: cd ../../ && echo CrossUtility | xargs -n1 | xargs -I{} git clone https://github.com/mr5z/{}
+      run: cd .. && echo CrossUtility | xargs -n1 | xargs -I{} git clone https://github.com/mr5z/{}
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
