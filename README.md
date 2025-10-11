@@ -79,7 +79,7 @@ public partial class App
 # Usage
 ## NavigationPage
 ```cs
-// Inject INavigationService into your ViewModel or code-behind
+// Inject INavigationService into your ViewModel
 internal class LandingViewModel(INavigationService navigationService) : PageViewModel
 {
     private readonly INavigationService _navigationService = navigationService;
