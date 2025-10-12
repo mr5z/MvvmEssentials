@@ -254,6 +254,7 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 		Console.WriteLine("Bye!");
 	}
 
+	// Really cool attribute from CommunityToolkit.Mvvm
 	[RelayCommand]
 	private void IncreaseCount()
 	{
