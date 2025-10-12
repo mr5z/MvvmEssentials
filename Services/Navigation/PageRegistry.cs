@@ -11,7 +11,7 @@ public interface IPageRegistry
 	Type? ResolveViewModelType(Type pageType);
 }
 
-internal class PageRegistry(IServiceCollection services) : IPageRegistry
+internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 {
 	private readonly IServiceCollection _services = services;
 

@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
-public class TabSelectionBehavior : Behavior<TabbedPage>
+public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 {
 	private int _previousTabIndex = -1;
 

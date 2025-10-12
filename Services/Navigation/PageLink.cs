@@ -2,7 +2,7 @@
 
 namespace Nkraft.MvvmEssentials.Services.Navigation;
 
-internal class PageWithQuery(string? pageName)
+internal sealed class PageWithQuery(string? pageName)
 {
 	public PageWithQuery(string? pageName, Type? pageType) : this(pageName)
 	{

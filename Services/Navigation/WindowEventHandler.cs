@@ -17,7 +17,7 @@ public interface IWindowEventHandler
 	void OnStopped();
 }
 
-internal class WindowEventHandler : IWindowEventHandler
+internal sealed class WindowEventHandler : IWindowEventHandler
 {
 	public event EventHandler? Created;
 	public event EventHandler? Destroying;

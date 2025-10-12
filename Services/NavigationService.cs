@@ -19,7 +19,7 @@ public interface INavigationService
 	Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
 }
 
-internal class NavigationService : INavigationService
+internal sealed class NavigationService : INavigationService
 {
 	private readonly ILogger<NavigationService> _logger;
 	private readonly IServiceProvider _serviceProvider;
