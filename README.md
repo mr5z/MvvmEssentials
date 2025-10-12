@@ -18,7 +18,7 @@ public static class MauiProgram
         builder.Services.AddPageRegistry(registry =>
         {
             // ViewModel and Page naming convention must strictly be followed
-            // i.e., <page_name>Page, <viewmodel_name>ViewModel wherein page_name == viewmodel_name
+            // i.e., <page_name>Page, <vm_name>ViewModel wherein page_name == vm_name
             registry.MapPage<LandingPage, LandingViewModel>()
                 .MapPage<MainPage, MainViewModel>()
                 .MapPage<LoginPage, LoginViewModel>()
@@ -57,7 +57,7 @@ public partial class App
 	{
 		// I know Task is not awaited.
 		// I actually don't know where is the better place to do this.
-		// Help needed, please 🙏.
+		// Help needed 🙏.
 
 		var result = _navigationService.Absolute(withNavigation: false)
 			.Push<LandingViewModel>() // replace with whatever first ViewModel your app should use
@@ -120,9 +120,11 @@ await _navigationService.Absolute(withNavigation: true)
 ```cs
 // Pass parameters via object type
 await _navigationService.NavigateAsync<LoginViewModel, object>(new { ErrorMessage = "Session expired", Test = 1 });
+
 // Pass parameters via custom type
 record LoginParameters(string ErrorMessage, int Test);
 await _navigationService.NavigateAsync<LoginViewModel, LoginParameters>(new("Session expired", 1));
+
 // Pass parameters via INavigationParameters
 INavigationParameters parameters = new NavigationParameters();
 parameters.Add("ErrorMessage", "Session expired");
