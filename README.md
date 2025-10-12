@@ -109,7 +109,7 @@ interface INavigationService
 1. Page replacement
 ```cs
 await _navigationService.Absolute(withNavigation: true)
-	.Push<FirstViewModel, object>(new { A = 1 })
+	.Push<FirstViewModel, object>(new { A = 1 }) // .Push can only handle "primitive" data types
 	.Push<SecondViewModel, object>(new { B = 2 })
 	.Push<ThirdViewModel, object>(new { C = 3 })
 	.NavigateAsync();
