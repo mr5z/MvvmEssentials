@@ -10,12 +10,58 @@ using System.Reflection;
 
 namespace Nkraft.MvvmEssentials.Services;
 
+/// <summary>
+/// Defines navigation operations for navigating between pages in a .NET MAUI application.
+/// </summary>
 public interface INavigationService
 {
+	/// <summary>
+	/// Navigates to the specified pages defined by the <paramref name="path"/> string.
+	/// <para>
+	/// - Page names must correspond to types that exist in the configured assembly (see <c>NavigationOptions.AssemblyPageSource</c>).
+	///	</para>
+	/// <para>
+	/// - Use <c>//</c> at the start of the path to perform absolute navigation, which will completely replace the application's main page and navigation stack.
+	/// </para>
+	/// <para>
+	/// - Use <c>NavigationPage</c> in the path to wrap subsequent pages (separated by '/') in a <see cref="NavigationPage"/>.
+	/// </para>
+	/// <para>
+	/// - Query parameters can be appended to page names using <c>?</c> (e.g., <c>MyPage?param1=value1</c>).
+	/// </para>
+	/// <para>
+	/// - Relative navigation (without <c>//</c>) will push pages onto the current navigation stack or the current tab's stack if within a <see cref="TabbedPage"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="path">Navigation path, e.g., "//MainPage/NavigationPage/DetailsPage".</param>
+	/// <param name="parameters">Optional navigation parameters to pass to the target page's view model.</param>
+	/// <param name="animated">Whether to animate the navigation transition.</param>
+	/// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
 	Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
 
+	/// <summary>
+	/// Navigates back to the previous page in the navigation stack.
+	/// <para>
+	/// - If the current page is within a <see cref="NavigationPage"/>, this will pop the top page from the navigation stack.
+	/// </para>
+	/// <para>
+	/// - If not within a <see cref="NavigationPage"/>, this will call <see cref="Page.SendBackButtonPressed()"/> on the current page.
+	/// </para>
+	/// </summary>
+	/// <param name="animated">Whether to animate the navigation transition.</param>
+	/// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
 	Task<IResult> NavigateBackAsync(bool animated = true);
 
+	/// <summary>
+	/// Navigates to the root page of the navigation stack.
+	/// <para>
+	/// - If the root page implements <see cref="IRootPageAware"/> or <see cref="IRootPageAwareAsync"/>, the corresponding event will be delivered.
+	/// </para>
+	/// - Only supported when the current page is a <see cref="NavigationPage"/> or the current tab of a <see cref="TabbedPage"/> is a <see cref="NavigationPage"/>.
+	/// </summary>
+	/// <param name="parameters">Optional navigation parameters to pass to the root page's view model.</param>
+	/// <param name="animated">Whether to animate the navigation transition.</param>
+	/// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
 	Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
 }
 
