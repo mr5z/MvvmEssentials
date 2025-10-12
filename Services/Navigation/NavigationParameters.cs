@@ -14,7 +14,7 @@ public interface INavigationParameters : IEnumerable<KeyValuePair<string, object
 	bool ContainsKey(string key);
 }
 
-internal class NavigationParameters : INavigationParameters
+internal sealed class NavigationParameters : INavigationParameters
 {
 	private readonly Dictionary<string, object?> _parameters = [];
 
