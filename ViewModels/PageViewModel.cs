@@ -4,12 +4,39 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 
 public class PageViewModel : BaseViewModel,
 	IAppearingAware,
+	INavigatedAware,
+	INavigatedAwareAsync,
 	IPageLoadAware,
-	IRootPageAware,
-	IRootPageAwareAsync,
 	IWindowEventAware,
 	IWindowEventAwareAsync
 {
+	private bool _isInitialized = false;
+	private bool _isInitializedAsync = false;
+
+	void INavigatedAware.OnNavigatedTo()
+	{
+		if (_isInitialized == false)
+		{
+			_isInitialized = true;
+			OnInitialized();
+		}
+	}
+
+	async Task INavigatedAwareAsync.OnNavigatedToAsync()
+	{
+		if (_isInitializedAsync == false)
+		{
+			_isInitializedAsync = true;
+			await OnInitializedAsync();
+		}
+	}
+
+	// TODO abstract this away
+	void INavigatedAware.OnNavigatedFrom() { }
+
+	// TODO abstract this away
+	Task INavigatedAwareAsync.OnNavigatedFromAsync() => Task.CompletedTask;
+
 	public virtual void OnPageAppearing() { }
 
 	public virtual void OnPageDisappearing() { }
@@ -20,7 +47,7 @@ public class PageViewModel : BaseViewModel,
 
 	public virtual Task OnWindowActivatedAsync() => Task.CompletedTask;
 
-	public virtual void OnNavigatedToRoot(INavigationParameters parameters) { }
+	protected virtual void OnInitialized() { }
 
-	public virtual Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
+	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
 }

@@ -5,31 +5,12 @@ using System.Reflection;
 namespace Nkraft.MvvmEssentials.ViewModels;
 
 public class BaseViewModel : 
-	INotifyPropertyChanged, 
+	INotifyPropertyChanged,
+	// TODO these three will not be invoked on how TabViewModel is instantiated
 	IParameterSetAware,
-	INavigatedAware,
-	INavigatedAwareAsync
+	IRootPageAware,
+	IRootPageAwareAsync
 {
-	private bool _isInitialized = false;
-	private bool _isInitializedAsync = false;
-
-	void INavigatedAware.OnNavigatedTo()
-	{
-		if (_isInitialized == false)
-		{
-			_isInitialized = true;
-			OnInitialized();
-		}
-	}
-
-	async Task INavigatedAwareAsync.OnNavigatedToAsync()
-	{
-		if (_isInitializedAsync == false)
-		{
-			_isInitializedAsync = true;
-			await OnInitializedAsync();
-		}
-	}
 
 	public void OnPropertyChanged(PropertyChangedEventArgs args)
 	{
@@ -54,15 +35,9 @@ public class BaseViewModel :
 		}
 	}
 
-	protected virtual void OnInitialized() { }
+	public virtual void OnNavigatedToRoot(INavigationParameters parameters) { }
 
-	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
-
-	// TODO abstract this away
-	void INavigatedAware.OnNavigatedFrom() { }
-
-	// TODO abstract this away
-	Task INavigatedAwareAsync.OnNavigatedFromAsync() => Task.CompletedTask;
+	public virtual Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
 
 	public event PropertyChangedEventHandler? PropertyChanged;
 
