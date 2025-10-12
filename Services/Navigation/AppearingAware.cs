@@ -6,3 +6,10 @@ internal interface IAppearingAware
 
 	void OnPageDisappearing();
 }
+
+internal interface IAppearingAwareAsync
+{
+	Task OnPageAppearingAsync();
+
+	Task OnPageDisappearingAsync();
+}

@@ -5,7 +5,7 @@ namespace Nkraft.MvvmEssentials.Services.Navigation;
 
 internal interface ITabHost
 {
-	public int SelectedTabIndex { get; set; }
+	int SelectedTabIndex { get; set; }
 
 	TabViewModel CurrentTab { get; }
 

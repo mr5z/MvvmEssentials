@@ -5,22 +5,11 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 
 public abstract class TabHostViewModel : PageViewModel, ITabHost
 {
-	public override void OnPageAppearing()
+	protected override void OnInitialized()
 	{
-		base.OnPageAppearing();
+		base.OnInitialized();
 
-		// This should have gone through OnInitialized(), but TabbedPage doesn't invoke the NavigatedTo() lifecycle method.
-		SetInitialTabSelected();
-	}
-
-	private bool _isInitialTabSet = false;
-	private void SetInitialTabSelected()
-	{
-		if (_isInitialTabSet == false)
-		{
-			_isInitialTabSet = true;
-			CurrentTab.OnTabSelected();
-		}
+		CurrentTab.OnTabSelected();
 	}
 
 	public abstract ImmutableArray<TabViewModel> GetTabs();

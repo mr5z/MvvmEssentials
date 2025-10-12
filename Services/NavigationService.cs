@@ -305,7 +305,6 @@ internal sealed class NavigationService : INavigationService
 			}
 		}
 
-
 		return Result.Ok();
 	}
 
@@ -417,7 +416,7 @@ internal sealed class NavigationService : INavigationService
 		}
 	}
 
-	private void Page_Appearing(object? sender, EventArgs e)
+	private async void Page_Appearing(object? sender, EventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
@@ -425,10 +424,15 @@ internal sealed class NavigationService : INavigationService
 			{
 				appearingAware.OnPageAppearing();
 			}
+
+			if (viewModel is IAppearingAwareAsync appearingAwareAsync)
+			{
+				await appearingAwareAsync.OnPageAppearingAsync();
+			}
 		}
 	}
 
-	private void Page_Disappearing(object? sender, EventArgs e)
+	private async void Page_Disappearing(object? sender, EventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
@@ -436,10 +440,15 @@ internal sealed class NavigationService : INavigationService
 			{
 				appearingAware.OnPageDisappearing();
 			}
+
+			if (viewModel is IAppearingAwareAsync appearingAwareAsync)
+			{
+				await appearingAwareAsync.OnPageDisappearingAsync();
+			}
 		}
 	}
 
-	private async void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
+	private void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
@@ -447,26 +456,16 @@ internal sealed class NavigationService : INavigationService
 			{
 				navigatedAware.OnNavigatedTo();
 			}
-
-			if (viewModel is INavigatedAwareAsync navigatedAwareAsync)
-			{
-				await navigatedAwareAsync.OnNavigatedToAsync();
-			}
 		}
 	}
 
-	private async void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
+	private void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is INavigatedAware navigatedAware)
 			{
 				navigatedAware.OnNavigatedFrom();
-			}
-
-			if (viewModel is INavigatedAwareAsync navigatedAwareAsync)
-			{
-				await navigatedAwareAsync.OnNavigatedFromAsync();
 			}
 		}
 	}

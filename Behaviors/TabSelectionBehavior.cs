@@ -5,11 +5,13 @@ namespace Nkraft.MvvmEssentials.Behaviors;
 
 public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 {
+	private TabbedPage? _tabbedPage;
 	private int _previousTabIndex = -1;
 
 	protected override void OnAttachedTo(TabbedPage bindable)
 	{
 		base.OnAttachedTo(bindable);
+		_tabbedPage = bindable;
 		bindable.BindingContextChanged += TabbedPage_BindingContextChanged;
 		bindable.CurrentPageChanged += TabbedPage_CurrentPageChanged;
 	}
@@ -17,6 +19,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 	protected override void OnDetachingFrom(TabbedPage bindable)
 	{
 		base.OnDetachingFrom(bindable);
+		_tabbedPage = null;
 		bindable.BindingContextChanged -= TabbedPage_BindingContextChanged;
 		bindable.CurrentPageChanged -= TabbedPage_CurrentPageChanged;
 		if (bindable?.BindingContext is INotifyPropertyChanged notifiableObject)
@@ -74,21 +77,21 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 			return;
 		}
 
-		if (sender is not TabbedPage tabbedPage)
+		if (_tabbedPage is null)
 		{
 			return;
 		}
 
-		if (tabbedPage.BindingContext is not ITabHost tab)
+		if (_tabbedPage.BindingContext is not ITabHost tab)
 		{
 			return;
 		}
 
 		var tabIndex = tab.SelectedTabIndex;
-		var destinationPage = tabbedPage.Children.ElementAtOrDefault(tabIndex);
+		var destinationPage = _tabbedPage.Children.ElementAtOrDefault(tabIndex);
 		if (destinationPage is not null)
 		{
-			tabbedPage.CurrentPage = destinationPage;
+			_tabbedPage.CurrentPage = destinationPage;
 		}
 	}
 }

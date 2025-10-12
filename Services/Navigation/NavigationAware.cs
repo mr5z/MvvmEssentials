@@ -7,13 +7,6 @@ internal interface INavigatedAware
 	void OnNavigatedFrom();
 }
 
-internal interface INavigatedAwareAsync
-{
-	Task OnNavigatedToAsync();
-
-	Task OnNavigatedFromAsync();
-}
-
 internal interface IRootPageAware
 {
 	void OnNavigatedToRoot(INavigationParameters parameters);

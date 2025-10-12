@@ -10,10 +10,10 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.0.12</AssemblyVersion>
+    <AssemblyVersion>1.0.13</AssemblyVersion>
     <Copyright>Copyright (c) 2025 Mark L. All rights reserved.</Copyright>
-    <FileVersion>1.0.12</FileVersion>
-    <Version>1.0.12</Version>
+    <FileVersion>1.0.13</FileVersion>
+    <Version>1.0.13</Version>
   </PropertyGroup>
 
   <ItemGroup>
