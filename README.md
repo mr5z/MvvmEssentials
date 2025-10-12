@@ -115,9 +115,18 @@ await _navigationService.Absolute(withNavigation: true)
 	.NavigateAsync();
 // Constructs //NavigationPage/FirstPage?A=1/SecondPage?B=2/ThirdPage?C=3
 ```
-2. Parameter passing
+2. Navigation with different types of parameters
 ```cs
+// Pass parameters via object type
 await _navigationService.NavigateAsync<LoginViewModel, object>(new { ErrorMessage = "Session expired", Test = 1 });
+// Pass parameters via custom type
+record LoginParameters(string ErrorMessage, int Test);
+await _navigationService.NavigateAsync<LoginViewModel, LoginParameters>(new("Session expired", 1));
+// Pass parameters via INavigationParameters
+INavigationParameters parameters = new NavigationParameters();
+parameters.Add("ErrorMessage", "Session expired");
+parameters.Add("Test", 1);
+await _navigationService.NavigateAsync<LoginViewModel>(parameters);
 
 // LoginViewModel.cs
 class LoginViewModel : PageViewModel
