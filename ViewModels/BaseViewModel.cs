@@ -36,7 +36,7 @@ public class BaseViewModel :
 		PropertyChanged?.Invoke(this, args);
 	}
 
-	public void OnParametersSet(INavigationParameters parameters) { }
+	public virtual void OnParametersSet(INavigationParameters parameters) { }
 
 	internal void SetNavigationParameter(string key, object? value)
 	{
