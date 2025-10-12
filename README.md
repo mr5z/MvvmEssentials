@@ -112,6 +112,109 @@ internal class LandingViewModel(INavigationService navigationService) : PageView
 ```
 
 ## TabbedPage + NavigationPage
+
+1. Register tabs in DI container
+```cs
+// These are tabs and should not be mapped to their associated pages
+// because we are binding them via XAML
+builder.Services.AddTransient<HomeViewModel>();
+builder.Services.AddTransient<SettingsViewModel>();
+
+builder.Services.AddPageRegistry(registry =>
+{
+	// This is the tab host
+	registry.MapPage<MainPage, MainViewModel>()
+		;
+});
+```
+
+2. Define the structure of your tabs in XAML
+```xaml
+<?xml version="1.0" encoding="utf-8" ?>
+<TabbedPage
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+	xmlns:behaviors="clr-namespace:Nkraft.MvvmEssentials.Behaviors;assembly=Nkraft.MvvmEssentials"
+	xmlns:local="clr-namespace:MauiApp1"
+	xmlns:android="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;assembly=Microsoft.Maui.Controls"
+	android:TabbedPage.ToolbarPlacement="Bottom"
+	x:DataType="local:MainViewModel"
+	x:Class="MauiApp1.MainPage">
+
+	<TabbedPage.Behaviors>
+		<behaviors:TabSelectionBehavior />
+	</TabbedPage.Behaviors>
+
+	<NavigationPage Title="Home">
+		<x:Arguments>
+			<local:HomePage BindingContext="{Binding HomeViewModel}" />
+		</x:Arguments>
+	</NavigationPage>
+
+	<NavigationPage Title="Settings">
+		<x:Arguments>
+			<local:SettingsPage BindingContext="{Binding SettingsViewModel}" />
+		</x:Arguments>
+	</NavigationPage>
+
+</TabbedPage>
+```
+
+3. Inject ViewModels in the host VM and inherit from `TabHostViewModel`
+```cs
+public class MainViewModel(HomeViewModel homeViewModel, SettingsViewModel settingsViewModel) : TabHostViewModel
+{
+	public override ImmutableArray<TabViewModel> GetTabs() => [HomeViewModel, SettingsViewModel];
+
+	public HomeViewModel HomeViewModel { get; } = homeViewModel;
+
+	public SettingsViewModel SettingsViewModel { get; } = settingsViewModel;
+}
+```
+
+4. Define tab ViewModels
+```cs
+public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabViewModel
+{
+	private readonly ISemanticScreenReader _screenReader = screenReader;
+
+	public override void OnTabSelected()
+	{
+		base.OnTabSelected();
+
+		Console.WriteLine("Home tab selected");
+	}
+
+	public override void OnTabUnselected()
+	{
+		base.OnTabUnselected();
+
+		Console.WriteLine("Bye!");
+	}
+
+	[RelayCommand]
+	private void IncreaseCount()
+	{
+		Count++;
+
+		if (Count == 1)
+			CountButtonText = $"Clicked {Count} time";
+		else
+			CountButtonText = $"Clicked {Count} times";
+
+		_screenReader.Announce(CountButtonText);
+	}
+
+	// We assume you're using Fody PropertyChanged
+
+	public int Count { get; set; }
+
+	public string CountButtonText { get; set; } = "Click me";
+}
+
+```
+
+# MasterDetailPage
 ```cs
 // TODO
 ```
