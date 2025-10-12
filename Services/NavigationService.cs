@@ -42,7 +42,7 @@ internal sealed class NavigationService : INavigationService
 		windowHandler.Activated += WindowEvent_Activated;
 	}
 
-	// Handle support for MasterDetailPage, and nested NavigationPage if needed in the future.
+	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
 	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
 	{
 		var currentApp = Application.Current;
@@ -357,7 +357,7 @@ internal sealed class NavigationService : INavigationService
 			currentPage = navigationPage.CurrentPage;
 		}
 
-		if (currentPage is not null && currentPage.BindingContext is object viewModel)
+		if (TryGetViewModel(currentPage, out var viewModel))
 		{
 			if (viewModel is IWindowEventAware eventAware)
 			{
@@ -373,7 +373,7 @@ internal sealed class NavigationService : INavigationService
 
 	private void Page_Appearing(object? sender, EventArgs e)
 	{
-		if (sender is Page page && page.BindingContext is object viewModel)
+		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is IAppearingAware appearingAware)
 			{
@@ -384,7 +384,7 @@ internal sealed class NavigationService : INavigationService
 
 	private void Page_Disappearing(object? sender, EventArgs e)
 	{
-		if (sender is Page page && page.BindingContext is object viewModel)
+		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is IAppearingAware appearingAware)
 			{
@@ -395,7 +395,7 @@ internal sealed class NavigationService : INavigationService
 
 	private async void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
 	{
-		if (sender is Page page && page.BindingContext is object viewModel)
+		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is INavigatedAware navigatedAware)
 			{
@@ -411,7 +411,7 @@ internal sealed class NavigationService : INavigationService
 
 	private async void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
 	{
-		if (sender is Page page && page.BindingContext is object viewModel)
+		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is INavigatedAware navigatedAware)
 			{
@@ -435,6 +435,17 @@ internal sealed class NavigationService : INavigationService
 				UnregisterPageEvents(page);
 			}
 		}
+	}
+
+	private static bool TryGetViewModel(object? sender, [NotNullWhen(true)] out object? resultViewModel)
+	{
+		if (sender is Page { BindingContext: { } viewModel })
+		{
+			resultViewModel = viewModel;
+			return true;
+		}
+		resultViewModel = null;
+		return false;
 	}
 
 	private static bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
