@@ -3,7 +3,7 @@
 [![NuGet Pre-release](https://img.shields.io/nuget/vpre/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
 [![GitHub Release](https://img.shields.io/github/release/mr5z/Nkraft.MvvmEssentials.svg?style=flat)](https://github.com/mr5z/Nkraft.MvvmEssentials/packages/385702)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
-[![.NET](https://github.com/mr5z/PropertyValidator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/Nkraft.MvvmEssentials/actions/workflows/dotnet.yml)
+[![.NET](https://github.com/mr5z/Nkraft.MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/Nkraft.MvvmEssentials/actions/workflows/dotnet.yml)
 
 # Setup
 
