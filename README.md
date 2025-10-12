@@ -87,6 +87,68 @@ public partial class App
 ```
 
 # Usage
+
+## NavigationService
+```cs
+interface INavigationService
+{
+	// Under the hood, it detects which current page type is currently active,
+	// and performs either a page replacement, or push page on the stack if its NavigationPage.
+	// I recommend to use the extensions instead of this.
+	Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
+
+	// Wraps Navigation.PopAsync()
+	Task<IResult> NavigateBackAsync(bool animated = true);
+
+	// Wraps Navigation.PopToRootAsync()
+	Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
+}
+```
+
+### NavigationExtension Examples
+1. Page replacement
+```cs
+await _navigationService.Absolute(withNavigation: true)
+	.Push<FirstViewModel, object>(new { A = 1 })
+	.Push<SecondViewModel, object>(new { B = 2 })
+	.Push<ThirdViewModel, object>(new { C = 3 })
+	.NavigateAsync();
+// Constructs //NavigationPage/FirstPage?A=1/SecondPage?B=2/ThirdPage?C=3
+```
+2. Parameter passing
+```cs
+await _navigationService.NavigateAsync<LoginViewModel, object>(new { ErrorMessage = "Session expired", Test = 1 });
+
+// LoginViewModel.cs
+class LoginViewModel : PageViewModel
+{
+	// Will automatically map to this property
+	public string? ErrorMessage { get; set; }
+
+	// Alternatively for no mapped properties
+	public override void OnParametersSet(INavigationParameters parameters)
+	{
+		if (parameters.TryGetValue<int>("Test", out var testValue))
+		{
+			// ..
+		}
+	}
+}
+
+```
+3. Contextual navigation
+```cs
+// Will either replace the page if the active page is not a NavigationPage
+// or will push on NavigationPage's stack if it is.
+await _navigationService.NavigateAsync<AccountViewModel>();
+```
+4. Select tab of TabbedPage
+```cs
+await _navigationService.Absolute(withNavigation: false)
+	.Push<MainViewModel, object>(new { SelectedTabIndex = 2 }) // switches to 3rd tab
+	.NavigateAsync();
+```
+
 ## NavigationPage
 ```cs
 // Inject INavigationService into your ViewModel
@@ -192,6 +254,7 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 		Console.WriteLine("Bye!");
 	}
 
+	// Really cool attribute from CommunityToolkit.Mvvm
 	[RelayCommand]
 	private void IncreaseCount()
 	{
