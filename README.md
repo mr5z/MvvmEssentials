@@ -290,7 +290,7 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 
 ```
 
-# MasterDetailPage
+# FlyoutPage
 ```cs
 // TODO
 ```
