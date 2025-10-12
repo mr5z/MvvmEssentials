@@ -6,7 +6,7 @@
 [![.NET](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml)
 
 # Setup
-Quickly test this using this [test project](https://github.com/mr5z/MauiTest1), or just follow the instructions below:
+Quick test using this [test project](https://github.com/mr5z/MauiTest1), or just follow the instructions below:
 
 1. Register types in DI container
 ```cs
