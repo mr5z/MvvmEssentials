@@ -9,7 +9,7 @@ public abstract class TabHostViewModel : PageViewModel, ITabHost
 	{
 		base.OnPageAppearing();
 
-		// This should have gone through OnInitialized(), but TabbedPage doesn't invoke tha NavigatedTo() lifecycle method.
+		// This should have gone through OnInitialized(), but TabbedPage doesn't invoke the NavigatedTo() lifecycle method.
 		SetInitialTabSelected();
 	}
 

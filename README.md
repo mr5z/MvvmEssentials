@@ -6,7 +6,7 @@
 [![.NET](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml)
 
 # Setup
-Quickly test this using this [test project](https://github.com/mr5z/MauiTest1), or just follow the instructions below:
+Quick test using this [test project](https://github.com/mr5z/MauiTest1), or just follow the instructions below:
 
 1. Register types in DI container
 ```cs
@@ -114,7 +114,7 @@ await _navigationService.Absolute(withNavigation: true)
 	.Push<SecondViewModel, object>(new { B = 2 })
 	.Push<ThirdViewModel, object>(new { C = 3 })
 	.NavigateAsync();
-// Constructs //NavigationPage/FirstPage?A=1/SecondPage?B=2/ThirdPage?C=3
+// Constructs "//NavigationPage/FirstPage?A=1/SecondPage?B=2/ThirdPage?C=3"
 ```
 2. Navigation with different types of parameters
 ```cs
@@ -125,7 +125,7 @@ await _navigationService.NavigateAsync<LoginViewModel, object>(new { ErrorMessag
 record LoginParameters(string ErrorMessage, int Test);
 await _navigationService.NavigateAsync<LoginViewModel, LoginParameters>(new("Session expired", 1));
 
-// Pass parameters via INavigationParameters
+// Pass parameters via INavigationParameters, which is the "superior" of the 2 previous variants
 INavigationParameters parameters = new NavigationParameters();
 parameters.Add("ErrorMessage", "Session expired");
 parameters.Add("Test", 1);
