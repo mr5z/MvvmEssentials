@@ -87,6 +87,28 @@ public partial class App
 ```
 
 # Usage
+
+## NavigationService
+```cs
+interface INavigationService
+{
+	// Under the hood, it detects which current page type is currently active,
+	// and performs either a page replacement, or push page on the stack if its NavigationPage
+	Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
+
+	// Wraps Navigation.PopAsync()
+	Task<IResult> NavigateBackAsync(bool animated = true);
+
+	// Wraps Navigation.PopToRootAsync()
+	Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
+}
+```
+
+### NavigationExtension
+
+```cs
+```
+
 ## NavigationPage
 ```cs
 // Inject INavigationService into your ViewModel
