@@ -5,6 +5,8 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 public class PageViewModel : BaseViewModel,
 	IAppearingAware,
 	IPageLoadAware,
+	IRootPageAware,
+	IRootPageAwareAsync,
 	IWindowEventAware,
 	IWindowEventAwareAsync
 {
@@ -17,4 +19,8 @@ public class PageViewModel : BaseViewModel,
 	public virtual void OnWindowActivated() { }
 
 	public virtual Task OnWindowActivatedAsync() => Task.CompletedTask;
+
+	public virtual void OnNavigatedToRoot(INavigationParameters parameters) { }
+
+	public virtual Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
 }

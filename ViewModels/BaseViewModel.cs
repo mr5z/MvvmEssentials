@@ -31,7 +31,7 @@ public class BaseViewModel :
 		}
 	}
 
-	internal void OnPropertyChanged(PropertyChangedEventArgs args)
+	public void OnPropertyChanged(PropertyChangedEventArgs args)
 	{
 		PropertyChanged?.Invoke(this, args);
 	}

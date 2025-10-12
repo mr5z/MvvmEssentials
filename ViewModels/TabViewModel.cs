@@ -18,7 +18,7 @@ public class TabViewModel : BaseViewModel, IRootPageAware, IRootPageAwareAsync
 
 	public virtual void OnTabUnselected() { }
 
-	public void OnNavigatedToRoot(INavigationParameters parameters) { }
+	public virtual void OnNavigatedToRoot(INavigationParameters parameters) { }
 
-	public Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
+	public virtual Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
 }
