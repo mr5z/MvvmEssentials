@@ -215,6 +215,7 @@ builder.Services.AddPageRegistry(registry =>
 	x:DataType="local:MainViewModel"
 	x:Class="MauiApp1.MainPage">
 
+	<!-- Include this for tab selection via VM to work -->
 	<TabbedPage.Behaviors>
 		<behaviors:TabSelectionBehavior />
 	</TabbedPage.Behaviors>
