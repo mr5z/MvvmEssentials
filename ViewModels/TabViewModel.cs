@@ -1,5 +1,24 @@
-﻿namespace Nkraft.MvvmEssentials.ViewModels;
+﻿using Nkraft.MvvmEssentials.Services.Navigation;
 
-internal class TabViewModel : BaseViewModel
+namespace Nkraft.MvvmEssentials.ViewModels;
+
+public class TabViewModel : BaseViewModel, IRootPageAware, IRootPageAwareAsync
 {
+	private bool _isInitialized;
+
+	public virtual async void OnTabSelected()
+	{
+		if (_isInitialized == false)
+		{
+			_isInitialized = true;
+			OnInitialized();
+			await OnInitializedAsync();
+		}
+	}
+
+	public virtual void OnTabUnselected() { }
+
+	public void OnNavigatedToRoot(INavigationParameters parameters) { }
+
+	public Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
 }

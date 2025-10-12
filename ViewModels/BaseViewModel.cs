@@ -4,11 +4,34 @@ using System.Reflection;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public class BaseViewModel : INotifyPropertyChanged, IParameterSetAware
+public class BaseViewModel : 
+	INotifyPropertyChanged, 
+	IParameterSetAware,
+	INavigatedAware,
+	INavigatedAwareAsync
 {
-	public event PropertyChangedEventHandler? PropertyChanged;
+	private bool _isInitialized = false;
+	private bool _isInitializedAsync = false;
 
-	protected virtual void OnPropertyChanged(PropertyChangedEventArgs args)
+	void INavigatedAware.OnNavigatedTo()
+	{
+		if (_isInitialized == false)
+		{
+			_isInitialized = true;
+			OnInitialized();
+		}
+	}
+
+	async Task INavigatedAwareAsync.OnNavigatedToAsync()
+	{
+		if (_isInitializedAsync == false)
+		{
+			_isInitializedAsync = true;
+			await OnInitializedAsync();
+		}
+	}
+
+	internal void OnPropertyChanged(PropertyChangedEventArgs args)
 	{
 		PropertyChanged?.Invoke(this, args);
 	}
@@ -30,6 +53,18 @@ public class BaseViewModel : INotifyPropertyChanged, IParameterSetAware
 			}
 		}
 	}
+
+	protected virtual void OnInitialized() { }
+
+	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
+
+	// TODO abstract this away
+	void INavigatedAware.OnNavigatedFrom() { }
+
+	// TODO abstract this away
+	Task INavigatedAwareAsync.OnNavigatedFromAsync() => Task.CompletedTask;
+
+	public event PropertyChangedEventHandler? PropertyChanged;
 
 	private static bool AreTypesEqual(Type typeA, Type typeB)
 	{
