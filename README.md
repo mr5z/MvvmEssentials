@@ -62,7 +62,7 @@ public partial class App
 		// Help needed 🙏.
 
 		var result = _navigationService.Absolute(withNavigation: false)
-			.Push<LandingViewModel>() // replace with whatever first ViewModel your app should use
+			.Push<LandingViewModel>() // replace with whatever initial ViewModel your app should use
 			.NavigateAsync()
 			.GetAwaiter()
 			.GetResult();
