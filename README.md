@@ -297,5 +297,8 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 // TODO
 ```
 
+# Notes
+This library is inspired by [Prism](https://github.com/PrismLibrary/Prism)
+
 # Contribution
 Any help welcome. Thanks!
