@@ -17,8 +17,10 @@ public static class MauiProgram
         // ..
         builder.Services.AddPageRegistry(registry =>
         {
-            // ViewModel and Page naming convention must strictly be followed
-            // i.e., <page_name>Page, <vm_name>ViewModel wherein page_name == vm_name
+            // ViewModel and Page naming convention must strictly be followed,
+            // page_name + Page
+            // vm_name + ViewModel
+            // wherein page_name == vm_name
             registry.MapPage<LandingPage, LandingViewModel>()
                 .MapPage<MainPage, MainViewModel>()
                 .MapPage<LoginPage, LoginViewModel>()
@@ -60,7 +62,7 @@ public partial class App
 		// Help needed 🙏.
 
 		var result = _navigationService.Absolute(withNavigation: false)
-			.Push<LandingViewModel>() // replace with whatever first ViewModel your app should use
+			.Push<LandingViewModel>() // replace with whatever initial ViewModel your app should use
 			.NavigateAsync()
 			.GetAwaiter()
 			.GetResult();
@@ -215,6 +217,7 @@ builder.Services.AddPageRegistry(registry =>
 	x:DataType="local:MainViewModel"
 	x:Class="MauiApp1.MainPage">
 
+	<!-- Include this for tab selection via VM to work -->
 	<TabbedPage.Behaviors>
 		<behaviors:TabSelectionBehavior />
 	</TabbedPage.Behaviors>
@@ -289,10 +292,13 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 
 ```
 
-# MasterDetailPage
+# FlyoutPage
 ```cs
 // TODO
 ```
+
+# Notes
+This library is inspired by [Prism](https://github.com/PrismLibrary/Prism)
 
 # Contribution
 Any help welcome. Thanks!
