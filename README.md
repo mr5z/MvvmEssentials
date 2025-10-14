@@ -297,6 +297,132 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 // TODO
 ```
 
+# PopupPage
+This feature is made possible by this awesome library [Mopups](https://github.com/LuckyDucko/Mopups).
+
+## Setup
+Register required types in DI container. Note that this is an optional feature.
+
+### Mopups
+```cs
+// Under MauiProgram.cs
+// ..
+var builder = MauiApp.CreateBuilder();
+builder
+	.UseMauiApp<App>()
+	.ConfigureFonts(fonts =>
+	{
+		fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+		fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+	})
+	.ConfigureMopups(); // For Mopups
+//..
+```
+### Popup page
+```cs
+// Still under MauiProgram.cs
+// ..
+builder.Services.AddPageRegistry(registry =>
+{
+	registry.MapPage<LandingPage, LandingViewModel>()
+		.MapPage<MainPage, MainViewModel>()
+		.MapPage<ConfirmPopup, ConfirmViewModel>() // This is a Popup page
+		;
+});
+
+// Skip if this is already done.
+// It also injects the PopupService since I am still undecided,
+// whether if it's a good idea to create another extension just for that
+builder.Services.AddNavigationService(options =>
+	options.AssemblyPageSource = Assembly.GetExecutingAssembly()
+);
+```
+
+## Usage
+1. Define your popup in XAML
+```xaml
+<?xml version="1.0" encoding="utf-8" ?>
+ <!-- Must inherit from nkraft:PopupPage -->
+<nkraft:PopupPage
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+	xmlns:nkraft="clr-namespace:Nkraft.MvvmEssentials.Pages;assembly=Nkraft.MvvmEssentials"
+	xmlns:local="clr-namespace:MauiApp1"
+	x:DataType="local:ConfirmViewModel"
+	x:Class="MauiApp1.ConfirmPopup"
+	HasSystemPadding="True"
+	Padding="10"
+	Title="Confirm">
+	<Border
+		VerticalOptions="Center" 
+		HorizontalOptions="Center"
+		WidthRequest="300"
+		HeightRequest="200"
+        Stroke="LightGray"
+        StrokeThickness="1"
+        BackgroundColor="White">
+		<Border.Shadow>
+			<Shadow Brush="Black"
+                Opacity="0.5"
+                Radius="5"
+                Offset="5,5" />
+		</Border.Shadow>
+		<VerticalStackLayout 
+		    VerticalOptions="Center" 
+		    HorizontalOptions="Center"
+			Spacing="5">
+			<Label Text="{Binding ConfirmationMessage}" FontSize="Large" />
+			<Grid ColumnDefinitions="*, *" ColumnSpacing="5">
+				<Button Grid.Column="0" FontSize="Medium" Text="No" BackgroundColor="{StaticResource Secondary}" TextColor="Black" Command="{Binding NoCommand}" />
+				<Button Grid.Column="1" FontSize="Medium" Text="Reset" Command="{Binding YesCommand}" BackgroundColor="{StaticResource Primary}" TextColor="White" />
+			</Grid>
+		</VerticalStackLayout>
+	</Border>
+</nkraft:PopupPage>
+```
+
+2. Define its backing ViewModel
+```cs
+// The result type you expect from this popup
+record ConfirmResult(bool Confirm);
+
+internal partial class ConfirmViewModel(IPopupService popupService) : PopupViewModel<ConfirmResult>(popupService)
+{
+	[RelayCommand]
+	private async Task Yes()
+	{
+		await Dismiss(new ConfirmResult(true));
+	}
+
+	[RelayCommand]
+	private async Task No()
+	{
+		await Dismiss(new ConfirmResult(false));
+	}
+
+	public string? ConfirmationMessage { get; set; }
+}
+```
+
+3. Use the popup in other ViewModel
+```cs
+var navParams = new NavigationParameters { { nameof(ConfirmViewModel.ConfirmationMessage), "Reset counter?" } };
+var result = await _popupService.ShowAsync<ConfirmViewModel, ConfirmResult>(navParams);
+if (result.TryGetValue(out var confirmResult))
+{
+	Console.WriteLine("User pressed: {0}", confirmResult.Confirm ? "Yes" : "No");
+	if (confirmResult.Confirm)
+	{
+		Count = 0;
+	}
+}
+else
+{
+	// This means, either the user clicks the background or pressed the back button
+	Console.WriteLine("User cancelled the popup");
+}
+```
+
 # Notes
 This library is inspired by [Prism](https://github.com/PrismLibrary/Prism)
 
