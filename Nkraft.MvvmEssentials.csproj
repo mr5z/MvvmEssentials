@@ -10,9 +10,9 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.0.14</AssemblyVersion>
-    <FileVersion>1.0.14</FileVersion>
-    <Version>1.0.14</Version>
+    <AssemblyVersion>1.0.15</AssemblyVersion>
+    <FileVersion>1.0.15</FileVersion>
+    <Version>1.0.15</Version>
     <Copyright>Copyright (c) 2025 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
