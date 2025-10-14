@@ -14,16 +14,16 @@ public interface INavigationParameters : IEnumerable<KeyValuePair<string, object
 	bool ContainsKey(string key);
 }
 
-internal sealed class NavigationParameters : INavigationParameters
+public sealed class NavigationParameters : INavigationParameters
 {
 	private readonly Dictionary<string, object?> _parameters = [];
 
-	void INavigationParameters.Add(string key, object? value)
+	public void Add(string key, object? value)
 	{
 		_parameters.Add(key, value);
 	}
 
-	bool INavigationParameters.TryGetValue<T>(string key, [NotNullWhen(true)] out T? value) where T : default
+	public bool TryGetValue<T>(string key, [NotNullWhen(true)] out T? value)
 	{
 		if (_parameters.TryGetValue(key, out var obj) && obj is T result)
 		{
@@ -34,7 +34,7 @@ internal sealed class NavigationParameters : INavigationParameters
 		return false;
 	}
 
-	bool INavigationParameters.ContainsKey(string key)
+	public bool ContainsKey(string key)
 	{
 		return _parameters.ContainsKey(key);
 	}

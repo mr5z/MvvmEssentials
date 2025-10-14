@@ -8,7 +8,7 @@ namespace Nkraft.MvvmEssentials.Extensions;
 
 public static class NavigationExtension
 {
-	internal static string ToPageName<TViewModel>() where TViewModel : PageViewModel
+	internal static string ToPageName<TViewModel>()
 	{
 		const string KnownViewModelPattern = "ViewModel";
 		const string KnownPagePattern = "Page";

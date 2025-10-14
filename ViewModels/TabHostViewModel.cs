@@ -9,6 +9,7 @@ public abstract class TabHostViewModel : PageViewModel, ITabHost
 	{
 		base.OnInitialized();
 
+		// TODO OnTabSelected() gets called twice if SelectedTabIndex != 0
 		CurrentTab.OnTabSelected();
 	}
 

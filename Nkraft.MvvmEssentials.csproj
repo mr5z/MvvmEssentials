@@ -10,19 +10,30 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.0.13</AssemblyVersion>
+    <AssemblyVersion>1.0.14</AssemblyVersion>
+    <FileVersion>1.0.14</FileVersion>
+    <Version>1.0.14</Version>
     <Copyright>Copyright (c) 2025 Mark L. All rights reserved.</Copyright>
-    <FileVersion>1.0.13</FileVersion>
-    <Version>1.0.13</Version>
+    <Company>Nkraft</Company>
+    <Description>MAUI's Shell Alternative</Description>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
+    <PackageReleaseNotes>- Minor improvements and bug fixes</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.9" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.110" />
-    <PackageReference Include="Nkraft.CrossUtility" Version="1.0.1" />
+    <PackageReference Include="Mopups" Version="1.3.4" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
   </ItemGroup>
 
 </Project>

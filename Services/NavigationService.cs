@@ -1,12 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Nkraft.CrossUtility.Helpers;
+using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Navigation;
-using Nkraft.MvvmEssentials.ViewModels;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
 namespace Nkraft.MvvmEssentials.Services;
 
@@ -68,22 +65,15 @@ public interface INavigationService
 internal sealed class NavigationService : INavigationService
 {
 	private readonly ILogger<NavigationService> _logger;
-	private readonly IServiceProvider _serviceProvider;
-	private readonly IPageRegistry _pageRegistry;
-
-	private readonly Assembly? _assemblyPageSource;
+	private readonly IPageFactory _pageFactory;
 
 	public NavigationService(
 		ILogger<NavigationService> logger,
-		IServiceProvider serviceProvider,
-		IPageRegistry pageRegistry,
 		IWindowEventHandler windowHandler,
-		IOptions<NavigationOptions> options)
+		IPageFactory pageFactory)
 	{
 		_logger = logger;
-		_serviceProvider = serviceProvider;
-		_pageRegistry = pageRegistry;
-		_assemblyPageSource = options.Value.AssemblyPageSource;
+		_pageFactory = pageFactory;
 
 		windowHandler.Activated += WindowEvent_Activated;
 	}
@@ -94,7 +84,7 @@ internal sealed class NavigationService : INavigationService
 		var currentApp = Application.Current;
 		if (currentApp is null)
 		{
-			const string error = "Application.Current is null";
+			const string error = "Application.Current is null.";
 			_logger.LogError(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
@@ -103,18 +93,18 @@ internal sealed class NavigationService : INavigationService
 
 		try
 		{
-			pageInfoList = GetPageTypesFromPath(path);
+			pageInfoList = _pageFactory.GetPageTypesFromPath<Page>(path);
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occurred while trying to fetch page information";
+			const string error = "An error occurred while trying to fetch page information.";
 			_logger.LogError(ex, error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
 		if (pageInfoList.Length == 0)
 		{
-			const string error = "No valid pages found in the navigation path";
+			const string error = "No valid pages found in the navigation path.";
 			_logger.LogError(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
@@ -122,13 +112,7 @@ internal sealed class NavigationService : INavigationService
 		try
 		{
 			// Build the page stack
-			var pages = pageInfoList.Select(pageInfo =>
-			{
-				var viewModelType = _pageRegistry.ResolveViewModelType(pageInfo.PageType);
-				var page = CreatePage(pageInfo, viewModelType, parameters);
-				RegisterPageEvents(page);
-				return page;
-			}).ToImmutableArray();
+			var pages = pageInfoList.Select(pageInfo => _pageFactory.CreatePage(pageInfo, parameters)).ToImmutableArray();
 
 			var replaceCurrentPage = path.StartsWith('/');
 
@@ -136,7 +120,7 @@ internal sealed class NavigationService : INavigationService
 			{
 				if (pages.Length == 0)
 				{
-					const string error = "No valid pages to navigate to";
+					const string error = "No valid pages to navigate to.";
 					_logger.LogError(error);
 					return Result.Fail(ErrorCode.InvalidState, error);
 				}
@@ -144,7 +128,7 @@ internal sealed class NavigationService : INavigationService
 				var firstPage = pages.First();
 				if (firstPage is null)
 				{
-					const string error = "First page is null";
+					const string error = "First page is null.";
 					_logger.LogError(error);
 					return Result.Fail(ErrorCode.InvalidState, error);
 				}
@@ -160,7 +144,9 @@ internal sealed class NavigationService : INavigationService
 					}
 					else
 					{
-						return Result.Fail(ErrorCode.NotSupported, "Absolute navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage");
+						const string error = "Absolute navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage.";
+						_logger.LogError(error);
+						return Result.Fail(ErrorCode.NotSupported, error);
 					}
 				}
 				else if (firstPage is NavigationPage navigationPage)
@@ -194,7 +180,7 @@ internal sealed class NavigationService : INavigationService
 				var currentPage = currentApp.Windows[0].Page;
 				if (currentPage is null)
 				{
-					const string error = "Current page is null";
+					const string error = "Current page is null.";
 					_logger.LogError(error);
 					return Result.Fail(ErrorCode.InvalidState, error);
 				}
@@ -203,7 +189,7 @@ internal sealed class NavigationService : INavigationService
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occurred while trying to perform page navigation (Path: {Path})";
+			const string error = "An error occurred while trying to perform page navigation (Path: {Path}).";
 			_logger.LogError(ex, error, path);
 			return Result.Fail(ErrorCode.Unknown, error);
 		}
@@ -215,7 +201,7 @@ internal sealed class NavigationService : INavigationService
 	{
 		if (TryGetCurrentPage(out var currentPage) == false)
 		{
-			const string error = "Main page is not set for current window";
+			const string error = "Main page is not set for current window.";
 			_logger.LogError(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
@@ -225,7 +211,7 @@ internal sealed class NavigationService : INavigationService
 			var canPopPage = navigationPage.Navigation.NavigationStack.Count > 0;
 			if (canPopPage)
 			{
-				const string error = "No page to navigate back to";
+				const string error = "No page to navigate back to.";
 				_logger.LogError(error);
 				return Result.Fail(ErrorCode.InvalidState, error);
 			}
@@ -233,7 +219,7 @@ internal sealed class NavigationService : INavigationService
 			var previousPage = await navigationPage.PopAsync(animated);
 			if (previousPage is null)
 			{
-				const string error = "Popped page returns null";
+				const string error = "Popped page returns null.";
 				_logger.LogError(error);
 				return Result.Fail(ErrorCode.InvalidState, error);
 			}
@@ -251,13 +237,13 @@ internal sealed class NavigationService : INavigationService
 			}
 			else
 			{
-				const string error = "Back navigation got cancelled";
+				const string error = "Back navigation got cancelled.";
 				_logger.LogError(error);
 				return Result.Fail(ErrorCode.Cancelled, error);
 			}
 		}
 
-		const string errorMessage = "Navigation back is only supported when MainPage is a NavigationPage or a Page";
+		const string errorMessage = "Back navigation is only supported when root page is a NavigationPage.";
 		_logger.LogError(errorMessage);
 		return Result.Fail(ErrorCode.NotSupported, errorMessage);
 	}
@@ -266,7 +252,9 @@ internal sealed class NavigationService : INavigationService
 	{
 		if (TryGetCurrentPage(out var currentPage) == false)
 		{
-			return Result.Fail(ErrorCode.InvalidState, "Main page is not set for current window");
+			const string error = "Main page is not set for current window.";
+			_logger.LogError(error);
+			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
 		NavigationPage? navigationPage = currentPage switch
@@ -278,31 +266,40 @@ internal sealed class NavigationService : INavigationService
 
 		if (navigationPage is null)
 		{
-			const string error = "Navigation to root is only supported when MainPage is a NavigationPage";
+			const string error = "Root navigation is only supported within NavigationPage.";
 			_logger.LogError(error);
 			return Result.Fail(ErrorCode.NotSupported, error);
 		}
 
 		if (navigationPage.Navigation.NavigationStack.Count <= 1)
 		{
-			const string error = "No page to navigate back to";
+			const string error = "No page to navigate back to.";
 			_logger.LogError(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
-		await navigationPage.PopToRootAsync(animated);
-
-		if (navigationPage.CurrentPage is Page rootPage)
+		try
 		{
-			if (rootPage.BindingContext is IRootPageAware rootPageAware)
-			{
-				rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
-			}
+			await navigationPage.PopToRootAsync(animated);
 
-			if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
+			if (navigationPage.CurrentPage is Page rootPage)
 			{
-				await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
+				if (rootPage.BindingContext is IRootPageAware rootPageAware)
+				{
+					rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
+				}
+
+				if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
+				{
+					await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
+				}
 			}
+		}
+		catch (Exception ex)
+		{
+			const string error = "An error occurred while trying to navigate to root.";
+			_logger.LogError(ex, error);
+			return Result.Fail(ErrorCode.General, error);
 		}
 
 		return Result.Ok();
@@ -315,7 +312,7 @@ internal sealed class NavigationService : INavigationService
 			var currentTab = tabbedPage.CurrentPage;
 			if (currentTab is null)
 			{
-				const string error = "No current tab found in the TabbedPage";
+				const string error = "No current tab found in the TabbedPage.";
 				_logger.LogError(error);
 				return Result.Fail(ErrorCode.InvalidState, error);
 			}
@@ -329,7 +326,7 @@ internal sealed class NavigationService : INavigationService
 			}
 			else
 			{
-				const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage";
+				const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
 				_logger.LogError(error);
 				return Result.Fail(ErrorCode.NotSupported, error);
 			}
@@ -343,7 +340,7 @@ internal sealed class NavigationService : INavigationService
 		}
 		else
 		{
-			const string error = "Relative navigation is only supported when MainPage is a NavigationPage";
+			const string error = "Relative navigation is only supported when root page is a NavigationPage.";
 			_logger.LogError(error);
 			return Result.Fail(ErrorCode.NotSupported, error);
 		}
@@ -359,35 +356,12 @@ internal sealed class NavigationService : INavigationService
 		}
 	}
 
-	private void RegisterPageEvents(Page? page)
-	{
-		if (page is not null)
-		{
-			page.Appearing += Page_Appearing;
-			page.Disappearing += Page_Disappearing;
-			page.NavigatedTo += Page_NavigatedTo;
-			page.NavigatedFrom += Page_NavigatedFrom;
-			page.Unloaded += Page_Unloaded;
-		}
-	}
-
-	private void UnregisterPageEvents(Page? page)
-	{
-		if (page is not null)
-		{
-			page.Appearing -= Page_Appearing;
-			page.Disappearing -= Page_Disappearing;
-			page.NavigatedTo -= Page_NavigatedTo;
-			page.NavigatedFrom -= Page_NavigatedFrom;
-			page.Unloaded -= Page_Unloaded;
-		}
-	}
-
-	private async void WindowEvent_Activated(object? sender, EventArgs e)
+	private void WindowEvent_Activated(object? sender, EventArgs e)
 	{
 		var currentApp = Application.Current;
 		if (currentApp is null)
 		{
+			_logger.LogInformation("Application.Current null detected at '{MethodName}'.", nameof(WindowEvent_Activated));
 			return;
 		}
 
@@ -402,7 +376,7 @@ internal sealed class NavigationService : INavigationService
 			currentPage = navigationPage.CurrentPage;
 		}
 
-		if (TryGetViewModel(currentPage, out var viewModel))
+		if (currentPage?.BindingContext is object viewModel)
 		{
 			if (viewModel is IWindowEventAware eventAware)
 			{
@@ -411,95 +385,23 @@ internal sealed class NavigationService : INavigationService
 
 			if (viewModel is IWindowEventAwareAsync eventAwareAsync)
 			{
-				await eventAwareAsync.OnWindowActivatedAsync();
+				eventAwareAsync.OnWindowActivatedAsync().FireAndForget(exception =>
+				{
+					_logger.LogError(exception, 
+						"An error occurred while trying to invoke {MethodName}.", 
+						nameof(eventAwareAsync.OnWindowActivatedAsync)
+					);
+				});
 			}
 		}
-	}
-
-	private async void Page_Appearing(object? sender, EventArgs e)
-	{
-		if (TryGetViewModel(sender, out var viewModel))
-		{
-			if (viewModel is IAppearingAware appearingAware)
-			{
-				appearingAware.OnPageAppearing();
-			}
-
-			if (viewModel is IAppearingAwareAsync appearingAwareAsync)
-			{
-				await appearingAwareAsync.OnPageAppearingAsync();
-			}
-		}
-	}
-
-	private async void Page_Disappearing(object? sender, EventArgs e)
-	{
-		if (TryGetViewModel(sender, out var viewModel))
-		{
-			if (viewModel is IAppearingAware appearingAware)
-			{
-				appearingAware.OnPageDisappearing();
-			}
-
-			if (viewModel is IAppearingAwareAsync appearingAwareAsync)
-			{
-				await appearingAwareAsync.OnPageDisappearingAsync();
-			}
-		}
-	}
-
-	private void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
-	{
-		if (TryGetViewModel(sender, out var viewModel))
-		{
-			if (viewModel is INavigatedAware navigatedAware)
-			{
-				navigatedAware.OnNavigatedTo();
-			}
-		}
-	}
-
-	private void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
-	{
-		if (TryGetViewModel(sender, out var viewModel))
-		{
-			if (viewModel is INavigatedAware navigatedAware)
-			{
-				navigatedAware.OnNavigatedFrom();
-			}
-		}
-	}
-
-	private void Page_Unloaded(object? sender, EventArgs e)
-	{
-		if (sender is Page page && page.BindingContext is object viewModel)
-		{
-			if (viewModel is IPageLoadAware loadAware)
-			{
-				loadAware.OnPageUnloaded();
-				UnregisterPageEvents(page);
-			}
-		}
-	}
-
-	private static bool TryGetViewModel(object? sender, [NotNullWhen(true)] out object? resultViewModel)
-	{
-		if (sender is Page { BindingContext: { } viewModel })
-		{
-			resultViewModel = viewModel;
-			return true;
-		}
-		resultViewModel = null;
-		return false;
 	}
 
 	private static bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
 	{
-		page = null;
-
 		var currentApp = Application.Current;
 		if (currentApp is null)
 		{
+			page = null;
 			return false;
 		}
 
@@ -509,73 +411,7 @@ internal sealed class NavigationService : INavigationService
 			return true;
 		}
 
+		page = null;
 		return false;
-	}
-
-	// TODO implement page reuse strategy if needed.
-	private Page CreatePage(PageInfo pageInfo, Type? viewModelType = null, INavigationParameters? parameters = null)
-	{
-		var page = (Page?)Activator.CreateInstance(pageInfo.PageType)
-			?? throw new InvalidOperationException($"Could not create instance of page type '{pageInfo.PageType.FullName}'.");
-
-		if (viewModelType is not null)
-		{
-			var viewModel = _serviceProvider.GetRequiredService(viewModelType);
-			page.BindingContext = viewModel;
-
-			if (viewModel is BaseViewModel baseViewModel)
-			{
-				foreach (var param in pageInfo.Parameters ?? [])
-				{
-					baseViewModel.SetNavigationParameter(param.Key, param.Value);
-				}
-
-				foreach (var param in parameters ?? new NavigationParameters())
-				{
-					baseViewModel.SetNavigationParameter(param.Key, param.Value);
-				}
-			}
-
-			if (viewModel is IParameterSetAware parameterSetAware)
-			{
-				parameterSetAware.OnParametersSet(parameters ?? new NavigationParameters());
-			}
-		}
-
-		return page;
-	}
-
-	private PageInfo[] GetPageTypesFromPath(string path)
-	{
-		var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return [.. segments.Select(segment =>
-		{
-			var parts = segment.Split('?', StringSplitOptions.RemoveEmptyEntries);
-			var pageName = parts[0];
-			var queryParameters = parts.Length > 1 ? parts[1] : string.Empty;
-			var queryDictionary = QueryStringHelper.ToDictionary(queryParameters);
-			var pageType = FindPageTypeByName(pageName);
-			return pageType == null
-				? throw new InvalidOperationException($"Page '{pageName}' not found.")
-				: new PageInfo(pageType, queryDictionary);
-		})];
-	}
-
-	private Type? FindPageTypeByName(string pageName)
-	{
-		return GetAssemblyPageSourceTypes()
-			.FirstOrDefault(t => t.Name.Equals(pageName, StringComparison.OrdinalIgnoreCase));
-	}
-
-	private Type[]? _cachedAssemblyPageSourceTypes;
-	private Type[] GetAssemblyPageSourceTypes()
-	{
-		if (_cachedAssemblyPageSourceTypes is null)
-		{
-			var types = _assemblyPageSource?.GetTypes()
-				.Where(t => typeof(Page).IsAssignableFrom(t)) ?? [];
-			_cachedAssemblyPageSourceTypes = [.. types, typeof(NavigationPage)];
-		}
-		return _cachedAssemblyPageSourceTypes;
 	}
 }

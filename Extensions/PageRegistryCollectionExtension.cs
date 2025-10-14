@@ -2,7 +2,7 @@
 
 namespace Nkraft.MvvmEssentials.Extensions;
 
-public static class PageRegistryExtension
+public static class PageRegistryCollectionExtension
 {
 	public static IServiceCollection AddPageRegistry(this IServiceCollection services, Action<IPageRegistry> configure)
 	{

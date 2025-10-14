@@ -41,6 +41,14 @@ public class BaseViewModel :
 
 	public event PropertyChangedEventHandler? PropertyChanged;
 
+	protected string TypeName => GetType().Name;
+
+	protected virtual string PageName => TypeName.Replace("ViewModel", "Page");
+
+	protected string ViewModelName => TypeName;
+
+	protected string NormalizedName => TypeName.Replace("ViewModel", string.Empty);
+
 	private static bool AreTypesEqual(Type typeA, Type typeB)
 	{
 		Type underlyingA = Nullable.GetUnderlyingType(typeA) ?? typeA;
