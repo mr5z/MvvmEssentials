@@ -19,8 +19,8 @@ public static class MauiProgram
         {
             // ViewModel and Page naming convention must strictly be followed,
             // page_name + Page
-		         	// vm_name + ViewModel
-		         	// wherein page_name == vm_name
+            // vm_name + ViewModel
+            // wherein page_name == vm_name
             registry.MapPage<LandingPage, LandingViewModel>()
                 .MapPage<MainPage, MainViewModel>()
                 .MapPage<LoginPage, LoginViewModel>()
