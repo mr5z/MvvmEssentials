@@ -17,6 +17,7 @@
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
     <PackageReleaseNotes>- Minor improvements and bug fixes</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
@@ -34,6 +35,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\MvvmEssentials\LICENSE" Link="LICENSE">
+      <PackagePath></PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\MvvmEssentials\README.md" Link="README.md">
+      <PackagePath></PackagePath>
+      <Pack>True</Pack>
+    </None>
   </ItemGroup>
 
 </Project>
