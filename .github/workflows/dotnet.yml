@@ -13,6 +13,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Clone CrossUtility
+      run: git clone https://github.com/mr5z/CrossUtility ../CrossUtility
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
