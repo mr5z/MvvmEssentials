@@ -40,7 +40,7 @@ public static class MauiProgram
     }
 }
 ```
-2. Delete any `Shell` related because it is garbage.
+2. Delete any `Shell` related. It is not used here.
 3. Under `App.xaml.cs`:
 ```cs
 public partial class App
