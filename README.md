@@ -1,3 +1,6 @@
+# MvvmEssentials
+Lightweight MVVM utility library for .NET MAUI - designed to simplify navigation, tab handling, and popup management with opinionated conventions and minimal boilerplate.
+
 # Installation
 [![NuGet Version](https://img.shields.io/nuget/v/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
 [![NuGet Pre-release](https://img.shields.io/nuget/vpre/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
