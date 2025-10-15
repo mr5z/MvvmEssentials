@@ -47,7 +47,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 
 			if (_previousTabIndex != -1)
 			{
-				var previousTab = tabHost.GetTabs().ElementAt(_previousTabIndex);
+				var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
 				previousTab.OnTabUnselected();
 			}
 

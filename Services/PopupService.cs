@@ -8,14 +8,14 @@ namespace Nkraft.MvvmEssentials.Services;
 
 public interface IPopupService
 {
-	Task<IResult> ShowAsync(string popupName, INavigationParameters? parameters = null, bool animated = false);
+	Task<IResult> PresentAsync(string popupName, INavigationParameters? parameters = null, bool animated = false);
 
 	Task<IResult> DismissAsync(string? popupName = null, bool animated = true);
 
 	Task<IResult> DismissAllAsync(bool animated = true);
 }
 
-internal class PopupService : IPopupService
+internal sealed class PopupService : IPopupService
 {
 	private readonly ILogger<PopupService> _logger;
 	private readonly IPopupNavigation _popupNavigation;
@@ -46,7 +46,7 @@ internal class PopupService : IPopupService
 		}
 	}
 
-	async Task<IResult> IPopupService.ShowAsync(string popupName, INavigationParameters? parameters, bool animated)
+	async Task<IResult> IPopupService.PresentAsync(string popupName, INavigationParameters? parameters, bool animated)
 	{
 		PageInfo[] pageInfoList;
 		try

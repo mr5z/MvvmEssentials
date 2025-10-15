@@ -2,7 +2,7 @@
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public class PageViewModel : BaseViewModel,
+public class PageViewModel : NavigableEntryViewModel,
 	IAppearingAware,
 	IAppearingAwareAsync,
 	INavigatedAware,

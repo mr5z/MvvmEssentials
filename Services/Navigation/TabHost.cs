@@ -1,5 +1,4 @@
 ﻿using Nkraft.MvvmEssentials.ViewModels;
-using System.Collections.Immutable;
 
 namespace Nkraft.MvvmEssentials.Services.Navigation;
 
@@ -9,5 +8,5 @@ internal interface ITabHost
 
 	TabViewModel CurrentTab { get; }
 
-	ImmutableArray<TabViewModel> GetTabs();
+	IReadOnlyCollection<TabViewModel> Tabs { get; }
 }

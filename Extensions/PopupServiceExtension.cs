@@ -14,7 +14,7 @@ public static class PopupServiceExtension
 		return typeof(TViewModel).Name.Replace(KnownViewModelPattern, KnownPopupPattern);
 	}
 
-	public static async Task<Result<TResult>> ShowAsync<TViewModel, TResult>(
+	public static async Task<Result<TResult>> PresentAsync<TViewModel, TResult>(
 		this IPopupService popupService,
 		INavigationParameters? parameters = null,
 		bool animated = true)
@@ -24,7 +24,7 @@ public static class PopupServiceExtension
 		var tcs = new TaskCompletionSource<TResult>();
 		parameters ??= new NavigationParameters();
 		parameters.Add("_completion", tcs);
-		var navResult = await popupService.ShowAsync(popupName, parameters, animated);
+		var navResult = await popupService.PresentAsync(popupName, parameters, animated);
 		if (navResult.IsFailure)
 		{
 			return Result.Fail<TResult>(ErrorCode.InvalidState, "Failed to display popup '{PopupName}'.", popupName);
@@ -53,9 +53,7 @@ public static class PopupServiceExtension
 	public static async Task<IResult> DismissAsync<TViewModel>(
 		this IPopupService popupService, 
 		bool animated = true)
-		where TViewModel : PageViewModel
-		// Oh come on!
-		//where TViewModel : PopupViewModel<>
+		where TViewModel : IPopupViewModel
 	{
 		var popupName = ToPopupName<TViewModel>();
 		return await popupService.DismissAsync(popupName, animated);

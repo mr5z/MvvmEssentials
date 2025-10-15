@@ -44,7 +44,7 @@ internal class PageFactory(
 			var viewModel = _serviceProvider.GetRequiredService(viewModelType);
 			page.BindingContext = viewModel;
 
-			if (viewModel is BaseViewModel baseViewModel)
+			if (viewModel is NavigableEntryViewModel baseViewModel)
 			{
 				foreach (var param in pageInfo.Parameters ?? [])
 				{
@@ -91,7 +91,6 @@ internal class PageFactory(
 	}
 
 	private Type[]? _cachedAssemblyPageSourceTypes;
-
 	private Type[] GetAssemblyPageSourceTypes(Type basePage)
 	{
 		if (_cachedAssemblyPageSourceTypes is null)

@@ -2,7 +2,6 @@
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Navigation;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nkraft.MvvmEssentials.Services;
@@ -112,7 +111,7 @@ internal sealed class NavigationService : INavigationService
 		try
 		{
 			// Build the page stack
-			var pages = pageInfoList.Select(pageInfo => _pageFactory.CreatePage(pageInfo, parameters)).ToImmutableArray();
+			var pages = pageInfoList.Select(pageInfo => _pageFactory.CreatePage(pageInfo, parameters)).ToArray();
 
 			var replaceCurrentPage = path.StartsWith('/');
 

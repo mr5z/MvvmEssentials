@@ -5,7 +5,9 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public interface IPopupViewModel<TResult> { }
+public interface IPopupViewModel { }
+
+public interface IPopupViewModel<TResult> : IPopupViewModel { }
 
 public partial class PopupViewModel<TResult>(IPopupService popupService) : PageViewModel, IPopupViewModel<TResult>, IPopupDismissible
 {
