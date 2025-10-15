@@ -380,8 +380,6 @@ else
 
 # Notes
 - Inspired by [Prism](https://github.com/PrismLibrary/Prism)
-- Designed for strict ViewModel–Page naming convention
-- Built for .NET MAUI, dependency-injected, and navigation-friendly
 
 # Contribution
 Pull requests and issues are welcome. Thanks!
