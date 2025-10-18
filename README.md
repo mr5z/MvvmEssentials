@@ -131,9 +131,11 @@ record LoginParameters(string ErrorMessage, int Test);
 await _navigationService.NavigateAsync<LoginViewModel, LoginParameters>(new("Session expired", 1));
 
 // Pass parameters via INavigationParameters, which is the "superior" of the 2 previous variants
-INavigationParameters parameters = new NavigationParameters();
-parameters.Add("ErrorMessage", "Session expired");
-parameters.Add("Test", 1);
+var parameters = new NavigationParameters
+{
+	{ "ErrorMessage", "Session expired"},
+	{ "Test", 1 }
+};
 await _navigationService.NavigateAsync<LoginViewModel>(parameters);
 
 // LoginViewModel.cs
@@ -244,7 +246,7 @@ builder.Services.AddPageRegistry(registry =>
 ```cs
 public class MainViewModel(HomeViewModel homeViewModel, SettingsViewModel settingsViewModel) : TabHostViewModel
 {
-	public override ImmutableArray<TabViewModel> GetTabs() => [HomeViewModel, SettingsViewModel];
+	public override IReadOnlyCollection<TabViewModel> Tabs => [HomeViewModel, SettingsViewModel];
 
 	public HomeViewModel HomeViewModel { get; } = homeViewModel;
 
