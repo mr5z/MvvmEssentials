@@ -362,7 +362,7 @@ internal partial class ConfirmViewModel(IPopupService popupService) : PopupViewM
 3. Use the popup in other ViewModel
 ```cs
 var navParams = new NavigationParameters { { nameof(ConfirmViewModel.ConfirmationMessage), "Reset counter?" } };
-var result = await _popupService.ShowAsync<ConfirmViewModel, ConfirmResult>(navParams);
+var result = await _popupService.PresentAsync<ConfirmViewModel, ConfirmResult>(navParams);
 if (result.TryGetValue(out var confirmResult))
 {
 	Console.WriteLine("User pressed: {0}", confirmResult.Confirm ? "Yes" : "No");
