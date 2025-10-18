@@ -6,46 +6,28 @@ public class PopupPage : Mopups.Pages.PopupPage
 {
 	protected override bool OnBackgroundClicked()
 	{
-		var dismissible = BindingContext as IPopupDismissible;
-		if (dismissible is not null)
+		if (BindingContext is IPopupDismissible dismissible)
 		{
-			var dismiss = dismissible.ShouldDismissOnBackgroundClicked;
-			if (dismiss == false)
+			// The word use should be "tap", not "click" here, since it's mobile.
+			if (dismissible.ShouldDismissOnBackgroundTapped)
 			{
-				return false;
+				dismissible.NotifyCancellation();
 			}
 		}
 
-		var willDismiss = base.OnBackgroundClicked();
-		if (willDismiss)
-		{
-			dismissible?.NotifyCancellation();
-		}
-
-		return willDismiss;
+		return true;
 	}
 
-	// TODO this is actually confusing
-	// review again in the future
 	protected override bool OnBackButtonPressed()
 	{
-		var dismissible = BindingContext as IPopupDismissible;
-		if (dismissible is not null)
+		if (BindingContext is IPopupDismissible dismissible)
 		{
-			var dismiss  = dismissible.ShouldHandleBackButtonPressed;
-			if (dismiss == false)
+			if (dismissible.ShouldDismissOnBackButtonPressed)
 			{
-				dismissible?.NotifyCancellation();
-				return true;
+				dismissible.NotifyCancellation();
 			}
 		}
-		
-		var backPressedHandled = base.OnBackButtonPressed();
-		if (backPressedHandled == false)
-		{
-			dismissible?.NotifyCancellation();
-		}
 
-		return backPressedHandled;
+		return true;
 	}
 }

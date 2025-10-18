@@ -10,9 +10,9 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.0.16</AssemblyVersion>
-    <FileVersion>1.0.16</FileVersion>
-    <Version>1.0.16</Version>
+    <AssemblyVersion>1.0.17</AssemblyVersion>
+    <FileVersion>1.0.17</FileVersion>
+    <Version>1.0.17</Version>
     <Copyright>Copyright (c) 2025 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
@@ -25,10 +25,10 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.110" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.120" />
     <PackageReference Include="Mopups" Version="1.3.4" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
   </ItemGroup>

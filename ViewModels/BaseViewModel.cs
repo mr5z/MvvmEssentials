@@ -13,7 +13,7 @@ public class BaseViewModel : INotifyPropertyChanged
 
 	protected string TypeName => GetType().Name;
 
-	protected virtual string PageName => TypeName.Replace("ViewModel", "Page");
+	internal virtual string PageName => TypeName.Replace("ViewModel", "Page");
 
 	protected string ViewModelName => TypeName;
 

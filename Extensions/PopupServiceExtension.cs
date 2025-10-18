@@ -35,18 +35,16 @@ public static class PopupServiceExtension
 			var popupResult = await tcs.Task;
 			return Result.Ok(popupResult);
 		}
+		catch (TaskCanceledException)
+		{
+			const string error = "Failed to dismiss popup '{PopupName}' after a request for cancellation; Additional info: {AdditionalInfo}";
+			var dismissResult = await popupService.DismissAsync(popupName, animated);
+			return Result.Fail<TResult>(ErrorCode.Cancelled, error, popupName, dismissResult.ErrorMessage);
+		}
 		catch (Exception ex)
 		{
-			var dismissResult = await popupService.DismissAsync(popupName, animated);
-			if (dismissResult.IsSuccess)
-			{
-				return Result.Fail<TResult>(ErrorCode.General, ex.Message);
-			}
-			else
-			{
-				const string error = "Failed to dismiss popup after a request for cancellation. {AdditionalInfo}.";
-				return Result.Fail<TResult>(ErrorCode.InvalidState, error, dismissResult.ErrorMessage);
-			}
+			const string error = "Failed to dismiss popup '{PopupName}'; Additional info: {AdditionalInfo}";
+			return Result.Fail<TResult>(ErrorCode.Unknown, error, popupName, ex.Message);
 		}
 	}
 

@@ -6,7 +6,7 @@ internal interface IPopupDismissible
 
 	void NotifyCancellation();
 
-	bool ShouldHandleBackButtonPressed { get; }
+	bool ShouldDismissOnBackButtonPressed { get; }
 
-	bool ShouldDismissOnBackgroundClicked { get; }
+	bool ShouldDismissOnBackgroundTapped { get; }
 }

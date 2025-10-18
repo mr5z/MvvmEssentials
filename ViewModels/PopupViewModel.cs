@@ -5,9 +5,9 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public interface IPopupViewModel { }
+public interface IPopupViewModel;
 
-public interface IPopupViewModel<TResult> : IPopupViewModel { }
+public interface IPopupViewModel<TResult> : IPopupViewModel;
 
 public partial class PopupViewModel<TResult>(IPopupService popupService) : PageViewModel, IPopupViewModel<TResult>, IPopupDismissible
 {
@@ -51,20 +51,14 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 		return popupResult;
 	}
 
-	// I don't actually know what this means
-	public virtual bool ShouldHandleBackButtonPressed => false;
+	public virtual bool ShouldDismissOnBackButtonPressed => true;
 
-	public virtual bool ShouldDismissOnBackgroundClicked => true;
+	public virtual bool ShouldDismissOnBackgroundTapped => true;
 
 	void IPopupDismissible.NotifyCancellation()
 	{
 		_completion?.TrySetCanceled();
-		if (_popupService is PopupService service)
-		{
-			// TODO wtf is this garbage?
-			service.RemovePopupDueToCancellation(PageName);
-		}
 	}
 
-	protected override string PageName => TypeName.Replace("ViewModel", "Popup");
+	internal sealed override string PageName => TypeName.Replace("ViewModel", "Popup");
 }
