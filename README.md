@@ -375,7 +375,7 @@ if (result.TryGetValue(out var confirmResult))
 }
 else
 {
-	// This means, either the user clicks the background or pressed the back button
+	// This means, either the user taps the background or pressed the back button
 	Console.WriteLine("User cancelled the popup");
 }
 ```
