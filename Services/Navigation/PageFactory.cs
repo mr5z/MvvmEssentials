@@ -86,12 +86,16 @@ internal class PageFactory(
 
 	private Type? FindPageTypeByName(string pageName, Type basePage)
 	{
-		return GetAssemblyPageSourceTypes(basePage)
-			.FirstOrDefault(t => t.Name.Equals(pageName, StringComparison.OrdinalIgnoreCase));
+		var pageDictionary = GetAssemblyPageSourceTypes(basePage);
+		if (pageDictionary.TryGetValue(pageName, out var type))
+		{
+  			return type;
+		}
+		return null;
 	}
 
-	private Type[]? _cachedAssemblyPageSourceTypes;
-	private Type[] GetAssemblyPageSourceTypes(Type basePage)
+	private Dictionary<string, Type>? _cachedAssemblyPageSourceTypes;
+	private Dictionary<string, Type> GetAssemblyPageSourceTypes(Type basePage)
 	{
 		if (_cachedAssemblyPageSourceTypes is null)
 		{
@@ -99,8 +103,9 @@ internal class PageFactory(
 				.Where(pageType => pageType.IsSubclassOf(basePage))
 				.Where(pageType => pageType.IsAbstract == false)
 				.Where(pageType => pageType.IsGenericType == false)
-				?? [];
-			_cachedAssemblyPageSourceTypes = [.. types, typeof(NavigationPage)];
+				.Concat([typeof(NavigationPage)])
+				.ToDictionary(t => t.Name, t => t) ?? [];
+			_cachedAssemblyPageSourceTypes = types;
 		}
 		return _cachedAssemblyPageSourceTypes;
 	}
