@@ -84,7 +84,7 @@ internal sealed class NavigationService : INavigationService
 		if (currentApp is null)
 		{
 			const string error = "Application.Current is null.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
@@ -104,7 +104,7 @@ internal sealed class NavigationService : INavigationService
 		if (pageInfoList.Length == 0)
 		{
 			const string error = "No valid pages found in the navigation path.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
@@ -125,13 +125,6 @@ internal sealed class NavigationService : INavigationService
 				}
 
 				var firstPage = pages.First();
-				if (firstPage is null)
-				{
-					const string error = "First page is null.";
-					_logger.LogError(error);
-					return Result.Fail(ErrorCode.InvalidState, error);
-				}
-
 				Page mainPage;
 
 				if (firstPage is TabbedPage tabbedPage)
@@ -180,7 +173,7 @@ internal sealed class NavigationService : INavigationService
 				if (currentPage is null)
 				{
 					const string error = "Current page is null.";
-					_logger.LogError(error);
+					_logger.LogWarning(error);
 					return Result.Fail(ErrorCode.InvalidState, error);
 				}
 				return await HandleContextualNavigationAsync(currentPage, pages, animated);
@@ -201,7 +194,7 @@ internal sealed class NavigationService : INavigationService
 		if (TryGetCurrentPage(out var currentPage) == false)
 		{
 			const string error = "Main page is not set for current window.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
@@ -211,7 +204,7 @@ internal sealed class NavigationService : INavigationService
 			if (canPopPage)
 			{
 				const string error = "No page to navigate back to.";
-				_logger.LogError(error);
+				_logger.LogWarning(error);
 				return Result.Fail(ErrorCode.InvalidState, error);
 			}
 
@@ -219,7 +212,7 @@ internal sealed class NavigationService : INavigationService
 			if (previousPage is null)
 			{
 				const string error = "Popped page returns null.";
-				_logger.LogError(error);
+				_logger.LogWarning(error);
 				return Result.Fail(ErrorCode.InvalidState, error);
 			}
 			else
@@ -237,13 +230,13 @@ internal sealed class NavigationService : INavigationService
 			else
 			{
 				const string error = "Back navigation got cancelled.";
-				_logger.LogError(error);
+				_logger.LogWarning(error);
 				return Result.Fail(ErrorCode.Cancelled, error);
 			}
 		}
 
 		const string errorMessage = "Back navigation is only supported when root page is a NavigationPage.";
-		_logger.LogError(errorMessage);
+		_logger.LogWarning(errorMessage);
 		return Result.Fail(ErrorCode.NotSupported, errorMessage);
 	}
 
@@ -252,7 +245,7 @@ internal sealed class NavigationService : INavigationService
 		if (TryGetCurrentPage(out var currentPage) == false)
 		{
 			const string error = "Main page is not set for current window.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
@@ -266,14 +259,14 @@ internal sealed class NavigationService : INavigationService
 		if (navigationPage is null)
 		{
 			const string error = "Root navigation is only supported within NavigationPage.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.NotSupported, error);
 		}
 
 		if (navigationPage.Navigation.NavigationStack.Count <= 1)
 		{
 			const string error = "No page to navigate back to.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
@@ -309,25 +302,29 @@ internal sealed class NavigationService : INavigationService
 		if (currentPage is TabbedPage tabbedPage)
 		{
 			var currentTab = tabbedPage.CurrentPage;
-			if (currentTab is null)
+			switch (currentTab)
 			{
-				const string error = "No current tab found in the TabbedPage.";
-				_logger.LogError(error);
-				return Result.Fail(ErrorCode.InvalidState, error);
-			}
-
-			if (currentTab is NavigationPage tabNavigationPage)
-			{
-				foreach (var page in newPages)
+				case NavigationPage tabNavigationPage:
 				{
-					await tabNavigationPage.PushAsync(page, animated);
+					foreach (var page in newPages)
+					{
+						await tabNavigationPage.PushAsync(page, animated);
+					}
+
+					break;
 				}
-			}
-			else
-			{
-				const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
-				_logger.LogError(error);
-				return Result.Fail(ErrorCode.NotSupported, error);
+				case null:
+				{
+					const string error = "No current tab found in the TabbedPage.";
+					_logger.LogWarning(error);
+					return Result.Fail(ErrorCode.InvalidState, error);
+				}
+				default:
+				{
+					const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
+					_logger.LogWarning(error);
+					return Result.Fail(ErrorCode.NotSupported, error);
+				}
 			}
 		}
 		else if (currentPage is NavigationPage navigationPage)
@@ -340,7 +337,7 @@ internal sealed class NavigationService : INavigationService
 		else
 		{
 			const string error = "Relative navigation is only supported when root page is a NavigationPage.";
-			_logger.LogError(error);
+			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.NotSupported, error);
 		}
 
@@ -360,7 +357,7 @@ internal sealed class NavigationService : INavigationService
 		var currentApp = Application.Current;
 		if (currentApp is null)
 		{
-			_logger.LogInformation("Application.Current null detected at '{MethodName}'.", nameof(WindowEvent_Activated));
+			_logger.LogWarning("Application.Current null detected at '{MethodName}'.", nameof(WindowEvent_Activated));
 			return;
 		}
 
@@ -386,7 +383,7 @@ internal sealed class NavigationService : INavigationService
 			{
 				eventAwareAsync.OnWindowActivatedAsync().FireAndForget(exception =>
 				{
-					_logger.LogError(exception, 
+					_logger.LogWarning(exception, 
 						"An error occurred while trying to invoke {MethodName}.", 
 						nameof(eventAwareAsync.OnWindowActivatedAsync)
 					);

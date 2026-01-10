@@ -9,51 +9,50 @@ public static class PopupServiceExtension
 {
 	internal static string ToPopupName<TViewModel>()
 	{
-		const string KnownViewModelPattern = "ViewModel";
-		const string KnownPopupPattern = "Popup";
-		return typeof(TViewModel).Name.Replace(KnownViewModelPattern, KnownPopupPattern);
+		const string knownViewModelPattern = "ViewModel";
+		const string knownPopupPattern = "Popup";
+		return typeof(TViewModel).Name.Replace(knownViewModelPattern, knownPopupPattern);
 	}
 
-	public static async Task<Result<TResult>> PresentAsync<TViewModel, TResult>(
-		this IPopupService popupService,
-		INavigationParameters? parameters = null,
-		bool animated = true)
-		where TViewModel : IPopupViewModel<TResult>
+	extension(IPopupService popupService)
 	{
-		var popupName = ToPopupName<TViewModel>();
-		var tcs = new TaskCompletionSource<TResult>();
-		parameters ??= new NavigationParameters();
-		parameters.Add("_completion", tcs);
-		var navResult = await popupService.PresentAsync(popupName, parameters, animated);
-		if (navResult.IsFailure)
+		public async Task<Result<TResult>> PresentAsync<TViewModel, TResult>(INavigationParameters? parameters = null,
+			bool animated = true)
+			where TViewModel : IPopupViewModel<TResult>
 		{
-			return Result.Fail<TResult>(ErrorCode.InvalidState, "Failed to display popup '{PopupName}'.", popupName);
+			var popupName = ToPopupName<TViewModel>();
+			var tcs = new TaskCompletionSource<TResult>();
+			parameters ??= new NavigationParameters();
+			parameters.Add("_completion", tcs);
+			var navResult = await popupService.PresentAsync(popupName, parameters, animated);
+			if (navResult.IsFailure)
+			{
+				return Result.Fail<TResult>(ErrorCode.InvalidState, "Failed to display popup '{PopupName}'.", popupName);
+			}
+
+			try
+			{
+				var popupResult = await tcs.Task;
+				return Result.Ok(popupResult);
+			}
+			catch (TaskCanceledException)
+			{
+				const string error = "Failed to dismiss popup '{PopupName}' after a request for cancellation; Additional info: {AdditionalInfo}";
+				var dismissResult = await popupService.DismissAsync(popupName, animated);
+				return Result.Fail<TResult>(ErrorCode.Cancelled, error, popupName, dismissResult.ErrorMessage);
+			}
+			catch (Exception ex)
+			{
+				const string error = "Failed to dismiss popup '{PopupName}'; Additional info: {AdditionalInfo}";
+				return Result.Fail<TResult>(ErrorCode.Unknown, error, popupName, ex.Message);
+			}
 		}
 
-		try
+		public async Task<IResult> DismissAsync<TViewModel>(bool animated = true)
+			where TViewModel : IPopupViewModel
 		{
-			var popupResult = await tcs.Task;
-			return Result.Ok(popupResult);
+			var popupName = ToPopupName<TViewModel>();
+			return await popupService.DismissAsync(popupName, animated);
 		}
-		catch (TaskCanceledException)
-		{
-			const string error = "Failed to dismiss popup '{PopupName}' after a request for cancellation; Additional info: {AdditionalInfo}";
-			var dismissResult = await popupService.DismissAsync(popupName, animated);
-			return Result.Fail<TResult>(ErrorCode.Cancelled, error, popupName, dismissResult.ErrorMessage);
-		}
-		catch (Exception ex)
-		{
-			const string error = "Failed to dismiss popup '{PopupName}'; Additional info: {AdditionalInfo}";
-			return Result.Fail<TResult>(ErrorCode.Unknown, error, popupName, ex.Message);
-		}
-	}
-
-	public static async Task<IResult> DismissAsync<TViewModel>(
-		this IPopupService popupService, 
-		bool animated = true)
-		where TViewModel : IPopupViewModel
-	{
-		var popupName = ToPopupName<TViewModel>();
-		return await popupService.DismissAsync(popupName, animated);
 	}
 }

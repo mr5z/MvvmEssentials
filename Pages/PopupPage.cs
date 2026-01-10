@@ -6,13 +6,10 @@ public class PopupPage : Mopups.Pages.PopupPage
 {
 	protected override bool OnBackgroundClicked()
 	{
-		if (BindingContext is IPopupDismissible dismissible)
-		{
+		if (BindingContext is IPopupDismissible { ShouldDismissOnBackgroundTapped: true } dismissible)
 			// The word use should be "tap", not "click" here, since it's mobile.
-			if (dismissible.ShouldDismissOnBackgroundTapped)
-			{
-				dismissible.NotifyCancellation();
-			}
+		{
+			dismissible.NotifyCancellation();
 		}
 
 		return true;
@@ -20,12 +17,9 @@ public class PopupPage : Mopups.Pages.PopupPage
 
 	protected override bool OnBackButtonPressed()
 	{
-		if (BindingContext is IPopupDismissible dismissible)
+		if (BindingContext is IPopupDismissible { ShouldDismissOnBackButtonPressed: true } dismissible)
 		{
-			if (dismissible.ShouldDismissOnBackButtonPressed)
-			{
-				dismissible.NotifyCancellation();
-			}
+			dismissible.NotifyCancellation();
 		}
 
 		return true;

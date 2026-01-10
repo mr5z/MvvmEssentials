@@ -77,12 +77,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 			return;
 		}
 
-		if (_tabbedPage is null)
-		{
-			return;
-		}
-
-		if (_tabbedPage.BindingContext is not ITabHost tab)
+		if (_tabbedPage?.BindingContext is not ITabHost tab)
 		{
 			return;
 		}

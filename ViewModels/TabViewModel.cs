@@ -1,6 +1,6 @@
 ﻿namespace Nkraft.MvvmEssentials.ViewModels;
 
-public class TabViewModel : BaseViewModel
+public abstract class TabViewModel : BaseViewModel
 {
 	private bool _isInitialized;
 

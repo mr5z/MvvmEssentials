@@ -13,11 +13,7 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 		var property = GetType().GetProperty(key, BindingFlags.Public | BindingFlags.Instance);
 		if (property is not null && property.CanWrite)
 		{
-			if (value is null)
-			{
-				property.SetValue(this, value);
-			}
-			else if (AreTypesEqual(property.PropertyType, value.GetType()))
+			if (value is null || AreTypesEqual(property.PropertyType, value.GetType()))
 			{
 				property.SetValue(this, value);
 			}
