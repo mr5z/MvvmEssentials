@@ -4,12 +4,17 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 
 public class BaseViewModel : INotifyPropertyChanged
 {
-	public void OnPropertyChanged(PropertyChangedEventArgs args)
+	private PropertyChangedEventHandler? _handler;
+	event PropertyChangedEventHandler? INotifyPropertyChanged.PropertyChanged
 	{
-		PropertyChanged?.Invoke(this, args);
+		add => _handler += value;
+		remove => _handler -= value;
 	}
-
-	public event PropertyChangedEventHandler? PropertyChanged;
+	
+	protected void OnPropertyChanged(PropertyChangedEventArgs args)
+	{
+		_handler?.Invoke(this, args);
+	}
 
 	protected string TypeName => GetType().Name;
 

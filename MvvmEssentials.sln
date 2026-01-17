@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials", "Nkraft.MvvmEssentials.csproj", "{A8540844-176C-2E4B-D027-1EFDE58CE741}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiApp1", "..\MauiTest1\MauiApp1\MauiApp1.csproj", "{ED3BD160-2B6B-4AC7-8226-722B0E89D4BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{A8540844-176C-2E4B-D027-1EFDE58CE741}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8540844-176C-2E4B-D027-1EFDE58CE741}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8540844-176C-2E4B-D027-1EFDE58CE741}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED3BD160-2B6B-4AC7-8226-722B0E89D4BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED3BD160-2B6B-4AC7-8226-722B0E89D4BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED3BD160-2B6B-4AC7-8226-722B0E89D4BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED3BD160-2B6B-4AC7-8226-722B0E89D4BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

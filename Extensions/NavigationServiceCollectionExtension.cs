@@ -6,8 +6,7 @@ namespace Nkraft.MvvmEssentials.Extensions;
 
 public static class NavigationServiceCollectionExtension
 {
-	public static IServiceCollection AddNavigationService(
-		this IServiceCollection services,
+	public static void AddNavigationService(this IServiceCollection services,
 		Action<NavigationOptions> configure)
 	{
 		services.Configure(configure);
@@ -18,6 +17,5 @@ public static class NavigationServiceCollectionExtension
 		// TODO move to different extension
 		services.AddSingleton<IPopupService, PopupService>();
 		services.AddSingleton(MopupService.Instance);
-		return services;
 	}
 }

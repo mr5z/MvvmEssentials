@@ -15,7 +15,7 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 
 	private TaskCompletionSource<TResult>? _completion;
 
-	public override void OnParametersSet(INavigationParameters parameters)
+	protected override void OnParametersSet(INavigationParameters parameters)
 	{
 		base.OnParametersSet(parameters);
 
@@ -51,9 +51,13 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 		return popupResult;
 	}
 
-	public virtual bool ShouldDismissOnBackButtonPressed => true;
+	protected virtual bool ShouldDismissOnBackButtonPressed => true;
 
-	public virtual bool ShouldDismissOnBackgroundTapped => true;
+	protected virtual bool ShouldDismissOnBackgroundTapped => true;
+	
+	bool IPopupDismissible.ShouldDismissOnBackButtonPressed => ShouldDismissOnBackButtonPressed;
+	
+	bool IPopupDismissible.ShouldDismissOnBackgroundTapped => ShouldDismissOnBackgroundTapped;
 
 	void IPopupDismissible.NotifyCancellation()
 	{

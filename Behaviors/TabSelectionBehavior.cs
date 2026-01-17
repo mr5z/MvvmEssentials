@@ -41,19 +41,22 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 			return;
 		}
 
-		if (tabbedPage.BindingContext is ITabHost tabHost)
+		if (tabbedPage.BindingContext is not ITabHost tabHost)
 		{
-			tabHost.SelectedTabIndex = tabIndex;
-
-			if (_previousTabIndex != -1)
-			{
-				var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
-				previousTab.OnTabUnselected();
-			}
-
-			tabHost.CurrentTab.OnTabSelected();
-			_previousTabIndex = tabIndex;
+			return;
 		}
+		
+		tabHost.SelectedTabIndex = tabIndex;
+
+		if (_previousTabIndex != -1)
+		{
+			IHostComponent previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
+			previousTab.OnTabUnselected();
+			previousTab.OnTabUnselectedAsync();
+		}
+
+		((IHostComponent)tabHost.CurrentTab).OnTabSelected();
+		_previousTabIndex = tabIndex;
 	}
 
 	private void TabbedPage_BindingContextChanged(object? sender, EventArgs e)

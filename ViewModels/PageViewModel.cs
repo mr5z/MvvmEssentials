@@ -13,19 +13,7 @@ public class PageViewModel : NavigableEntryViewModel,
 	private bool _isInitialized = false;
 	private bool _isInitializedAsync = false;
 
-	// TODO abstract this away
-	public virtual void OnNavigatedTo() { }
-
-	// TODO abstract this away
-	public virtual Task OnNavigatedToAsync() => Task.CompletedTask;
-
-	// TODO abstract this away
-	public virtual void OnNavigatedFrom() { }
-
-	// TODO abstract this away
-	public virtual Task OnNavigatedFromAsync() => Task.CompletedTask;
-
-	public virtual void OnPageAppearing()
+	protected virtual void OnPageAppearing()
 	{
 		if (_isInitialized == false)
 		{
@@ -34,9 +22,9 @@ public class PageViewModel : NavigableEntryViewModel,
 		}
 	}
 
-	public virtual void OnPageDisappearing() { }
+	protected virtual void OnPageDisappearing() { }
 
-	public virtual async Task OnPageAppearingAsync() 
+	protected virtual async Task OnPageAppearingAsync() 
 	{
 		if (_isInitializedAsync == false)
 		{
@@ -45,15 +33,41 @@ public class PageViewModel : NavigableEntryViewModel,
 		}
 	}
 
-	public virtual Task OnPageDisappearingAsync() => Task.CompletedTask;
+	protected virtual Task OnPageDisappearingAsync() => Task.CompletedTask;
 
-	public virtual void OnPageUnloaded() { }
+	protected virtual void OnNavigatedTo() { }
 
-	public virtual void OnWindowActivated() { }
+	protected virtual Task OnNavigatedToAsync() => Task.CompletedTask;
 
-	public virtual Task OnWindowActivatedAsync() => Task.CompletedTask;
+	protected virtual void OnNavigatedFrom() { }
+
+	protected virtual Task OnNavigatedFromAsync() => Task.CompletedTask;
+
+	protected virtual void OnPageUnloaded() { }
+
+	protected virtual void OnWindowActivated() { }
+
+	protected virtual Task OnWindowActivatedAsync() => Task.CompletedTask;
 
 	protected virtual void OnInitialized() { }
 
 	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
+	
+	void IAppearingAware.OnPageAppearing() => OnPageAppearing();
+	
+	void IAppearingAware.OnPageDisappearing() => OnPageDisappearing();
+	
+	Task IAppearingAwareAsync.OnPageAppearingAsync() => OnPageAppearingAsync();
+	
+	Task IAppearingAwareAsync.OnPageDisappearingAsync() => Task.CompletedTask;
+	
+	void INavigatedAware.OnNavigatedTo() => OnNavigatedTo();
+	
+	void INavigatedAware.OnNavigatedFrom() => OnNavigatedFrom();
+	
+	void IPageLoadAware.OnPageUnloaded() => OnPageUnloaded();
+	
+	void IWindowEventAware.OnWindowActivated() => OnWindowActivated();
+
+	Task IWindowEventAwareAsync.OnWindowActivatedAsync() => OnWindowActivatedAsync();
 }
