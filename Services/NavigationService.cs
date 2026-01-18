@@ -273,18 +273,15 @@ internal sealed class NavigationService : INavigationService
 		try
 		{
 			await navigationPage.PopToRootAsync(animated);
-
-			if (navigationPage.CurrentPage is Page rootPage)
+			var rootPage = navigationPage.CurrentPage;
+			if (rootPage.BindingContext is IRootPageAware rootPageAware)
 			{
-				if (rootPage.BindingContext is IRootPageAware rootPageAware)
-				{
-					rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
-				}
+				rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
+			}
 
-				if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
-				{
-					await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
-				}
+			if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
+			{
+				await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
 			}
 		}
 		catch (Exception ex)
@@ -299,46 +296,53 @@ internal sealed class NavigationService : INavigationService
 
 	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, IEnumerable<Page> newPages, bool animated)
 	{
-		if (currentPage is TabbedPage tabbedPage)
+		switch (currentPage)
 		{
-			var currentTab = tabbedPage.CurrentPage;
-			switch (currentTab)
+			case TabbedPage tabbedPage:
 			{
-				case NavigationPage tabNavigationPage:
+				var currentTab = tabbedPage.CurrentPage;
+				switch (currentTab)
 				{
-					foreach (var page in newPages)
+					case NavigationPage tabNavigationPage:
 					{
-						await tabNavigationPage.PushAsync(page, animated);
-					}
+						foreach (var page in newPages)
+						{
+							await tabNavigationPage.PushAsync(page, animated);
+						}
 
-					break;
+						break;
+					}
+					case null:
+					{
+						const string error = "No current tab found in the TabbedPage.";
+						_logger.LogWarning(error);
+						return Result.Fail(ErrorCode.InvalidState, error);
+					}
+					default:
+					{
+						const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
+						_logger.LogWarning(error);
+						return Result.Fail(ErrorCode.NotSupported, error);
+					}
 				}
-				case null:
-				{
-					const string error = "No current tab found in the TabbedPage.";
-					_logger.LogWarning(error);
-					return Result.Fail(ErrorCode.InvalidState, error);
-				}
-				default:
-				{
-					const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
-					_logger.LogWarning(error);
-					return Result.Fail(ErrorCode.NotSupported, error);
-				}
+
+				break;
 			}
-		}
-		else if (currentPage is NavigationPage navigationPage)
-		{
-			foreach (var page in newPages)
+			case NavigationPage navigationPage:
 			{
-				await navigationPage.PushAsync(page, animated);
+				foreach (var page in newPages)
+				{
+					await navigationPage.PushAsync(page, animated);
+				}
+
+				break;
 			}
-		}
-		else
-		{
-			const string error = "Relative navigation is only supported when root page is a NavigationPage.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.NotSupported, error);
+			default:
+			{
+				const string error = "Relative navigation is only supported when root page is a NavigationPage.";
+				_logger.LogWarning(error);
+				return Result.Fail(ErrorCode.NotSupported, error);
+			}
 		}
 
 		return Result.Ok();

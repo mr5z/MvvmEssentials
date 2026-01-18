@@ -1,4 +1,5 @@
 ﻿using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.ViewModels;
@@ -7,20 +8,13 @@ namespace Nkraft.MvvmEssentials.Extensions;
 
 public static class PopupServiceExtension
 {
-	internal static string ToPopupName<TViewModel>()
-	{
-		const string knownViewModelPattern = "ViewModel";
-		const string knownPopupPattern = "Popup";
-		return typeof(TViewModel).Name.Replace(knownViewModelPattern, knownPopupPattern);
-	}
-
 	extension(IPopupService popupService)
 	{
 		public async Task<Result<TResult>> PresentAsync<TViewModel, TResult>(INavigationParameters? parameters = null,
 			bool animated = true)
 			where TViewModel : IPopupViewModel<TResult>
 		{
-			var popupName = ToPopupName<TViewModel>();
+			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
 			var tcs = new TaskCompletionSource<TResult>();
 			parameters ??= new NavigationParameters();
 			parameters.Add("_completion", tcs);
@@ -51,7 +45,7 @@ public static class PopupServiceExtension
 		public async Task<IResult> DismissAsync<TViewModel>(bool animated = true)
 			where TViewModel : IPopupViewModel
 		{
-			var popupName = ToPopupName<TViewModel>();
+			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
 			return await popupService.DismissAsync(popupName, animated);
 		}
 	}

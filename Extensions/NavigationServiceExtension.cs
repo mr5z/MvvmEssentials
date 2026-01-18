@@ -1,20 +1,14 @@
-﻿using Nkraft.CrossUtility.Patterns;
+﻿using Nkraft.CrossUtility.Helpers;
+using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.ViewModels;
-using Nkraft.CrossUtility.Helpers;
 
 namespace Nkraft.MvvmEssentials.Extensions;
 
 public static class NavigationExtension
 {
-	internal static string ToPageName<TViewModel>()
-	{
-		const string KnownViewModelPattern = "ViewModel";
-		const string KnownPagePattern = "Page";
-		return typeof(TViewModel).Name.Replace(KnownViewModelPattern, KnownPagePattern);
-	}
-
 	extension(INavigationService navigationService)
 	{
 		/// <summary>
@@ -27,9 +21,9 @@ public static class NavigationExtension
 			where TViewModel : PageViewModel
 			where TParameter : class
 		{
-			var pageName = ToPageName<TViewModel>();
+			var pageName = PageHelper.ToPageName<TViewModel>("Page");
 			var dictionary = ObjectHelper.ToDictionary(parameters);
-			INavigationParameters navParam = new NavigationParameters();
+			var navParam = new NavigationParameters();
 			foreach (var (key, value) in dictionary)
 			{
 				navParam.Add(key, value);
@@ -45,7 +39,7 @@ public static class NavigationExtension
 		public async Task<IResult> NavigateAsync<TViewModel>(INavigationParameters? parameters = null, bool animated = true)
 			where TViewModel : PageViewModel
 		{
-			var pageName = ToPageName<TViewModel>();
+			var pageName = PageHelper.ToPageName<TViewModel>("Page");
 			return await navigationService.NavigateAsync(pageName, parameters, animated);
 		}
 
@@ -72,17 +66,6 @@ public static class NavigationExtension
 		}
 	}
 
-	/// <summary>
-	/// Appends a page segment to the navigation path for the specified ViewModel type.
-	/// </summary>
-	/// <typeparam name="TViewModel">The ViewModel type to append. The corresponding Page must be registered.</typeparam>
-	/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
-	/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
-	public static IPageLink Push<TViewModel>(this IPageLink pageLink, object? parameters = null) where TViewModel : PageViewModel
-	{
-		return Push<TViewModel, object>(pageLink, parameters);
-	}
-
 	extension(IPageLink pageLink)
 	{
 		/// <summary>
@@ -96,21 +79,31 @@ public static class NavigationExtension
 			where TViewModel : PageViewModel
 			where TParameter : class
 		{
-			var page = ToPageName<TViewModel>();
-			return pageLink.AppendSegment(page, typeof(TViewModel), parameters);
+			var pageName = PageHelper.ToPageName<TViewModel>("Page");
+			return pageLink.AppendSegment(pageName, typeof(TViewModel), parameters);
 		}
-	}
 
-	/// <summary>
-	/// Navigates to the path aggregated from <see cref="IPageLink"/>.
-	/// </summary>
-	/// <param name="parameters">The last ViewModel in the <see cref="IPageLink"/> will only receive this.</param>
-	/// <returns>An <see cref="IResult"/> indicating the outcome of the navigation operation.</returns>
-	public static async Task<IResult> NavigateAsync(this IPageLink pageLink,
-		INavigationParameters? parameters = null, bool animated = true)
-	{
-		var navigationService = ((PageLink)pageLink).NavigationService;
-		var fullPath = pageLink.FullPath;
-		return await navigationService.NavigateAsync(fullPath, parameters, animated);
+		/// <summary>
+		/// Navigates to the path aggregated from <see cref="IPageLink"/>.
+		/// </summary>
+		/// <param name="parameters">The last ViewModel in the <see cref="IPageLink"/> will only receive this.</param>
+		/// <returns>An <see cref="IResult"/> indicating the outcome of the navigation operation.</returns>
+		public async Task<IResult> NavigateAsync(INavigationParameters? parameters = null, bool animated = true)
+		{
+			var navigationService = ((PageLink)pageLink).NavigationService;
+			var fullPath = pageLink.FullPath;
+			return await navigationService.NavigateAsync(fullPath, parameters, animated);
+		}
+
+		/// <summary>
+		/// Appends a page segment to the navigation path for the specified ViewModel type.
+		/// </summary>
+		/// <typeparam name="TViewModel">The ViewModel type to append. The corresponding Page must be registered.</typeparam>
+		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
+		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
+		public IPageLink Push<TViewModel>(object? parameters = null) where TViewModel : PageViewModel
+		{
+			return pageLink.Push<TViewModel, object>(parameters);
+		}
 	}
 }
