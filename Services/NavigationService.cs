@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Navigation;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Nkraft.MvvmEssentials.Services;
 
@@ -12,27 +12,54 @@ namespace Nkraft.MvvmEssentials.Services;
 public interface INavigationService
 {
 	/// <summary>
-	/// Navigates to the specified pages defined by the <paramref name="path"/> string.
-	/// <para>
-	/// - Page names must correspond to types that exist in the configured assembly (see <c>NavigationOptions.AssemblyPageSource</c>).
-	///	</para>
-	/// <para>
-	/// - Use <c>//</c> at the start of the path to perform absolute navigation, which will completely replace the application's main page and navigation stack.
-	/// </para>
-	/// <para>
-	/// - Use <c>NavigationPage</c> in the path to wrap subsequent pages (separated by '/') in a <see cref="NavigationPage"/>.
-	/// </para>
-	/// <para>
-	/// - Query parameters can be appended to page names using <c>?</c> (e.g., <c>MyPage?param1=value1</c>).
-	/// </para>
-	/// <para>
-	/// - Relative navigation (without <c>//</c>) will push pages onto the current navigation stack or the current tab's stack if within a <see cref="TabbedPage"/>.
-	/// </para>
+	/// Navigates to the sequence of pages defined by the specified <paramref name="path"/>.
 	/// </summary>
-	/// <param name="path">Navigation path, e.g., "//MainPage/NavigationPage/DetailsPage".</param>
-	/// <param name="parameters">Optional navigation parameters to pass to the target page's view model.</param>
-	/// <param name="animated">Whether to animate the navigation transition.</param>
-	/// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
+	/// <remarks>
+	/// <list type="bullet">
+	///   <item>
+	///     <description>
+	///     Page names in the path must correspond to page types that exist in the configured assembly
+	///     (see <c>NavigationOptions.AssemblyPageSource</c>).
+	///     </description>
+	///   </item>
+	///   <item>
+	///     <description>
+	///     Prefix the path with <c>//</c> to perform absolute navigation, which replaces the application's
+	///     main page and clears the navigation stack.
+	///     </description>
+	///   </item>
+	///   <item>
+	///     <description>
+	///     Include <c>NavigationPage</c> in the path to wrap subsequent pages (separated by '/') inside
+	///     a <see cref="NavigationPage"/>.
+	///     </description>
+	///   </item>
+	///   <item>
+	///     <description>
+	///     Query parameters may be appended to page names using <c>?</c>
+	///     (for example, <c>MyPage?param1=value1</c>).
+	///     </description>
+	///   </item>
+	///   <item>
+	///     <description>
+	///     Relative navigation (paths without <c>//</c>) pushes pages onto the current navigation stack,
+	///     or onto the active tab's stack when hosted in a <see cref="TabbedPage"/>.
+	///     </description>
+	///   </item>
+	/// </list>
+	/// </remarks>
+	/// <param name="path">
+	/// Navigation path (for example, <c>//MainPage/NavigationPage/DetailsPage</c>).
+	/// </param>
+	/// <param name="parameters">
+	/// Optional parameters passed to the target page's view model.
+	/// </param>
+	/// <param name="animated">
+	/// Indicates whether the navigation transition should be animated.
+	/// </param>
+	/// <returns>
+	/// An <see cref="IResult"/> indicating whether the navigation operation succeeded.
+	/// </returns>
 	Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
 
 	/// <summary>
@@ -112,7 +139,6 @@ internal sealed class NavigationService : INavigationService
 		{
 			// Build the page stack
 			var pages = pageInfoList.Select(pageInfo => _pageFactory.CreatePage(pageInfo, parameters)).ToArray();
-
 			var replaceCurrentPage = path.StartsWith('/');
 
 			if (replaceCurrentPage)
@@ -120,7 +146,7 @@ internal sealed class NavigationService : INavigationService
 				if (pages.Length == 0)
 				{
 					const string error = "No valid pages to navigate to.";
-					_logger.LogError(error);
+					_logger.LogWarning(error);
 					return Result.Fail(ErrorCode.InvalidState, error);
 				}
 
@@ -137,7 +163,7 @@ internal sealed class NavigationService : INavigationService
 					else
 					{
 						const string error = "Absolute navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage.";
-						_logger.LogError(error);
+						_logger.LogWarning(error);
 						return Result.Fail(ErrorCode.NotSupported, error);
 					}
 				}
@@ -200,8 +226,8 @@ internal sealed class NavigationService : INavigationService
 
 		if (currentPage is NavigationPage navigationPage)
 		{
-			var canPopPage = navigationPage.Navigation.NavigationStack.Count > 0;
-			if (canPopPage)
+			var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
+			if (isRootPage)
 			{
 				const string error = "No page to navigate back to.";
 				_logger.LogWarning(error);
@@ -215,29 +241,19 @@ internal sealed class NavigationService : INavigationService
 				_logger.LogWarning(error);
 				return Result.Fail(ErrorCode.InvalidState, error);
 			}
-			else
-			{
-				return Result.Ok();
-			}
+			
+			return Result.Ok();
 		}
-		else if (currentPage is not null)
+		
+		var navigatedBack = currentPage.SendBackButtonPressed();
+		if (navigatedBack)
 		{
-			var navigatedBack = currentPage.SendBackButtonPressed();
-			if (navigatedBack)
-			{
-				return Result.Ok();
-			}
-			else
-			{
-				const string error = "Back navigation got cancelled.";
-				_logger.LogWarning(error);
-				return Result.Fail(ErrorCode.Cancelled, error);
-			}
+			return Result.Ok();
 		}
-
-		const string errorMessage = "Back navigation is only supported when root page is a NavigationPage.";
+		
+		const string errorMessage = "Back navigation got cancelled.";
 		_logger.LogWarning(errorMessage);
-		return Result.Fail(ErrorCode.NotSupported, errorMessage);
+		return Result.Fail(ErrorCode.Cancelled, errorMessage);
 	}
 
 	async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
@@ -367,7 +383,7 @@ internal sealed class NavigationService : INavigationService
 
 		Page? currentPage = null;
 
-		if (currentApp.Windows[0].Page is Page page)
+		if (currentApp.Windows[0].Page is { } page)
 		{
 			currentPage = page;
 		}
@@ -376,7 +392,7 @@ internal sealed class NavigationService : INavigationService
 			currentPage = navigationPage.CurrentPage;
 		}
 
-		if (currentPage?.BindingContext is object viewModel)
+		if (currentPage?.BindingContext is { } viewModel)
 		{
 			if (viewModel is IWindowEventAware eventAware)
 			{
@@ -405,7 +421,7 @@ internal sealed class NavigationService : INavigationService
 			return false;
 		}
 
-		if (currentApp.Windows.Count > 0 && currentApp.Windows[0].Page is Page currentPage)
+		if (currentApp.Windows.Count > 0 && currentApp.Windows[0].Page is { } currentPage)
 		{
 			page = currentPage;
 			return true;

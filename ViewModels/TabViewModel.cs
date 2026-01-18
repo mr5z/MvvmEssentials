@@ -2,7 +2,7 @@
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract class TabViewModel : BaseViewModel, IHostComponent
+public abstract class TabViewModel : BaseViewModel, ITabComponent
 {
 	private bool _isInitialized;
 	private bool _isInitializedAsync;
@@ -33,11 +33,11 @@ public abstract class TabViewModel : BaseViewModel, IHostComponent
 
 	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
 	
-	void IHostComponent.OnTabSelected() => OnTabSelected();
+	void ITabComponent.OnTabSelected() => OnTabSelected();
 	
-	void IHostComponent.OnTabUnselected() => OnTabUnselected();
+	void ITabComponent.OnTabUnselected() => OnTabUnselected();
 	
-	Task IHostComponent.OnTabSelectedAsync() => OnTabSelectedAsync();
+	Task ITabComponent.OnTabSelectedAsync() => OnTabSelectedAsync();
 	
-	Task IHostComponent.OnTabUnselectedAsync() => OnTabUnselectedAsync();
+	Task ITabComponent.OnTabUnselectedAsync() => OnTabUnselectedAsync();
 }

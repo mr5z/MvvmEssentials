@@ -65,7 +65,7 @@ internal sealed class PopupService : IPopupService
 		if (pageInfoList.Length > 1)
 		{
 			const string error = "More than one popup found with a name '{PopupName}'.";
-			_logger.LogError(error, popupName);
+			_logger.LogWarning(error, popupName);
 			return Result.Fail(ErrorCode.General, error, popupName);
 		}
 
@@ -106,7 +106,7 @@ internal sealed class PopupService : IPopupService
 				else
 				{
 					const string error = "Failed dismiss popup '{PopupName}'.";
-					_logger.LogError(error, popupName);
+					_logger.LogWarning(error, popupName);
 					return Result.Fail(ErrorCode.InvalidState, error, popupName);
 				}
 			}

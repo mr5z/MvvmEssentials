@@ -1,6 +1,6 @@
 namespace Nkraft.MvvmEssentials.Services.Navigation;
 
-public interface IHostComponent
+public interface ITabComponent
 {
     void OnTabSelected();
 

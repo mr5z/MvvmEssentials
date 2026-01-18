@@ -9,18 +9,18 @@ public abstract class TabHostViewModel : PageViewModel, ITabHost
 		base.OnInitialized();
 
 		// TODO OnTabSelected() gets called twice if SelectedTabIndex != 0
-		((IHostComponent)CurrentTab).OnTabSelected();
+		CurrentTab.OnTabSelected();
 	}
 
-	protected abstract IReadOnlyCollection<TabViewModel> Tabs { get; }
+	protected abstract IReadOnlyCollection<ITabComponent> Tabs { get; }
 
-	protected TabViewModel CurrentTab => Tabs.ElementAt(SelectedTabIndex);
+	protected ITabComponent CurrentTab => Tabs.ElementAt(SelectedTabIndex);
 
 	protected int SelectedTabIndex { get; set; }
 	
-	IReadOnlyCollection<TabViewModel> ITabHost.Tabs => Tabs;
+	IReadOnlyCollection<ITabComponent> ITabHost.Tabs => Tabs;
 	
-	TabViewModel ITabHost.CurrentTab => CurrentTab;
+	ITabComponent ITabHost.CurrentTab => CurrentTab;
 
 	int ITabHost.SelectedTabIndex
 	{

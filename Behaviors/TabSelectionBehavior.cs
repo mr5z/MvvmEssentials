@@ -1,5 +1,5 @@
-﻿using Nkraft.MvvmEssentials.Services.Navigation;
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
@@ -50,12 +50,12 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 
 		if (_previousTabIndex != -1)
 		{
-			IHostComponent previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
+			var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
 			previousTab.OnTabUnselected();
 			previousTab.OnTabUnselectedAsync();
 		}
 
-		((IHostComponent)tabHost.CurrentTab).OnTabSelected();
+		tabHost.CurrentTab.OnTabSelected();
 		_previousTabIndex = tabIndex;
 	}
 

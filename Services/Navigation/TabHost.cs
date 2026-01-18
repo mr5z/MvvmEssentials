@@ -1,12 +1,10 @@
-﻿using Nkraft.MvvmEssentials.ViewModels;
-
-namespace Nkraft.MvvmEssentials.Services.Navigation;
+﻿namespace Nkraft.MvvmEssentials.Services.Navigation;
 
 internal interface ITabHost
 {
 	int SelectedTabIndex { get; set; }
 
-	TabViewModel CurrentTab { get; }
+	ITabComponent CurrentTab { get; }
 
-	IReadOnlyCollection<TabViewModel> Tabs { get; }
+	IReadOnlyCollection<ITabComponent> Tabs { get; }
 }
