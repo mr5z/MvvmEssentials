@@ -226,7 +226,7 @@ internal sealed class NavigationService : INavigationService
 
 		if (currentPage is NavigationPage navigationPage)
 		{
-			var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
+			var isRootPage = navigationPage.Navigation.NavigationStack.Count == 0;
 			if (isRootPage)
 			{
 				const string error = "No page to navigate back to.";
