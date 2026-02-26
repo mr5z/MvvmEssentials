@@ -17,5 +17,7 @@ public static class NavigationServiceCollectionExtension
 		// TODO move to different extension
 		services.AddSingleton<IPopupService, PopupService>();
 		services.AddSingleton(MopupService.Instance);
+		
+		services.AddSingleton<AppStartupWindowHook>();
 	}
 }

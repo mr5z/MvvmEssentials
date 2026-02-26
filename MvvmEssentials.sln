@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials", "Nkraft.MvvmEssentials.csproj", "{A8540844-176C-2E4B-D027-1EFDE58CE741}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvvmEssentials.Core", "..\MvvmEssentials.Core\MvvmEssentials.Core.csproj", "{E169CBEA-C7D9-4C03-91BC-2CA1AAE57C5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{A8540844-176C-2E4B-D027-1EFDE58CE741}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8540844-176C-2E4B-D027-1EFDE58CE741}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8540844-176C-2E4B-D027-1EFDE58CE741}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E169CBEA-C7D9-4C03-91BC-2CA1AAE57C5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E169CBEA-C7D9-4C03-91BC-2CA1AAE57C5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E169CBEA-C7D9-4C03-91BC-2CA1AAE57C5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E169CBEA-C7D9-4C03-91BC-2CA1AAE57C5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
