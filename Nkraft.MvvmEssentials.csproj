@@ -10,58 +10,71 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.0.17</AssemblyVersion>
-    <FileVersion>1.0.17</FileVersion>
-    <Version>1.0.17</Version>
-    <Copyright>Copyright (c) 2025 Mark L. All rights reserved.</Copyright>
+    <AssemblyVersion>1.1.3</AssemblyVersion>
+    <FileVersion>1.1.3</FileVersion>
+    <Version>1.1.3</Version>
+    <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>- Minor improvements and bug fixes</PackageReleaseNotes>
+    <PackageReleaseNotes>Added source gen and other improvements</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.3" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.120" />
     <PackageReference Include="Mopups" Version="1.3.4" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" PrivateAssets="All" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="Nkraft.MvvmEssentials.targets"
+          Pack="true"
+          PackagePath="buildTransitive/Nkraft.MvvmEssentials.targets" />
+    <None Include="SourceGenerator\bin\$(Configuration)\netstandard2.0\Nkraft.MvvmEssentials.SourceGenerator.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="LICENSE" Link="LICENSE">
+      <Pack>True</Pack>
+      <PackagePath />
+    </None>
+    <None Include="README.md" Link="README.md">
+      <Pack>True</Pack>
+      <PackagePath />
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiXaml Remove="SourceGenerator\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiCss Remove="SourceGenerator\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="SourceGenerator\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="SourceGenerator\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
-    <ProjectReference Include="Core\Nkraft.MvvmEssentials.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\MvvmEssentials\LICENSE" Link="LICENSE">
-      <Pack>True</Pack>
-    </None>
-    <None Include="..\MvvmEssentials\README.md" Link="README.md">
-      <Pack>True</Pack>
-    </None>
-    <None Remove="Core\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <MauiXaml Remove="Core\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <MauiCss Remove="Core\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Core\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="Core\**" />
+    <ProjectReference Include="SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

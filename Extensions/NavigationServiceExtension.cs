@@ -105,11 +105,5 @@ public static class NavigationExtension
 		{
 			return pageLink.Push<TViewModel, object>(parameters);
 		}
-		
-		public IPageLink Push(Type viewModelType, object? parameters = null)
-		{
-			var pageName = PageHelper.ToPageName(viewModelType, "Page");
-			return pageLink.AppendSegment(pageName, viewModelType, parameters);
-		}
 	}
 }

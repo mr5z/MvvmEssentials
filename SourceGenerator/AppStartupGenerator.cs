@@ -158,7 +158,7 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
                 {
                     await _navigationService
                         .Absolute(withNavigation: false)
-                        .Push(typeof({{initialViewModelFullName}}))
+                        .Push<{{initialViewModelFullName}}>()
                         .NavigateAsync();
                 }
             }
