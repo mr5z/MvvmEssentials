@@ -4,13 +4,12 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Extensions;
 
-public static class NavigationServiceCollectionExtension
+internal static class NavigationServiceCollectionExtension
 {
 	public static void AddNavigationService(this IServiceCollection services,
 		Action<NavigationOptions> configure)
 	{
 		services.Configure(configure);
-		services.AddSingleton<IWindowEventHandler, WindowEventHandler>();
 		services.AddSingleton<IPageFactory, PageFactory>();
 		services.AddSingleton<INavigationService, NavigationService>();
 

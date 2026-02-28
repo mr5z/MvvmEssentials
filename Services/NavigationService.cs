@@ -88,21 +88,12 @@ public interface INavigationService
 	Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
 }
 
-internal sealed class NavigationService : INavigationService
+internal sealed class NavigationService(
+	ILogger<NavigationService> logger,
+	IPageFactory pageFactory) : INavigationService
 {
-	private readonly ILogger<NavigationService> _logger;
-	private readonly IPageFactory _pageFactory;
-
-	public NavigationService(
-		ILogger<NavigationService> logger,
-		IWindowEventHandler windowHandler,
-		IPageFactory pageFactory)
-	{
-		_logger = logger;
-		_pageFactory = pageFactory;
-
-		windowHandler.Activated += WindowEvent_Activated;
-	}
+	private readonly ILogger<NavigationService> _logger = logger;
+	private readonly IPageFactory _pageFactory = pageFactory;
 
 	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
 	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
@@ -247,9 +238,7 @@ internal sealed class NavigationService : INavigationService
 		
 		var navigatedBack = currentPage.SendBackButtonPressed();
 		if (navigatedBack)
-		{
 			return Result.Ok();
-		}
 		
 		const string errorMessage = "Back navigation got cancelled.";
 		_logger.LogWarning(errorMessage);

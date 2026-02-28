@@ -87,11 +87,7 @@ internal class PageFactory(
 	private Type? FindPageTypeByName(string pageName, Type basePage)
 	{
 		var pageDictionary = GetAssemblyPageSourceTypes(basePage);
-		if (pageDictionary.TryGetValue(pageName, out var type))
-		{
-  			return type;
-		}
-		return null;
+		return pageDictionary.GetValueOrDefault(pageName);
 	}
 
 	private Dictionary<string, Type>? _cachedAssemblyPageSourceTypes;
@@ -202,14 +198,11 @@ internal class PageFactory(
 
 	private void Page_Unloaded(object? sender, EventArgs e)
 	{
-		if (sender is Page page && page.BindingContext is object viewModel)
+		if (sender is Page { BindingContext: not null and IPageLoadAware loadAware } page)
 		{
-			if (viewModel is IPageLoadAware loadAware)
-			{
-				loadAware.OnPageUnloaded();
-				UnregisterPageEvents(page);
-				PageUnloaded?.Invoke(this, page);
-			}
+			loadAware.OnPageUnloaded();
+			UnregisterPageEvents(page);
+			PageUnloaded?.Invoke(this, page);
 		}
 	}
 
