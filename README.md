@@ -249,7 +249,7 @@ registry.MapPage<MainPage, MainViewModel>();
 ```cs
 public class MainViewModel(HomeViewModel homeViewModel, SettingsViewModel settingsViewModel) : TabHostViewModel
 {
-    public override IReadOnlyCollection<ITabComponent> Tabs => [HomeViewModel, SettingsViewModel];
+    protected override IReadOnlyCollection<ITabComponent> Tabs => [HomeViewModel, SettingsViewModel];
 
     public HomeViewModel HomeViewModel { get; } = homeViewModel;
     public SettingsViewModel SettingsViewModel { get; } = settingsViewModel;
