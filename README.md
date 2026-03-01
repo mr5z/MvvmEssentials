@@ -170,7 +170,7 @@ class LoginViewModel : PageViewModel
     public string? ErrorMessage { get; set; }
 
     // Or handle manually
-    public override void OnParametersSet(INavigationParameters parameters)
+    protected override void OnParametersSet(INavigationParameters parameters)
     {
         if (parameters.TryGetValue<int>("Test", out var testValue))
         {
@@ -263,13 +263,13 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 {
     private readonly ISemanticScreenReader _screenReader = screenReader;
 
-    public override void OnTabSelected()
+    protected override void OnTabSelected()
     {
         base.OnTabSelected();
         Console.WriteLine("Home tab selected");
     }
 
-    public override void OnTabUnselected()
+    protected override void OnTabUnselected()
     {
         base.OnTabUnselected();
         Console.WriteLine("Bye!");
