@@ -198,7 +198,7 @@ internal class PageFactory(
 
 	private void Page_Unloaded(object? sender, EventArgs e)
 	{
-		if (sender is Page { BindingContext: not null and IPageLoadAware loadAware } page)
+		if (sender is Page { BindingContext: IPageLoadAware loadAware } page)
 		{
 			loadAware.OnPageUnloaded();
 			UnregisterPageEvents(page);

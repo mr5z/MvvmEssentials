@@ -31,20 +31,14 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 	private void TabbedPage_CurrentPageChanged(object? sender, EventArgs e)
 	{
 		if (sender is not TabbedPage tabbedPage)
-		{
 			return;
-		}
 
 		var tabIndex = tabbedPage.Children.IndexOf(tabbedPage.CurrentPage);
 		if (tabIndex == -1)
-		{
 			return;
-		}
 
 		if (tabbedPage.BindingContext is not ITabHost tabHost)
-		{
 			return;
-		}
 		
 		tabHost.SelectedTabIndex = tabIndex;
 
@@ -62,9 +56,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 	private void TabbedPage_BindingContextChanged(object? sender, EventArgs e)
 	{
 		if (sender is not BindableObject bindableObject)
-		{
 			return;
-		}
 
 		if (bindableObject.BindingContext is INotifyPropertyChanged notifiableObject)
 		{
@@ -76,14 +68,10 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 	private void TabbedPage_BindingContextPropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
 		if (e.PropertyName != nameof(ITabHost.SelectedTabIndex))
-		{
 			return;
-		}
 
 		if (_tabbedPage?.BindingContext is not ITabHost tab)
-		{
 			return;
-		}
 
 		var tabIndex = tab.SelectedTabIndex;
 		var destinationPage = _tabbedPage.Children.ElementAtOrDefault(tabIndex);
