@@ -27,6 +27,7 @@ internal class PageFactory(
 	private readonly ILogger<PageFactory> _logger = logger;
 	private readonly IPageRegistry _pageRegistry = pageRegistry;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
+	private readonly Dictionary<Page, IServiceScope> _pageScopes = []; 
 
 	public event EventHandler<Page>? PageUnloaded;
 
@@ -37,11 +38,14 @@ internal class PageFactory(
 			?? throw new InvalidOperationException(
 				$"Could not create instance of page type '{pageInfo.PageType.FullName}'. " +
 				"Make sure the page is registered in the DI container and you are using the correct service.");
+		
+		var scope = _serviceProvider.CreateScope();
+		_pageScopes[page] = scope;
 
 		var viewModelType = _pageRegistry.ResolveViewModelType(pageInfo.PageType);
 		if (viewModelType is not null)
 		{
-			var viewModel = _serviceProvider.GetRequiredService(viewModelType);
+			var viewModel = scope.ServiceProvider.GetRequiredService(viewModelType);
 			page.BindingContext = viewModel;
 
 			if (viewModel is NavigableEntryViewModel baseViewModel)
@@ -203,6 +207,11 @@ internal class PageFactory(
 			loadAware.OnPageUnloaded();
 			UnregisterPageEvents(page);
 			PageUnloaded?.Invoke(this, page);
+
+			if (_pageScopes.Remove(page, out var scope))
+			{
+				scope.Dispose();
+			}
 		}
 	}
 

@@ -7,6 +7,8 @@ public interface IPageRegistry
 	IPageRegistry MapPage<TPage, TViewModel>(bool isInitial = false)
 		where TViewModel : PageViewModel
 		where TPage : Page;
+	
+	IPageRegistry RegisterTab<TViewModel>() where TViewModel : TabViewModel;
 
 	Type? ResolveViewModelType(Type pageType);
 	
@@ -41,8 +43,14 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 		}
 
 		_mappings[typeof(TPage)] = typeof(TViewModel);
-		_services.AddTransient<TViewModel>();
+		_services.AddScoped<TViewModel>();
 
+		return this;
+	}
+
+	IPageRegistry IPageRegistry.RegisterTab<TViewModel>()
+	{
+		_services.AddScoped<TViewModel>();
 		return this;
 	}
 

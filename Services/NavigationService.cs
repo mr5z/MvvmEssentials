@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
@@ -358,46 +357,6 @@ internal sealed class NavigationService(
 		foreach (var page in newPages)
 		{
 			await navigationPage.PushAsync(page, animated);
-		}
-	}
-
-	private void WindowEvent_Activated(object? sender, EventArgs e)
-	{
-		var currentApp = Application.Current;
-		if (currentApp is null)
-		{
-			_logger.LogWarning("Application.Current null detected at '{MethodName}'.", nameof(WindowEvent_Activated));
-			return;
-		}
-
-		Page? currentPage = null;
-
-		if (currentApp.Windows[0].Page is { } page)
-		{
-			currentPage = page;
-		}
-		else if (currentApp.Windows[0].Page is NavigationPage navigationPage)
-		{
-			currentPage = navigationPage.CurrentPage;
-		}
-
-		if (currentPage?.BindingContext is { } viewModel)
-		{
-			if (viewModel is IWindowEventAware eventAware)
-			{
-				eventAware.OnWindowActivated();
-			}
-
-			if (viewModel is IWindowEventAwareAsync eventAwareAsync)
-			{
-				eventAwareAsync.OnWindowActivatedAsync().FireAndForget(exception =>
-				{
-					_logger.LogWarning(exception, 
-						"An error occurred while trying to invoke {MethodName}.", 
-						nameof(eventAwareAsync.OnWindowActivatedAsync)
-					);
-				});
-			}
 		}
 	}
 

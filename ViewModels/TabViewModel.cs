@@ -2,7 +2,7 @@
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract class TabViewModel : BaseViewModel, ITabComponent
+public abstract class TabViewModel : BaseViewModel, ITabComponent, IDisposable
 {
 	private bool _isInitialized;
 	private bool _isInitializedAsync;
@@ -33,6 +33,8 @@ public abstract class TabViewModel : BaseViewModel, ITabComponent
 
 	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
 	
+	protected virtual void OnDispose() { }
+	
 	void ITabComponent.OnTabSelected() => OnTabSelected();
 	
 	void ITabComponent.OnTabUnselected() => OnTabUnselected();
@@ -40,4 +42,8 @@ public abstract class TabViewModel : BaseViewModel, ITabComponent
 	Task ITabComponent.OnTabSelectedAsync() => OnTabSelectedAsync();
 	
 	Task ITabComponent.OnTabUnselectedAsync() => OnTabUnselectedAsync();
+	
+#pragma warning disable CA1816
+	void IDisposable.Dispose() => OnDispose();
+#pragma warning restore CA1816
 }

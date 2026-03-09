@@ -7,8 +7,7 @@ public class PageViewModel : NavigableEntryViewModel,
 	IAppearingAwareAsync,
 	INavigatedAware,
 	IPageLoadAware,
-	IWindowEventAware,
-	IWindowEventAwareAsync
+	IDisposable
 {
 	private bool _isInitialized = false;
 	private bool _isInitializedAsync = false;
@@ -45,13 +44,11 @@ public class PageViewModel : NavigableEntryViewModel,
 
 	protected virtual void OnPageUnloaded() { }
 
-	protected virtual void OnWindowActivated() { }
-
-	protected virtual Task OnWindowActivatedAsync() => Task.CompletedTask;
-
 	protected virtual void OnInitialized() { }
 
 	protected virtual Task OnInitializedAsync() => Task.CompletedTask;
+
+	protected virtual void OnDispose() { }
 	
 	void IAppearingAware.OnPageAppearing() => OnPageAppearing();
 	
@@ -67,7 +64,7 @@ public class PageViewModel : NavigableEntryViewModel,
 	
 	void IPageLoadAware.OnPageUnloaded() => OnPageUnloaded();
 	
-	void IWindowEventAware.OnWindowActivated() => OnWindowActivated();
-
-	Task IWindowEventAwareAsync.OnWindowActivatedAsync() => OnWindowActivatedAsync();
+#pragma warning disable CA1816
+	void IDisposable.Dispose() => OnDispose();
+#pragma warning restore CA1816
 }
