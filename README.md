@@ -27,7 +27,7 @@ public static class MauiProgram
                 // ViewModel and Page naming convention must strictly be followed:
                 // page_name + "Page", vm_name + "ViewModel", wherein page_name == vm_name
                 //
-                // Mark one page with isInitial: true — this is where the app starts.
+                // Mark one page with isInitial: true. This is where the app starts.
                 // If you need conditional startup logic (e.g. auth checks),
                 // implement IAppStartup instead (see below).
                 registry.MapPage<LandingPage, LandingViewModel>(isInitial: true)
@@ -69,7 +69,7 @@ public partial class App : Application
 }
 ```
 
-That's it. The hook handles all window lifecycle events and fires the initial navigation automatically.
+That's it. The hook fires the initial navigation automatically.
 
 ## 3. Delete any `Shell` related files. They are not used here.
 
@@ -78,7 +78,7 @@ That's it. The hook handles all window lifecycle events and fires the initial na
 # Custom Startup Logic (Optional)
 
 If you need to run async logic before deciding where to navigate (e.g. auth checks, feature flags),
-implement `IAppStartup` anywhere in your project. The source generator will find it automatically —
+implement `IAppStartup` anywhere in your project. The source generator will find it automatically,
 no registration needed.
 
 ```cs
@@ -198,17 +198,88 @@ await _navigationService.Absolute(withNavigation: false)
 
 ---
 
+## ViewModel Lifecycle
+
+<details>
+<summary>PageViewModel</summary>
+
+| Method | When it is called |
+|---|---|
+| `OnParametersSet` | Called when navigation parameters are passed to this ViewModel |
+| `OnInitialized` | Called once on the first page appearing |
+| `OnInitializedAsync` | Async version of `OnInitialized` |
+| `OnPageAppearing` | Called every time the page appears |
+| `OnPageAppearingAsync` | Async version of `OnPageAppearing` |
+| `OnPageDisappearing` | Called every time the page disappears |
+| `OnPageDisappearingAsync` | Async version of `OnPageDisappearing` |
+| `OnNavigatedTo` | Called when the page is navigated to |
+| `OnNavigatedFrom` | Called when the page is navigated away from |
+| `OnNavigatedToRoot` | Called when the navigation stack is popped back to this page as root |
+| `OnNavigatedToRootAsync` | Async version of `OnNavigatedToRoot` |
+| `OnPageUnloaded` | Called when the page is removed from the visual tree |
+| `OnDispose` | Called when the DI scope is disposed |
+
+</details>
+
+<details>
+<summary>TabViewModel</summary>
+
+| Method | When it is called |
+|---|---|
+| `OnInitialized` | Called once on the first tab selection |
+| `OnInitializedAsync` | Async version of `OnInitialized` |
+| `OnTabSelected` | Called every time the tab is selected |
+| `OnTabSelectedAsync` | Async version of `OnTabSelected` |
+| `OnTabUnselected` | Called every time the tab is unselected |
+| `OnTabUnselectedAsync` | Async version of `OnTabUnselected` |
+| `OnDispose` | Called when the parent host's DI scope is disposed |
+
+</details>
+
+<details>
+<summary>PopupViewModel</summary>
+
+Inherits all lifecycle methods from `PageViewModel`.
+
+</details>
+
+---
+
+## Resource Cleanup (IDisposable)
+
+All ViewModels (`PageViewModel`, `TabViewModel`, `PopupViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope.
+
+To clean up resources, override `OnDispose()` in your ViewModel:
+
+```cs
+public class MyViewModel : PageViewModel
+{
+    private readonly Timer _timer;
+
+    public MyViewModel()
+    {
+        _timer = new Timer(OnTick, null, 0, 1000);
+    }
+
+    protected override void OnDispose()
+    {
+        _timer.Dispose();
+    }
+}
+```
+
+---
+
 ## TabbedPage + NavigationPage
 
 **1. Register tabs in DI**
 
 ```cs
-// Tab ViewModels are not mapped to pages — they are bound via XAML
-builder.Services.AddTransient<HomeViewModel>();
-builder.Services.AddTransient<SettingsViewModel>();
-
-// Only the tab host is mapped
-registry.MapPage<MainPage, MainViewModel>();
+// Tab ViewModels are not mapped to pages. They are bound via XAML.
+// Use RegisterTab to ensure they are registered with the correct lifetime.
+registry.MapPage<MainPage, MainViewModel>()
+    .RegisterTab<HomeViewModel>()
+    .RegisterTab<SettingsViewModel>();
 ```
 
 **2. Define tabs in XAML**
