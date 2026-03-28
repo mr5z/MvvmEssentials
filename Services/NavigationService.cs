@@ -141,47 +141,17 @@ internal sealed class NavigationService(
 				}
 
 				var firstPage = pages.First();
-				Page mainPage;
-
-				if (firstPage is TabbedPage tabbedPage)
+				var mainPageResult = await GetMainPageAsync(firstPage, pages, animated);
+				if (mainPageResult.TryGetValue(out var mainPage))
 				{
-					if (tabbedPage.CurrentPage is NavigationPage tabNavigationPage)
-					{
-						await PushPagesAsync(tabNavigationPage, pages.Skip(1), animated);
-						mainPage = tabbedPage;
-					}
-					else
-					{
-						const string error = "Absolute navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage.";
-						_logger.LogWarning(error);
-						return Result.Fail(ErrorCode.NotSupported, error);
-					}
-				}
-				else if (firstPage is NavigationPage navigationPage)
-				{
-					await PushPagesAsync(navigationPage, pages.Skip(1), animated);
-					mainPage = navigationPage;
+#pragma warning disable CS0618 // Type or member is obsolete
+					currentApp.MainPage = mainPage;
+#pragma warning restore CS0618 // Type or member is obsolete
 				}
 				else
 				{
-					if (pages.Length > 1)
-					{
-						navigationPage = new NavigationPage(firstPage);
-						foreach (var page in pages.Skip(1))
-						{
-							await navigationPage.PushAsync(page, animated);
-						}
-						mainPage = navigationPage;
-					}
-					else
-					{
-						mainPage = firstPage;
-					}
+					return mainPageResult;
 				}
-
-#pragma warning disable CS0618 // Type or member is obsolete
-				currentApp.MainPage = mainPage;
-#pragma warning restore CS0618 // Type or member is obsolete
 			}
 			else
 			{
@@ -253,10 +223,11 @@ internal sealed class NavigationService(
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
-		NavigationPage? navigationPage = currentPage switch
+		var navigationPage = currentPage switch
 		{
 			NavigationPage navPage => navPage,
 			TabbedPage tabbedPage => tabbedPage.CurrentPage as NavigationPage,
+			FlyoutPage flyoutPage => flyoutPage.Detail as NavigationPage,
 			_ => null
 		};
 
@@ -296,6 +267,55 @@ internal sealed class NavigationService(
 		}
 
 		return Result.Ok();
+	}
+
+	private async Task<Result<Page>> GetMainPageAsync(Page firstPage, Page[] pages, bool animated)
+	{
+		switch (firstPage)
+		{
+			case TabbedPage { CurrentPage: NavigationPage tabNavigationPage } tabbedPage:
+			{
+				await PushPagesAsync(tabNavigationPage, pages.Skip(1), animated);
+				return Result.Ok<Page>(tabbedPage);
+			}
+			case TabbedPage:
+			{
+				const string error = "Absolute navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage.";
+				_logger.LogWarning(error);
+				return Result.Fail<Page>(ErrorCode.NotSupported, error);
+			}
+			case FlyoutPage { Detail: NavigationPage detailNavigationPage } flyoutPage:
+			{
+				await PushPagesAsync(detailNavigationPage, pages.Skip(1), animated);
+				return Result.Ok<Page>(flyoutPage);
+			}
+			case FlyoutPage:
+			{
+				const string error = "Absolute navigation within a FlyoutPage is only supported when Detail is wrapped in NavigationPage.";
+				_logger.LogWarning(error);
+				return Result.Fail<Page>(ErrorCode.NotSupported, error);
+			}
+			default:
+			{
+				if (firstPage is NavigationPage navigationPage)
+				{
+					await PushPagesAsync(navigationPage, pages.Skip(1), animated);
+					return Result.Ok<Page>(navigationPage);
+				}
+
+				if (pages.Length > 1)
+				{
+					navigationPage = new NavigationPage(firstPage);
+					foreach (var page in pages.Skip(1))
+					{
+						await navigationPage.PushAsync(page, animated);
+					}
+					return Result.Ok<Page>(navigationPage);
+				}
+
+				return Result.Ok(firstPage);
+			}
+		}
 	}
 
 	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, IEnumerable<Page> newPages, bool animated)
