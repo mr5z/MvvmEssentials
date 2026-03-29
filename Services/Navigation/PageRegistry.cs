@@ -4,17 +4,30 @@ namespace Nkraft.MvvmEssentials.Services.Navigation;
 
 public interface IPageRegistry
 {
+	/// <summary>
+	/// Maps a page type to a ViewModel type and registers both with the DI container.
+	/// The page and ViewModel must follow the naming convention: <c>{Name}Page</c> and <c>{Name}ViewModel</c>.
+	/// </summary>
+	/// <typeparam name="TPage">The page type to register.</typeparam>
+	/// <typeparam name="TViewModel">The ViewModel type to bind to the page.</typeparam>
+	/// <param name="isInitial">
+	/// If <c>true</c>, this page is used as the app's entry point when no <see cref="IAppStartup"/>
+	/// implementation is found. Only one page may be marked as initial.
+	/// </param>
 	IPageRegistry MapPage<TPage, TViewModel>(bool isInitial = false)
 		where TViewModel : PageViewModel
 		where TPage : Page;
 	
-	IPageRegistry RegisterTab<TViewModel>() where TViewModel : TabViewModel;
+	/// <summary>
+	/// Registers a ViewModel that is not directly mapped to a page — for example, a tab or flyout menu —
+	/// with the correct scoped lifetime in the DI container.
+	/// Use this for any ViewModel bound via XAML rather than through the navigation service.
+	/// </summary>
+	/// <typeparam name="TViewModel">The ViewModel type to register.</typeparam>
+	IPageRegistry RegisterPage<TViewModel>() where TViewModel : BaseViewModel;
 
 	Type? ResolveViewModelType(Type pageType);
 	
-	/// <summary>
-	/// The ViewModel type marked with isInitial: true, if any.
-	/// </summary>
 	Type? InitialViewModelType { get; }
 }
 
@@ -48,7 +61,7 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 		return this;
 	}
 
-	IPageRegistry IPageRegistry.RegisterTab<TViewModel>()
+	IPageRegistry IPageRegistry.RegisterPage<TViewModel>()
 	{
 		_services.AddScoped<TViewModel>();
 		return this;

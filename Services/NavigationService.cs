@@ -141,7 +141,7 @@ internal sealed class NavigationService(
 				}
 
 				var firstPage = pages.First();
-				var mainPageResult = await GetMainPageAsync(firstPage, pages, animated);
+				var mainPageResult = await BuildRootPageAsync(firstPage, pages, animated);
 				if (mainPageResult.TryGetValue(out var mainPage))
 				{
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -183,8 +183,16 @@ internal sealed class NavigationService(
 			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
+		
+		var navigationPage = currentPage switch
+		{
+			NavigationPage navPage => navPage,
+			TabbedPage tabbedPage => tabbedPage.CurrentPage as NavigationPage,
+			FlyoutPage flyoutPage => flyoutPage.Detail as NavigationPage,
+			_ => null
+		};
 
-		if (currentPage is NavigationPage navigationPage)
+		if (navigationPage is not null)
 		{
 			var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
 			if (isRootPage)
@@ -269,7 +277,7 @@ internal sealed class NavigationService(
 		return Result.Ok();
 	}
 
-	private async Task<Result<Page>> GetMainPageAsync(Page firstPage, Page[] pages, bool animated)
+	private async Task<Result<Page>> BuildRootPageAsync(Page firstPage, Page[] pages, bool animated)
 	{
 		switch (firstPage)
 		{
@@ -352,6 +360,19 @@ internal sealed class NavigationService(
 
 				break;
 			}
+			
+			case FlyoutPage flyoutPage:
+			{
+				var detail = flyoutPage.Detail;
+				if (detail is null)
+				{
+					const string error = "FlyoutPage has no Detail page set.";
+					_logger.LogWarning(error);
+					return Result.Fail(ErrorCode.InvalidState, error);
+				}
+				return await HandleContextualNavigationAsync(detail, newPages, animated);
+			}
+			
 			case NavigationPage navigationPage:
 			{
 				foreach (var page in newPages)
@@ -361,6 +382,7 @@ internal sealed class NavigationService(
 
 				break;
 			}
+			
 			default:
 			{
 				const string error = "Relative navigation is only supported when root page is a NavigationPage.";

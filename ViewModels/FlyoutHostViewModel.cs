@@ -2,10 +2,11 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract class FlyoutHostViewModel : PageViewModel, IFlyoutHost
+public abstract class FlyoutHostViewModel(IFlyoutComponent menu, IFlyoutComponent detail) : PageViewModel, IFlyoutHost
 {
-    public abstract PageViewModel FlyoutViewModel { get; }
-    public abstract PageViewModel DetailViewModel { get; }
+    public IFlyoutComponent MenuViewModel { get; } = menu;
 
-    bool IFlyoutHost.IsPresented { get; set; }
+    public IFlyoutComponent DetailViewModel { get; } = detail;
+
+    public bool IsPresented { get; set; }
 }

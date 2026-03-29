@@ -50,6 +50,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		}
 
 		tabHost.CurrentTab.OnTabSelected();
+		tabHost.CurrentTab.OnTabSelectedAsync();
 		_previousTabIndex = tabIndex;
 	}
 
