@@ -1,10 +1,9 @@
 using System.ComponentModel;
-using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
-public sealed class FlyoutBehavior : Behavior<FlyoutPage>
+public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
 {
     private FlyoutPage? _flyoutPage;
 
