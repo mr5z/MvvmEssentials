@@ -237,6 +237,19 @@ await _navigationService.Absolute(withNavigation: false)
 </details>
 
 <details>
+<summary>FlyoutViewModel</summary>
+
+| Method | When it is called |
+|---|---|
+| `OnFlyoutOpened` | Called every time the flyout is opened |
+| `OnFlyoutOpenedAsync` | Async version of `OnFlyoutOpened` |
+| `OnFlyoutClosed` | Called every time the flyout is closed |
+| `OnFlyoutClosedAsync` | Async version of `OnFlyoutClosed` |
+| `OnDispose` | Called when the parent host's DI scope is disposed |
+
+</details>
+
+<details>
 <summary>PopupViewModel</summary>
 
 Inherits all lifecycle methods from `PageViewModel`.
@@ -247,7 +260,7 @@ Inherits all lifecycle methods from `PageViewModel`.
 
 ## Resource Cleanup (IDisposable)
 
-All ViewModels (`PageViewModel`, `TabViewModel`, `PopupViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope.
+All ViewModels (`PageViewModel`, `TabViewModel`, `FlyoutViewModel`, `PopupViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope.
 
 To clean up resources, override `OnDispose()` in your ViewModel:
 
@@ -276,10 +289,10 @@ public class MyViewModel : PageViewModel
 
 ```cs
 // Tab ViewModels are not mapped to pages. They are bound via XAML.
-// Use RegisterTab to ensure they are registered with the correct lifetime.
+// Use RegisterPage to ensure they are registered with the correct lifetime.
 registry.MapPage<MainPage, MainViewModel>()
-    .RegisterTab<HomeViewModel>()
-    .RegisterTab<SettingsViewModel>();
+    .RegisterPage<HomeViewModel>()
+    .RegisterPage<SettingsViewModel>();
 ```
 
 **2. Define tabs in XAML**
@@ -363,8 +376,98 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 
 ## FlyoutPage
 
+**1. Register ViewModels in DI**
+
 ```cs
-// TODO
+// The FlyoutHostViewModel is mapped like any other page.
+// The flyout menu and initial detail ViewModels are bound via XAML, so use RegisterPage.
+// Pages the user navigates to later are pushed via the navigation service, so use MapPage.
+registry.MapPage<RootPage, RootViewModel>()
+    .RegisterPage<MenuViewModel>()
+    .RegisterPage<HomeViewModel>()
+    .MapPage<SettingsPage, SettingsViewModel>();
+```
+
+**2. Define the FlyoutPage in XAML**
+
+```xaml
+<FlyoutPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:behaviors="clr-namespace:Nkraft.MvvmEssentials.Behaviors;assembly=Nkraft.MvvmEssentials"
+    xmlns:local="clr-namespace:MauiApp1"
+    x:DataType="local:RootViewModel"
+    x:Class="MauiApp1.RootPage">
+
+    <!-- Required for IsPresented to sync with the ViewModel -->
+    <FlyoutPage.Behaviors>
+        <behaviors:FlyoutPresentingBehavior />
+    </FlyoutPage.Behaviors>
+
+    <FlyoutPage.Flyout>
+        <local:MenuPage BindingContext="{Binding MenuViewModel}" Title="Menu" />
+    </FlyoutPage.Flyout>
+
+    <FlyoutPage.Detail>
+        <NavigationPage>
+            <x:Arguments>
+                <local:HomePage BindingContext="{Binding HomeViewModel}" />
+            </x:Arguments>
+        </NavigationPage>
+    </FlyoutPage.Detail>
+
+</FlyoutPage>
+```
+
+**3. Define the flyout host ViewModel**
+
+```cs
+public class RootViewModel(MenuViewModel menuViewModel, HomeViewModel homeViewModel)
+    : FlyoutHostViewModel(menuViewModel, homeViewModel)
+{
+    // Expose concrete types so XAML bindings have full visibility into each ViewModel's properties.
+    public MenuViewModel MenuViewModel { get; } = menuViewModel;
+    public HomeViewModel HomeViewModel { get; } = homeViewModel;
+}
+```
+
+**4. Define the menu ViewModel**
+
+```cs
+public class MenuViewModel : FlyoutViewModel
+{
+    protected override void OnFlyoutOpened()
+    {
+        base.OnFlyoutOpened();
+        Console.WriteLine("Flyout opened");
+    }
+
+    protected override void OnFlyoutClosed()
+    {
+        base.OnFlyoutClosed();
+        Console.WriteLine("Flyout closed");
+    }
+}
+```
+
+**5. Navigate between detail pages from the menu**
+
+```cs
+public class MenuViewModel(INavigationService navigationService) : FlyoutViewModel
+{
+    [RelayCommand]
+    private async Task GoToSettings()
+    {
+        await navigationService.NavigateAsync<SettingsViewModel>();
+    }
+}
+```
+
+**6. Toggle the flyout programmatically**
+
+```cs
+// From the host ViewModel, e.g. bound to a hamburger toolbar button
+IsPresented = !IsPresented;
 ```
 
 ---
