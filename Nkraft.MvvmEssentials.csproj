@@ -10,16 +10,16 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.2.0</AssemblyVersion>
-    <FileVersion>1.2.0</FileVersion>
-    <Version>1.2.0</Version>
+    <AssemblyVersion>1.3.0</AssemblyVersion>
+    <FileVersion>1.3.0</FileVersion>
+    <Version>1.3.0</Version>
     <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>Make ViewModel disposable and other improvements</PackageReleaseNotes>
+    <PackageReleaseNotes>Flyout support and other improvements</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 

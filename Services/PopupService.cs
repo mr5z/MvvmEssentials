@@ -124,6 +124,8 @@ internal sealed class PopupService : IPopupService
 		try
 		{
 			await _popupNavigation.PopAllAsync(animated);
+			// TODO figure out if this is really needed
+			_activePopups.Clear();
 			return Result.Ok();
 		}
 		catch (Exception ex)

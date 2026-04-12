@@ -1,4 +1,5 @@
-﻿using Mopups.Services;
+﻿using Mopups.Interfaces;
+using Mopups.Services;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
@@ -15,7 +16,8 @@ internal static class NavigationServiceCollectionExtension
 
 		// TODO move to different extension
 		services.AddSingleton<IPopupService, PopupService>();
-		services.AddSingleton(MopupService.Instance);
+		services.AddSingleton<IPopupNavigation>(_ => MopupService.Instance);
+		services.AddSingleton<IApplication>(_ => Application.Current!);
 		
 		services.AddSingleton<AppStartupWindowHook>();
 	}

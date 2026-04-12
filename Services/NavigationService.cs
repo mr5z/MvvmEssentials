@@ -89,18 +89,19 @@ public interface INavigationService
 
 internal sealed class NavigationService(
 	ILogger<NavigationService> logger,
-	IPageFactory pageFactory) : INavigationService
+	IPageFactory pageFactory,
+	IApplication application) : INavigationService
 {
 	private readonly ILogger<NavigationService> _logger = logger;
 	private readonly IPageFactory _pageFactory = pageFactory;
+	private readonly IApplication _application = application;
 
 	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
 	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
 	{
-		var currentApp = Application.Current;
-		if (currentApp is null)
+		if (_application is not Application currentApp)
 		{
-			const string error = "Application.Current is null.";
+			const string error = "Current application instance is null.";
 			_logger.LogWarning(error);
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
@@ -402,10 +403,9 @@ internal sealed class NavigationService(
 		}
 	}
 
-	private static bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
+	private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
 	{
-		var currentApp = Application.Current;
-		if (currentApp is null)
+		if (_application is not Application currentApp)
 		{
 			page = null;
 			return false;
