@@ -28,7 +28,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		}
 	}
 
-	private void TabbedPage_CurrentPageChanged(object? sender, EventArgs e)
+	private async void TabbedPage_CurrentPageChanged(object? sender, EventArgs e)
 	{
 		if (sender is not TabbedPage tabbedPage)
 			return;
@@ -46,11 +46,11 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		{
 			var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
 			previousTab.OnTabUnselected();
-			previousTab.OnTabUnselectedAsync();
+			await previousTab.OnTabUnselectedAsync();
 		}
 
 		tabHost.CurrentTab.OnTabSelected();
-		tabHost.CurrentTab.OnTabSelectedAsync();
+		await tabHost.CurrentTab.OnTabSelectedAsync();
 		_previousTabIndex = tabIndex;
 	}
 

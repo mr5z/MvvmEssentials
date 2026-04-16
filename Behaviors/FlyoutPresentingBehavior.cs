@@ -27,7 +27,7 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         }
     }
 
-    private static void FlyoutPage_IsPresentedChanged(object? sender, EventArgs e)
+    private static async void FlyoutPage_IsPresentedChanged(object? sender, EventArgs e)
     {
         if (sender is not FlyoutPage flyoutPage)
             return;
@@ -44,7 +44,7 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             foreach (var component in components)
             {
                 component.OnFlyoutOpened();
-                component.OnFlyoutOpenedAsync();
+                await component.OnFlyoutOpenedAsync();
             }
         }
         else
@@ -52,7 +52,7 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             foreach (var component in components)
             {
                 component.OnFlyoutClosed();
-                component.OnFlyoutClosedAsync();
+                await component.OnFlyoutClosedAsync();
             }
         }
     }

@@ -178,7 +178,7 @@ internal class PageFactory(
 		}
 	}
 
-	private void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
+	private static void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
@@ -189,7 +189,7 @@ internal class PageFactory(
 		}
 	}
 
-	private void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
+	private static void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
