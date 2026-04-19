@@ -16,8 +16,8 @@ internal static class NavigationServiceCollectionExtension
 
 		// TODO move to different extension
 		services.AddSingleton<IPopupService, PopupService>();
+		services.AddSingleton<IApplicationContext, ApplicationContext>();
 		services.AddSingleton<IPopupNavigation>(_ => MopupService.Instance);
-		services.AddSingleton<IApplication>(_ => Application.Current!);
 		
 		services.AddSingleton<AppStartupWindowHook>();
 	}

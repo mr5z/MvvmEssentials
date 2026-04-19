@@ -90,22 +90,15 @@ public interface INavigationService
 internal sealed class NavigationService(
 	ILogger<NavigationService> logger,
 	IPageFactory pageFactory,
-	IApplication application) : INavigationService
+	IApplicationContext applicationContext) : INavigationService
 {
 	private readonly ILogger<NavigationService> _logger = logger;
 	private readonly IPageFactory _pageFactory = pageFactory;
-	private readonly IApplication _application = application;
+	private readonly IApplicationContext _applicationContext = applicationContext;
 
 	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
 	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
 	{
-		if (_application is not Application currentApp)
-		{
-			const string error = "Current application instance is null.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.InvalidState, error);
-		}
-
 		PageInfo[] pageInfoList;
 
 		try
@@ -145,9 +138,7 @@ internal sealed class NavigationService(
 				var mainPageResult = await BuildRootPageAsync(firstPage, pages, animated);
 				if (mainPageResult.TryGetValue(out var mainPage))
 				{
-#pragma warning disable CS0618 // Type or member is obsolete
-					currentApp.MainPage = mainPage;
-#pragma warning restore CS0618 // Type or member is obsolete
+					_applicationContext.MainPage = mainPage;
 				}
 				else
 				{
@@ -156,7 +147,7 @@ internal sealed class NavigationService(
 			}
 			else
 			{
-				var currentPage = currentApp.Windows[0].Page;
+				var currentPage = _applicationContext.MainPage;
 				if (currentPage is null)
 				{
 					const string error = "Current page is null.";
@@ -405,13 +396,7 @@ internal sealed class NavigationService(
 
 	private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
 	{
-		if (_application is not Application currentApp)
-		{
-			page = null;
-			return false;
-		}
-
-		if (currentApp.Windows.Count > 0 && currentApp.Windows[0].Page is { } currentPage)
+		if (_applicationContext.Windows.Count > 0 && _applicationContext.Windows[0].Page is { } currentPage)
 		{
 			page = currentPage;
 			return true;
