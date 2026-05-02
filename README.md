@@ -291,6 +291,10 @@ public class MyViewModel : PageViewModel
 registry.MapPage<MainPage, MainViewModel>()
     .RegisterPage<HomeViewModel>()
     .RegisterPage<SettingsViewModel>();
+
+// RegisterPage() is literally equivalent to:
+builder.Services.AddScoped<HomeViewModel>();
+builder.Services.AddScoped<SettingsViewModel>();
 ```
 
 **2. Define tabs in XAML**
