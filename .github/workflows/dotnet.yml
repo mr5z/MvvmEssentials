@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
 
@@ -22,7 +21,10 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore Nkraft.MvvmEssentials.csproj
+      run: dotnet restore Source/Nkraft.MvvmEssentials.csproj
 
     - name: Build
-      run: dotnet build Nkraft.MvvmEssentials.csproj --no-restore --configuration Release
+      run: dotnet build Source/Nkraft.MvvmEssentials.csproj --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test Tests/Nkraft.MvvmEssentials.UnitTest.csproj --no-restore --configuration Release
