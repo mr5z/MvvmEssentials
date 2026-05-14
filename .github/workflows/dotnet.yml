@@ -21,10 +21,10 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore Source/Nkraft.MvvmEssentials.csproj
+      run: dotnet restore MvvmEssentials.sln
 
     - name: Build
-      run: dotnet build Source/Nkraft.MvvmEssentials.csproj --no-restore --configuration Release
+      run: dotnet build MvvmEssentials.sln --no-restore --configuration Release
 
     - name: Test
-      run: dotnet test Tests/Nkraft.MvvmEssentials.UnitTest.csproj --no-restore --configuration Release
+      run: dotnet test MvvmEssentials.sln --no-restore --configuration Release --logger "console;verbosity=detailed"
