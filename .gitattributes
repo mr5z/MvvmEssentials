@@ -1,0 +1,9 @@
+* text=auto
+*.cs text eol=lf
+*.md text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+*.xaml text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.targets text eol=lf

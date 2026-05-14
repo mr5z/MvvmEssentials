@@ -34,7 +34,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <None Include="Nkraft.MvvmEssentials.targets"
+    <None Include="..\Nkraft.MvvmEssentials.targets"
           Pack="true"
           PackagePath="buildTransitive/Nkraft.MvvmEssentials.targets" />
     <None Include="SourceGenerator\bin\$(Configuration)\netstandard2.0\Nkraft.MvvmEssentials.SourceGenerator.dll"
@@ -44,11 +44,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="LICENSE" Link="LICENSE">
+    <None Include="..\LICENSE" Link="LICENSE">
       <Pack>True</Pack>
       <PackagePath />
     </None>
-    <None Include="README.md" Link="README.md">
+    <None Include="..\README.md" Link="README.md">
       <Pack>True</Pack>
       <PackagePath />
     </None>
@@ -71,7 +71,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
+    <ProjectReference Include="..\..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
     <ProjectReference Include="SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />

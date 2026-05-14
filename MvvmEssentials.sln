@@ -2,11 +2,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials", "Nkraft.MvvmEssentials.csproj", "{A8540844-176C-2E4B-D027-1EFDE58CE741}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials", "Source\Nkraft.MvvmEssentials.csproj", "{A8540844-176C-2E4B-D027-1EFDE58CE741}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials.SourceGenerator", "SourceGenerator/Nkraft.MvvmEssentials.SourceGenerator.csproj", "{21569D2C-68F5-46BA-8C94-D4D4C0E0D6E3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials.SourceGenerator", "Source\SourceGenerator/Nkraft.MvvmEssentials.SourceGenerator.csproj", "{21569D2C-68F5-46BA-8C94-D4D4C0E0D6E3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.CrossUtility", "..\CrossUtility\src\Nkraft.CrossUtility.csproj", "{54C687C9-1DA8-43CA-97FE-EF3975393935}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials.UnitTest", "Tests\Nkraft.MvvmEssentials.UnitTest.csproj", "{E4346076-4B31-4966-BDF1-7653B584296F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +28,10 @@ Global
 		{54C687C9-1DA8-43CA-97FE-EF3975393935}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54C687C9-1DA8-43CA-97FE-EF3975393935}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54C687C9-1DA8-43CA-97FE-EF3975393935}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4346076-4B31-4966-BDF1-7653B584296F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4346076-4B31-4966-BDF1-7653B584296F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4346076-4B31-4966-BDF1-7653B584296F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4346076-4B31-4966-BDF1-7653B584296F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
