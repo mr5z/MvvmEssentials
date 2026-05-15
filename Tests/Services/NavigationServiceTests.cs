@@ -5,7 +5,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 
-namespace Nkraft.MvvmEssentials.UnitTest.Services.Navigation;
+namespace Nkraft.MvvmEssentials.UnitTest.Services;
 
 [TestFixture]
 public class NavigationServiceTests
