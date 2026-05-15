@@ -143,6 +143,28 @@ internal class PropertiedViewModel : NavigableEntryViewModel
 }
 
 // ---------------------------------------------------------------------------
+// Page + ViewModel pair for full parameter-mapping pipeline tests.
+// MappableViewModel tracks OnParametersSet and exposes mapped properties.
+// ---------------------------------------------------------------------------
+
+internal class MappablePage : Page { }
+
+internal class MappableViewModel : PageViewModel
+{
+    public string? Name { get; set; }
+    public int Age { get; set; }
+    public int? NullableAge { get; set; }
+    public int OnParametersSetCount { get; private set; }
+    public INavigationParameters? LastParameters { get; private set; }
+
+    protected override void OnParametersSet(INavigationParameters parameters)
+    {
+        OnParametersSetCount++;
+        LastParameters = parameters;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // TabHostViewModel stub that exposes a single controllable tab
 // ---------------------------------------------------------------------------
 
