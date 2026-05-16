@@ -101,7 +101,7 @@ internal class TrackableTabViewModel : TabViewModel
 // Trackable FlyoutViewModel
 // ---------------------------------------------------------------------------
 
-internal class TrackableFlyoutViewModel : FlyoutViewModel
+internal class TrackableFlyoutMenuViewModel : FlyoutMenuViewModel
 {
     public int OpenedCount { get; private set; }
     public int OpenedAsyncCount { get; private set; }

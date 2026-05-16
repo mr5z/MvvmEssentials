@@ -5,12 +5,12 @@ using NUnit.Framework;
 namespace Nkraft.MvvmEssentials.UnitTest.ViewModels;
 
 [TestFixture]
-public class FlyoutViewModelTests
+public class FlyoutMenuViewModelTests
 {
-    private TrackableFlyoutViewModel _sut = null!;
+    private TrackableFlyoutMenuViewModel _sut = null!;
 
     [SetUp]
-    public void SetUp() => _sut = new TrackableFlyoutViewModel();
+    public void SetUp() => _sut = new TrackableFlyoutMenuViewModel();
 
     private void TriggerOpened() => ((IFlyoutComponent)_sut).OnFlyoutOpened();
     private void TriggerClosed() => ((IFlyoutComponent)_sut).OnFlyoutClosed();

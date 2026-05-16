@@ -2,7 +2,7 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract class FlyoutViewModel : BaseViewModel, IFlyoutComponent, IDisposable
+public abstract class FlyoutMenuViewModel : BaseViewModel, IFlyoutComponent, IDisposable
 {
     protected virtual void OnFlyoutOpened() { }
 

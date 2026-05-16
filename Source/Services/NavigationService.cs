@@ -271,51 +271,33 @@ internal sealed class NavigationService(
 
 	private async Task<Result<Page>> BuildRootPageAsync(Page firstPage, Page[] pages, bool animated)
 	{
-		switch (firstPage)
+		// If there's only one page or no pages to push, just return as-is
+		if (pages.Length <= 1)
 		{
-			case TabbedPage { CurrentPage: NavigationPage tabNavigationPage } tabbedPage:
-			{
-				await PushPagesAsync(tabNavigationPage, pages.Skip(1), animated);
-				return Result.Ok<Page>(tabbedPage);
-			}
-			case TabbedPage:
-			{
-				const string error = "Absolute navigation within a TabbedPage is only supported when the current tab is wrapped in NavigationPage.";
-				_logger.LogWarning(error);
-				return Result.Fail<Page>(ErrorCode.NotSupported, error);
-			}
-			case FlyoutPage { Detail: NavigationPage detailNavigationPage } flyoutPage:
-			{
-				await PushPagesAsync(detailNavigationPage, pages.Skip(1), animated);
-				return Result.Ok<Page>(flyoutPage);
-			}
-			case FlyoutPage:
-			{
-				const string error = "Absolute navigation within a FlyoutPage is only supported when Detail is wrapped in NavigationPage.";
-				_logger.LogWarning(error);
-				return Result.Fail<Page>(ErrorCode.NotSupported, error);
-			}
-			default:
-			{
-				if (firstPage is NavigationPage navigationPage)
-				{
-					await PushPagesAsync(navigationPage, pages.Skip(1), animated);
-					return Result.Ok<Page>(navigationPage);
-				}
-
-				if (pages.Length > 1)
-				{
-					navigationPage = new NavigationPage(firstPage);
-					foreach (var page in pages.Skip(1))
-					{
-						await navigationPage.PushAsync(page, animated);
-					}
-					return Result.Ok<Page>(navigationPage);
-				}
-
-				return Result.Ok(firstPage);
-			}
+			return Result.Ok(firstPage);
 		}
+
+		var navigationPage = FindNavigationPage(firstPage);
+		if (navigationPage is not null)
+		{
+			await PushPagesAsync(navigationPage, pages.Skip(1), animated);
+			return Result.Ok(firstPage);
+		}
+
+		const string error = "No NavigationPage found in the page hierarchy and multiple pages were requested.";
+		_logger.LogWarning(error);
+		return Result.Fail<Page>(ErrorCode.NotSupported, error);
+	}
+
+	private static NavigationPage? FindNavigationPage(Page page)
+	{
+		return page switch
+		{
+			NavigationPage navPage => navPage,
+			FlyoutPage flyoutPage => FindNavigationPage(flyoutPage.Detail),
+			TabbedPage { CurrentPage: not null } tabbedPage => FindNavigationPage(tabbedPage.CurrentPage),
+			_ => null
+		};
 	}
 
 	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, IEnumerable<Page> newPages, bool animated)
