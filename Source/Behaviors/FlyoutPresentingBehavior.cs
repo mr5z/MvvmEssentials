@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.ViewModels;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
@@ -13,6 +14,8 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         _flyoutPage = bindable;
         bindable.BindingContextChanged += FlyoutPage_BindingContextChanged;
         bindable.IsPresentedChanged += FlyoutPage_IsPresentedChanged;
+        
+        SetupFlyoutHost(bindable);
     }
 
     protected override void OnDetachingFrom(FlyoutPage bindable)
@@ -24,6 +27,17 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         if (bindable.BindingContext is INotifyPropertyChanged notifiable)
         {
             notifiable.PropertyChanged -= ViewModel_PropertyChanged;
+        }
+    }
+    
+    private static void SetupFlyoutHost(FlyoutPage flyoutPage)
+    {
+        if (flyoutPage.BindingContext is not IFlyoutHost flyoutHost)
+            return;
+            
+        if (flyoutHost.MenuViewModel is FlyoutMenuViewModel menu)
+        {
+            menu.SetFlyoutHost(flyoutHost);
         }
     }
 
@@ -61,6 +75,11 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
     {
         if (sender is not BindableObject bindable)
             return;
+        
+        if (sender is FlyoutPage flyoutPage)
+        {
+            SetupFlyoutHost(flyoutPage);
+        }
 
         if (bindable.BindingContext is INotifyPropertyChanged notifiable)
         {

@@ -4,6 +4,19 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 
 public abstract class FlyoutMenuViewModel : BaseViewModel, IFlyoutComponent, IDisposable
 {
+    private IFlyoutHost? _flyoutHost;
+    
+    internal void SetFlyoutHost(IFlyoutHost flyoutHost)
+    {
+        _flyoutHost = flyoutHost;
+    }
+    
+    protected bool IsPresented
+    {
+        get => _flyoutHost?.IsPresented ?? false;
+        set => _flyoutHost?.IsPresented = value;
+    }
+    
     protected virtual void OnFlyoutOpened() { }
 
     protected virtual Task OnFlyoutOpenedAsync() => Task.CompletedTask;
