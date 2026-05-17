@@ -7,4 +7,10 @@ internal static class PageHelper
         const string knownViewModelPattern = "ViewModel";
         return typeof(TViewModel).Name.Replace(knownViewModelPattern, pagePattern);
     }
+    
+    internal static string ToViewModelName(Type pageType)
+    {
+        const string knownPagePattern = "Page";
+        return pageType.Name.Replace(knownPagePattern, "ViewModel");
+    }
 }

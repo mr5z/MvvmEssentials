@@ -1,5 +1,3 @@
-using Nkraft.MvvmEssentials.ViewModels;
-
 namespace Nkraft.MvvmEssentials.Services.Navigation;
 
 internal interface IFlyoutHost

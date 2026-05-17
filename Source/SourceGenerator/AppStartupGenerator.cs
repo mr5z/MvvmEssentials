@@ -144,15 +144,10 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
             using Nkraft.MvvmEssentials.Services;
 
             namespace Nkraft.MvvmEssentials;
-
-            internal sealed class GeneratedAppStartup : IAppStartup
+            
+            internal sealed class GeneratedAppStartup(INavigationService navigationService) : IAppStartup
             {
-                private readonly INavigationService _navigationService;
-
-                public GeneratedAppStartup(INavigationService navigationService)
-                {
-                    _navigationService = navigationService;
-                }
+                private readonly INavigationService _navigationService = navigationService;
 
                 public async Task OnInitializedAsync()
                 {

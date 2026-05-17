@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Helpers;
+using Nkraft.MvvmEssentials.Services.Handlers;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Services;
@@ -95,6 +97,8 @@ internal sealed class NavigationService(
 	private readonly ILogger<NavigationService> _logger = logger;
 	private readonly IPageFactory _pageFactory = pageFactory;
 	private readonly IApplicationContext _applicationContext = applicationContext;
+	// Track original Detail pages per FlyoutPage because MAUI made it so complicated.
+	private readonly Dictionary<FlyoutPage, Page> _originalDetails = [];
 
 	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
 	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
@@ -223,14 +227,7 @@ internal sealed class NavigationService(
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
-		var navigationPage = currentPage switch
-		{
-			NavigationPage navPage => navPage,
-			TabbedPage tabbedPage => tabbedPage.CurrentPage as NavigationPage,
-			FlyoutPage flyoutPage => flyoutPage.Detail as NavigationPage,
-			_ => null
-		};
-
+		var navigationPage = FindNavigationPage(currentPage);
 		if (navigationPage is null)
 		{
 			const string error = "Root navigation is only supported within NavigationPage.";
@@ -299,73 +296,27 @@ internal sealed class NavigationService(
 			_ => null
 		};
 	}
-
-	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, IEnumerable<Page> newPages, bool animated)
+	
+	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, Page[] newPages, bool animated)
 	{
-		switch (currentPage)
+		var handlers = new IPageNavigationHandler[]
 		{
-			case TabbedPage tabbedPage:
-			{
-				var currentTab = tabbedPage.CurrentPage;
-				switch (currentTab)
-				{
-					case NavigationPage tabNavigationPage:
-					{
-						foreach (var page in newPages)
-						{
-							await tabNavigationPage.PushAsync(page, animated);
-						}
+			new NavigationPageHandler(),
+			new TabbedPageHandler(_logger),
+			new FlyoutPageHandler(_logger, _originalDetails, HandleContextualNavigationAsync),
+			new UnsupportedPageHandler(_logger)
+		};
 
-						break;
-					}
-					case null:
-					{
-						const string error = "No current tab found in the TabbedPage.";
-						_logger.LogWarning(error);
-						return Result.Fail(ErrorCode.InvalidState, error);
-					}
-					default:
-					{
-						const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
-						_logger.LogWarning(error);
-						return Result.Fail(ErrorCode.NotSupported, error);
-					}
-				}
-
-				break;
-			}
-			
-			case FlyoutPage flyoutPage:
+		foreach (var handler in handlers)
+		{
+			if (handler.CanHandle(currentPage))
 			{
-				var detail = flyoutPage.Detail;
-				if (detail is null)
-				{
-					const string error = "FlyoutPage has no Detail page set.";
-					_logger.LogWarning(error);
-					return Result.Fail(ErrorCode.InvalidState, error);
-				}
-				return await HandleContextualNavigationAsync(detail, newPages, animated);
-			}
-			
-			case NavigationPage navigationPage:
-			{
-				foreach (var page in newPages)
-				{
-					await navigationPage.PushAsync(page, animated);
-				}
-
-				break;
-			}
-			
-			default:
-			{
-				const string error = "Relative navigation is only supported when root page is a NavigationPage.";
-				_logger.LogWarning(error);
-				return Result.Fail(ErrorCode.NotSupported, error);
+				return await handler.HandleAsync(currentPage!, newPages, animated);
 			}
 		}
 
-		return Result.Ok();
+		// Should never reach here due to UnsupportedPageHandler catch-all
+		return Result.Fail(ErrorCode.NotSupported, "No handler found for current page.");
 	}
 
 	private static async Task PushPagesAsync(NavigationPage navigationPage, IEnumerable<Page> newPages, bool animated)
