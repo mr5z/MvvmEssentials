@@ -8,7 +8,7 @@ Lightweight MVVM utility library for .NET MAUI. It simplifies navigation, tab ha
 
 # Setup
 
-Quick test using this [test project](https://github.com/mr5z/MauiTest1), or just follow the instructions below.
+Quick test using this [Food Delivery app](https://github.com/mr5z/ShowCase-FoodDelivery), or just follow the instructions below.
 
 ## 1. Configure in `MauiProgram.cs`
 
