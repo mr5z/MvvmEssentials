@@ -10,8 +10,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.CrossUtility", "..\C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nkraft.MvvmEssentials.UnitTest", "Tests\Nkraft.MvvmEssentials.UnitTest.csproj", "{E4346076-4B31-4966-BDF1-7653B584296F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodDelivery", "..\FoodDelivery\FoodDelivery\FoodDelivery.csproj", "{B15EF276-EB63-47E9-8176-C6DC49AADEC9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +32,6 @@ Global
 		{E4346076-4B31-4966-BDF1-7653B584296F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4346076-4B31-4966-BDF1-7653B584296F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4346076-4B31-4966-BDF1-7653B584296F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B15EF276-EB63-47E9-8176-C6DC49AADEC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B15EF276-EB63-47E9-8176-C6DC49AADEC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B15EF276-EB63-47E9-8176-C6DC49AADEC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B15EF276-EB63-47E9-8176-C6DC49AADEC9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
