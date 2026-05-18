@@ -14,9 +14,9 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         _flyoutPage = bindable;
         _wasPresented = bindable.IsPresented;
         
-        bindable.Appearing += OnFlyoutPageAppearing;
-        bindable.Disappearing += OnFlyoutPageDisappearing;
-        bindable.PropertyChanged += OnFlyoutPagePropertyChanged;
+        bindable.Appearing += FlyoutPage_Appearing;
+        bindable.Disappearing += FlyoutPage_Disappearing;
+        bindable.PropertyChanged += FlyoutPage_PropertyChanged;
         
         if (bindable.Detail is not null)
         {
@@ -28,14 +28,14 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     {
         base.OnDetachingFrom(bindable);
         
-        bindable.Appearing -= OnFlyoutPageAppearing;
-        bindable.Disappearing -= OnFlyoutPageDisappearing;
-        bindable.PropertyChanged -= OnFlyoutPagePropertyChanged;
+        bindable.Appearing -= FlyoutPage_Appearing;
+        bindable.Disappearing -= FlyoutPage_Disappearing;
+        bindable.PropertyChanged -= FlyoutPage_PropertyChanged;
         
         _flyoutPage = null;
     }
 
-    private void OnFlyoutPageAppearing(object? sender, EventArgs e)
+    private void FlyoutPage_Appearing(object? sender, EventArgs e)
     {
         if (_flyoutPage?.Detail is { } detailPage)
         {
@@ -43,7 +43,7 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         }
     }
 
-    private void OnFlyoutPageDisappearing(object? sender, EventArgs e)
+    private void FlyoutPage_Disappearing(object? sender, EventArgs e)
     {
         if (_flyoutPage?.Detail is { } detailPage)
         {
@@ -51,7 +51,7 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         }
     }
 
-    private void OnFlyoutPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void FlyoutPage_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (sender is not FlyoutPage flyoutPage)
             return;
