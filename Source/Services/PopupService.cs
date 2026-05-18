@@ -24,7 +24,10 @@ internal sealed class PopupService : IPopupService
 
 	private readonly OrderedDictionary<string, WeakReference<PopupPage>> _activePopups = [];
 
-	public PopupService(ILogger<PopupService> logger, IPopupNavigation popupNavigation, IPageFactory pageFactory)
+	public PopupService(
+		ILogger<PopupService> logger, 
+		IPopupNavigation popupNavigation,
+		IPageFactory pageFactory)
 	{
 		_logger = logger;
 		_popupNavigation = popupNavigation;

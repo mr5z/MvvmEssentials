@@ -97,8 +97,6 @@ internal sealed class NavigationService(
 	private readonly ILogger<NavigationService> _logger = logger;
 	private readonly IPageFactory _pageFactory = pageFactory;
 	private readonly IApplicationContext _applicationContext = applicationContext;
-	// Track original Detail pages per FlyoutPage because MAUI made it so complicated.
-	private readonly Dictionary<FlyoutPage, Page> _originalDetails = [];
 
 	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
 	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
@@ -227,7 +225,7 @@ internal sealed class NavigationService(
 			return Result.Fail(ErrorCode.InvalidState, error);
 		}
 
-		var navigationPage = FindNavigationPage(currentPage);
+		var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
 		if (navigationPage is null)
 		{
 			const string error = "Root navigation is only supported within NavigationPage.";
@@ -274,7 +272,7 @@ internal sealed class NavigationService(
 			return Result.Ok(firstPage);
 		}
 
-		var navigationPage = FindNavigationPage(firstPage);
+		var navigationPage = NavigationHelper.FindNavigationPage(firstPage);
 		if (navigationPage is not null)
 		{
 			await PushPagesAsync(navigationPage, pages.Skip(1), animated);
@@ -285,25 +283,14 @@ internal sealed class NavigationService(
 		_logger.LogWarning(error);
 		return Result.Fail<Page>(ErrorCode.NotSupported, error);
 	}
-
-	private static NavigationPage? FindNavigationPage(Page page)
-	{
-		return page switch
-		{
-			NavigationPage navPage => navPage,
-			FlyoutPage flyoutPage => FindNavigationPage(flyoutPage.Detail),
-			TabbedPage { CurrentPage: not null } tabbedPage => FindNavigationPage(tabbedPage.CurrentPage),
-			_ => null
-		};
-	}
 	
 	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, Page[] newPages, bool animated)
 	{
 		var handlers = new IPageNavigationHandler[]
 		{
-			new NavigationPageHandler(),
+			new NavigationPageHandler(_logger),
 			new TabbedPageHandler(_logger),
-			new FlyoutPageHandler(_logger, _originalDetails, HandleContextualNavigationAsync),
+			new FlyoutPageHandler(_logger, HandleContextualNavigationAsync),
 			new UnsupportedPageHandler(_logger)
 		};
 
