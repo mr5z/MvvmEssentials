@@ -6,6 +6,8 @@ namespace Nkraft.MvvmEssentials.Services.Navigation;
 public interface INavigationParameters : IEnumerable<KeyValuePair<string, object?>>
 {
 	bool IsEmpty { get; }
+	
+	object? this[string key] { get; set; }
 
 	void Add(string key, object? value);
 
@@ -51,4 +53,10 @@ public sealed class NavigationParameters : INavigationParameters
 
 	// <= in case of solar flare
 	bool INavigationParameters.IsEmpty => _parameters.Count <= 0;
+
+	public object? this[string key]
+	{
+		get => _parameters[key];
+		set => _parameters[key] = value;
+	}
 }

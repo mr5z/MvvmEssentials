@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Services.Handlers;
 
@@ -9,7 +10,7 @@ internal class NavigationPageHandler(ILogger logger) : IPageNavigationHandler
 
     public bool CanHandle(Page? page) => page is NavigationPage;
 
-    public async Task<IResult> HandleAsync(Page page, Page[] newPages, bool animated)
+    public async Task<IResult> HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var navigationPage = (NavigationPage)page;
         

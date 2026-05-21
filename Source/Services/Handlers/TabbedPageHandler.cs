@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Services.Handlers;
 
@@ -9,11 +10,33 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
 
     public bool CanHandle(Page? page) => page is TabbedPage;
 
-    public async Task<IResult> HandleAsync(Page page, Page[] newPages, bool animated)
+    public async Task<IResult> HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var tabbedPage = (TabbedPage)page;
-        var currentTab = tabbedPage.CurrentPage;
+        
+        var isExplicitTabSwitch = parameters?.ContainsKey(NavigationHints.IsTabbedPageSwitch) == true;
+        if (isExplicitTabSwitch)
+        {
+            var targetVmType = newPages.First().BindingContext?.GetType();
+        
+            // Find the matching tab
+            var targetTab = tabbedPage.Children.FirstOrDefault(c => 
+            {
+                var actualPage = c is NavigationPage navPage ? navPage.RootPage : c;
+                return actualPage?.BindingContext?.GetType() == targetVmType;
+            });
 
+            if (targetTab is not null)
+            {
+                tabbedPage.CurrentPage = targetTab;
+                return Result.Ok();
+            }
+
+            const string error = "Attempted to switch to tab '{TargetVm}', but it is not registered in the TabbedPage.";
+            _logger.LogWarning(error, targetVmType?.Name);
+        }
+
+        var currentTab = tabbedPage.CurrentPage;
         if (currentTab is not NavigationPage tabNavigationPage)
         {
             if (currentTab is null)

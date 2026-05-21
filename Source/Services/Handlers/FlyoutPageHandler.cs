@@ -7,17 +7,17 @@ namespace Nkraft.MvvmEssentials.Services.Handlers;
 
 internal class FlyoutPageHandler(
     ILogger logger,
-    Func<Page?, Page[], bool, Task<IResult>> recursiveNavigationHandler) : IPageNavigationHandler
+    Func<Page?, Page[], INavigationParameters?, bool, Task<IResult>> recursiveNavigationHandler) : IPageNavigationHandler
 {
     private readonly ILogger _logger = logger;
-    private readonly Func<Page?, Page[], bool, Task<IResult>> _recursiveNavigationHandler = recursiveNavigationHandler;
+    private readonly Func<Page?, Page[], INavigationParameters?, bool, Task<IResult>> _recursiveNavigationHandler = recursiveNavigationHandler;
     
     // Track original Detail pages per FlyoutPage because MAUI made it so complicated.
     private static readonly Dictionary<FlyoutPage, Page> OriginalDetails = [];
 
     public bool CanHandle(Page? page) => page is FlyoutPage;
 
-    public async Task<IResult> HandleAsync(Page page, Page[] newPages, bool animated)
+    public async Task<IResult> HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var flyoutPage = (FlyoutPage)page;
         var detail = flyoutPage.Detail;
@@ -29,7 +29,9 @@ internal class FlyoutPageHandler(
             return Result.Fail(ErrorCode.InvalidState, error);
         }
 
-        if (flyoutPage.IsPresented)
+        var isFlyoutInSplitViewMode = IsFlyoutInSplitViewMode(flyoutPage);
+        var isFlyoutDetailRootRequest = parameters?.ContainsKey(NavigationHints.IsFlyoutDetailRoot) == true;
+        if (isFlyoutInSplitViewMode && isFlyoutDetailRootRequest)
         {
             return await HandleFlyoutMenuNavigation(flyoutPage, detail, newPages);
         }
@@ -42,7 +44,7 @@ internal class FlyoutPageHandler(
             return Result.Fail(ErrorCode.NotSupported, error);
         }
 
-        return await _recursiveNavigationHandler(detail, newPages, animated);
+        return await _recursiveNavigationHandler(detail, newPages, parameters, animated);
     }
 
     private static async Task<IResult> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
@@ -80,6 +82,7 @@ internal class FlyoutPageHandler(
             navPage = new NavigationPage(pageToWrap);
             flyoutPage.Detail = navPage;
         }
+        
         // Push remaining pages if any
         foreach (var nextPage in newPages.Skip(1))
         {
@@ -87,5 +90,19 @@ internal class FlyoutPageHandler(
         }
 
         return Result.Ok();
+    }
+    
+    private static bool IsFlyoutInSplitViewMode(FlyoutPage flyoutPage)
+    {
+        var behavior = flyoutPage.FlyoutLayoutBehavior;
+    
+        // Explicitly set to Split
+        if (behavior == FlyoutLayoutBehavior.Split)
+            return true;
+
+        // For Default behavior, check if flyout is visible while IsPresented is false
+        // In split mode, both panes are always visible
+        // In overlay mode, flyout is only visible when IsPresented is true
+        return flyoutPage is { IsPresented: false, Flyout.IsVisible: true };
     }
 }

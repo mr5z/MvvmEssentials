@@ -1,7 +1,8 @@
 ﻿using Nkraft.MvvmEssentials.Services.Navigation;
 using System.Reflection;
 
-namespace Nkraft.MvvmEssentials.Extensions;
+// ReSharper disable once CheckNamespace
+namespace Nkraft.MvvmEssentials;
 
 public static class MauiAppBuilderExtension
 {

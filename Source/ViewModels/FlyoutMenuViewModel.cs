@@ -1,3 +1,5 @@
+using Nkraft.MvvmEssentials.Helpers;
+using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
@@ -15,6 +17,22 @@ public abstract class FlyoutMenuViewModel : BaseViewModel, IFlyoutComponent, IDi
     {
         get => _flyoutHost?.IsPresented ?? false;
         set => _flyoutHost?.IsPresented = value;
+    }
+    
+    protected async Task ReplaceDetailAsync<TViewModel>(
+        INavigationService navigationService, 
+        INavigationParameters? parameters = null, 
+        bool animated = true) 
+        where TViewModel : PageViewModel
+    {
+        var navParams = parameters ?? new NavigationParameters();
+        
+        navParams[NavigationHints.IsFlyoutDetailRoot] = true;
+
+        var pageName = PageHelper.ToPageName<TViewModel>("Page");
+        await navigationService.NavigateAsync(pageName, navParams, animated);
+
+        IsPresented = false;
     }
     
     protected virtual void OnFlyoutOpened() { }

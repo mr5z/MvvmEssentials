@@ -5,7 +5,8 @@ using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.ViewModels;
 
-namespace Nkraft.MvvmEssentials.Extensions;
+// ReSharper disable once CheckNamespace
+namespace Nkraft.MvvmEssentials;
 
 public static class NavigationExtension
 {
@@ -63,6 +64,22 @@ public static class NavigationExtension
 		{
 			var rootPage = withNavigation ? nameof(NavigationPage) : string.Empty;
 			return new PageLink(navigationService, rootPage);
+		}
+		
+		/// <summary>
+		/// Executes a lateral navigation to switch the active tab within the current TabbedPage.
+		/// This will not push a new page onto the navigation stack.
+		/// </summary>
+		public async Task<IResult> SwitchTabAsync<TTabViewModel>(INavigationParameters? parameters = null, bool animated = true)
+			where TTabViewModel : TabViewModel
+		{
+			var pageName = PageHelper.ToPageName<TTabViewModel>("Page");
+			var navParams = parameters ?? new NavigationParameters();
+    
+			// Inject the internal hint to strictly enforce the lateral routing
+			navParams.Add(NavigationHints.IsTabbedPageSwitch, true);
+
+			return await navigationService.NavigateAsync(pageName, navParams, animated);
 		}
 	}
 	

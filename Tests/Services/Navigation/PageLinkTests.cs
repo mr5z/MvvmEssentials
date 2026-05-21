@@ -1,5 +1,4 @@
 using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Extensions;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
@@ -134,7 +133,7 @@ public class PageLinkTests
         // When
         var link = _navigationService
             .Absolute(withNavigation: false)
-            .Push<FakeViewModel>(null);
+            .Push<FakeViewModel>();
 
         // Then
         Assert.That(link.FullPath, Does.Not.Contain("?"));
@@ -295,8 +294,7 @@ public class PageLinkTests
         // Then
         await _navigationService.Received(1).NavigateAsync(
             Arg.Any<string>(),
-            Arg.Any<INavigationParameters?>(),
-            true);
+            Arg.Any<INavigationParameters?>());
     }
 
     [Test]

@@ -4,7 +4,8 @@ using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.ViewModels;
 
-namespace Nkraft.MvvmEssentials.Extensions;
+// ReSharper disable once CheckNamespace
+namespace Nkraft.MvvmEssentials;
 
 public static class PopupServiceExtension
 {

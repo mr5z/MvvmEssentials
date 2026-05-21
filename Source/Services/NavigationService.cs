@@ -1,7 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services.Handlers;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
@@ -156,7 +155,7 @@ internal sealed class NavigationService(
 					_logger.LogWarning(error);
 					return Result.Fail(ErrorCode.InvalidState, error);
 				}
-				return await HandleContextualNavigationAsync(currentPage, pages, animated);
+				return await HandleContextualNavigationAsync(currentPage, pages, parameters, animated);
 			}
 		}
 		catch (Exception ex)
@@ -284,7 +283,7 @@ internal sealed class NavigationService(
 		return Result.Fail<Page>(ErrorCode.NotSupported, error);
 	}
 	
-	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, Page[] newPages, bool animated)
+	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, Page[] newPages, INavigationParameters? parameters, bool animated)
 	{
 		var handlers = new IPageNavigationHandler[]
 		{
@@ -298,7 +297,7 @@ internal sealed class NavigationService(
 		{
 			if (handler.CanHandle(currentPage))
 			{
-				return await handler.HandleAsync(currentPage!, newPages, animated);
+				return await handler.HandleAsync(currentPage!, newPages, parameters, animated);
 			}
 		}
 

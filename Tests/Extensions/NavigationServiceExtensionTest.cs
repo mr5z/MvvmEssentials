@@ -1,5 +1,4 @@
 using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Extensions;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;

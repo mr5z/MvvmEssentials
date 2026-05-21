@@ -3,7 +3,8 @@ using Mopups.Services;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
-namespace Nkraft.MvvmEssentials.Extensions;
+// ReSharper disable once CheckNamespace
+namespace Nkraft.MvvmEssentials;
 
 internal static class NavigationServiceCollectionExtension
 {
