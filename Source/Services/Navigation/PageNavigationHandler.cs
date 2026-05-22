@@ -1,7 +1,6 @@
 using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Services.Navigation;
 
-namespace Nkraft.MvvmEssentials.Services;
+namespace Nkraft.MvvmEssentials.Services.Navigation;
 
 internal interface IPageNavigationHandler
 {

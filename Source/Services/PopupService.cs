@@ -98,21 +98,17 @@ internal sealed class PopupService : IPopupService
 				// No need to manually remove from _activePopups here, as it will be handled in PageFactory_PageUnloaded.
 				return Result.Ok();
 			}
-			else
+
+			if (_activePopups.TryGetValue(popupName, out var popupRef) && popupRef.TryGetTarget(out var popupPage))
 			{
-				if (_activePopups.TryGetValue(popupName, out var popupRef) && popupRef.TryGetTarget(out var popupPage))
-				{
-					await _popupNavigation.RemovePageAsync(popupPage, animated);
-					// Ditto regarding removal from _activePopups.
-					return Result.Ok();
-				}
-				else
-				{
-					const string error = "Failed dismiss popup '{PopupName}'.";
-					_logger.LogWarning(error, popupName);
-					return Result.Fail(ErrorCode.InvalidState, error, popupName);
-				}
+				await _popupNavigation.RemovePageAsync(popupPage, animated);
+				// Ditto regarding removal from _activePopups.
+				return Result.Ok();
 			}
+
+			const string error = "Failed dismiss popup '{PopupName}'.";
+			_logger.LogWarning(error, popupName);
+			return Result.Fail(ErrorCode.InvalidState, error, popupName);
 		}
 		catch (Exception ex)
 		{

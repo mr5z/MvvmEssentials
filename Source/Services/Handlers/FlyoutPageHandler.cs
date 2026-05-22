@@ -29,9 +29,8 @@ internal class FlyoutPageHandler(
             return Result.Fail(ErrorCode.InvalidState, error);
         }
 
-        var isFlyoutInSplitViewMode = IsFlyoutInSplitViewMode(flyoutPage);
         var isFlyoutDetailRootRequest = parameters?.ContainsKey(NavigationHints.IsFlyoutDetailRoot) == true;
-        if (isFlyoutInSplitViewMode && isFlyoutDetailRootRequest)
+        if (isFlyoutDetailRootRequest)
         {
             return await HandleFlyoutMenuNavigation(flyoutPage, detail, newPages);
         }
@@ -90,19 +89,5 @@ internal class FlyoutPageHandler(
         }
 
         return Result.Ok();
-    }
-    
-    private static bool IsFlyoutInSplitViewMode(FlyoutPage flyoutPage)
-    {
-        var behavior = flyoutPage.FlyoutLayoutBehavior;
-    
-        // Explicitly set to Split
-        if (behavior == FlyoutLayoutBehavior.Split)
-            return true;
-
-        // For Default behavior, check if flyout is visible while IsPresented is false
-        // In split mode, both panes are always visible
-        // In overlay mode, flyout is only visible when IsPresented is true
-        return flyoutPage is { IsPresented: false, Flyout.IsVisible: true };
     }
 }

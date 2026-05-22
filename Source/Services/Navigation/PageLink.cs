@@ -47,9 +47,9 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 		{
 			var invalidProps = parameters?.GetType().GetProperties()
 				.Where(p => !IsNumericOrString(p.PropertyType))
-				.ToList();
+				.ToArray();
 
-			if (invalidProps?.Count > 0)
+			if (invalidProps?.Length > 0)
 			{
 				// TODO find a way to access the logger without converting this a member function
 				// const string error = "Invalid parameter types found '{Properties}'. It must be either string or number only.";
@@ -73,9 +73,9 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 	{
 		t = Nullable.GetUnderlyingType(t) ?? t;
 		return t == typeof(string)
-		       || t == typeof(int)    || t == typeof(long)
-		       || t == typeof(float)  || t == typeof(double)
-		       || t == typeof(decimal)|| t == typeof(short)
-		       || t == typeof(byte);
+	        || t == typeof(int)    || t == typeof(long)
+	        || t == typeof(float)  || t == typeof(double)
+	        || t == typeof(decimal)|| t == typeof(short)
+	        || t == typeof(byte);
 	}
 }
