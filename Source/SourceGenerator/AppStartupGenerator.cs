@@ -140,7 +140,7 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
             #nullable enable
 
             using System.Threading.Tasks;
-            using Nkraft.MvvmEssentials.Extensions;
+            using Nkraft.MvvmEssentials;
             using Nkraft.MvvmEssentials.Services;
 
             namespace Nkraft.MvvmEssentials;
