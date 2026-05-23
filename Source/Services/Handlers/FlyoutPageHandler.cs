@@ -5,19 +5,16 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.Services.Handlers;
 
-internal class FlyoutPageHandler(
-    ILogger logger,
-    Func<Page?, Page[], INavigationParameters?, bool, Task<IResult>> recursiveNavigationHandler) : IPageNavigationHandler
+internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
 {
     private readonly ILogger _logger = logger;
-    private readonly Func<Page?, Page[], INavigationParameters?, bool, Task<IResult>> _recursiveNavigationHandler = recursiveNavigationHandler;
     
     // Track original Detail pages per FlyoutPage because MAUI made it so complicated.
-    private static readonly Dictionary<FlyoutPage, Page> OriginalDetails = [];
+    private static readonly Dictionary<FlyoutPage, Page> InitialFlyoutDetails = [];
 
-    public bool CanHandle(Page? page) => page is FlyoutPage;
+    bool IPageNavigationHandler.CanHandle(Page? page) => page is FlyoutPage;
 
-    public async Task<IResult> HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
+    async Task<Result<Page?>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var flyoutPage = (FlyoutPage)page;
         var detail = flyoutPage.Detail;
@@ -26,7 +23,7 @@ internal class FlyoutPageHandler(
         {
             const string error = "FlyoutPage has no Detail page set.";
             _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.InvalidState, error);
+            return Result.Fail<Page?>(ErrorCode.InvalidState, error);
         }
 
         var isFlyoutDetailRootRequest = parameters?.ContainsKey(NavigationHints.IsFlyoutDetailRoot) == true;
@@ -40,29 +37,29 @@ internal class FlyoutPageHandler(
         {
             const string error = "Cannot navigate within FlyoutPage detail without a NavigationPage.";
             _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.NotSupported, error);
+            return Result.Fail<Page?>(ErrorCode.NotSupported, error);
         }
 
-        return await _recursiveNavigationHandler(detail, newPages, parameters, animated);
+        return Result.Ok<Page?>(detail);
     }
 
-    private static async Task<IResult> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
+    private static async Task<Result<Page?>> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
     {
         // Store original Detail on first navigation
-        _ = OriginalDetails.TryAdd(flyoutPage, detail);
+        _ = InitialFlyoutDetails.TryAdd(flyoutPage, detail);
 
         var targetPage = newPages.First();
-        var originalDetail = OriginalDetails[flyoutPage];
+        var initialDetailPage = InitialFlyoutDetails[flyoutPage];
 
         // Check if navigating back to original Detail
         var requestedViewModelName = PageHelper.ToViewModelName(targetPage.GetType());
-        var originalViewModelName = originalDetail.BindingContext?.GetType().Name;
+        var originalViewModelName = initialDetailPage.BindingContext?.GetType().Name;
         var isNavigatingToOriginal = requestedViewModelName == originalViewModelName;
 
         if (isNavigatingToOriginal)
         {
-            flyoutPage.Detail = originalDetail;
-            return Result.Ok();
+            flyoutPage.Detail = initialDetailPage;
+            return Result.Ok<Page?>(null);
         }
         
         // Workaround for MAUI bug: https://github.com/dotnet/maui/issues/22116
@@ -70,14 +67,14 @@ internal class FlyoutPageHandler(
         {
             await navPage.PopToRootAsync(animated: false);
 
-            var pageToInsert = isNavigatingToOriginal ? originalDetail : targetPage;
+            var pageToInsert = isNavigatingToOriginal ? initialDetailPage : targetPage;
             navPage.Navigation.InsertPageBefore(pageToInsert, navPage.RootPage);
             await navPage.PopAsync(animated: false);
         }
         else
         {
             // Detail is not a NavigationPage - wrap in one (only happens once)
-            var pageToWrap = isNavigatingToOriginal ? originalDetail : targetPage;
+            var pageToWrap = isNavigatingToOriginal ? initialDetailPage : targetPage;
             navPage = new NavigationPage(pageToWrap);
             flyoutPage.Detail = navPage;
         }
@@ -88,6 +85,6 @@ internal class FlyoutPageHandler(
             await navPage.PushAsync(nextPage, animated: false);
         }
 
-        return Result.Ok();
+        return Result.Ok<Page?>(null);
     }
 }

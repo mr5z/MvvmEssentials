@@ -289,7 +289,7 @@ internal sealed class NavigationService(
 		{
 			new NavigationPageHandler(_logger),
 			new TabbedPageHandler(_logger),
-			new FlyoutPageHandler(_logger, HandleContextualNavigationAsync),
+			new FlyoutPageHandler(_logger),
 			new UnsupportedPageHandler(_logger)
 		};
 
@@ -297,11 +297,15 @@ internal sealed class NavigationService(
 		{
 			if (handler.CanHandle(currentPage))
 			{
-				return await handler.HandleAsync(currentPage!, newPages, parameters, animated);
+				var result = await handler.HandleAsync(currentPage!, newPages, parameters, animated);
+				if (result.TryGetValue(out var innerPage))
+				{
+					return await HandleContextualNavigationAsync(innerPage, newPages, parameters, animated);
+				}
+				return result;
 			}
 		}
 
-		// Should never reach here due to UnsupportedPageHandler catch-all
 		return Result.Fail(ErrorCode.NotSupported, "No handler found for current page.");
 	}
 

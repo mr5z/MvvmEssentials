@@ -8,9 +8,9 @@ internal class NavigationPageHandler(ILogger logger) : IPageNavigationHandler
 {
     private readonly ILogger _logger = logger;
 
-    public bool CanHandle(Page? page) => page is NavigationPage;
+    bool IPageNavigationHandler.CanHandle(Page? page) => page is NavigationPage;
 
-    public async Task<IResult> HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
+    async Task<Result<Page?>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var navigationPage = (NavigationPage)page;
         
@@ -18,7 +18,7 @@ internal class NavigationPageHandler(ILogger logger) : IPageNavigationHandler
         {
             const string error = "No pages to navigate.";
             _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.General, error);
+            return Result.Fail<Page?>(ErrorCode.General, error);
         }
         
         foreach (var newPage in newPages)
@@ -26,6 +26,6 @@ internal class NavigationPageHandler(ILogger logger) : IPageNavigationHandler
             await navigationPage.PushAsync(newPage, animated);
         }
         
-        return Result.Ok();
+        return Result.Ok<Page?>(null);
     }
 }
