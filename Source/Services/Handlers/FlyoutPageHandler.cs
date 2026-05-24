@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
@@ -10,7 +11,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
     private readonly ILogger _logger = logger;
     
     // Track original Detail pages per FlyoutPage because MAUI made it so complicated.
-    private static readonly Dictionary<FlyoutPage, Page> InitialFlyoutDetails = [];
+    private static readonly ConditionalWeakTable<FlyoutPage, Page> InitialFlyoutDetails = [];
 
     bool IPageNavigationHandler.CanHandle(Page? page) => page is FlyoutPage;
 
@@ -32,26 +33,23 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
             return await HandleFlyoutMenuNavigation(flyoutPage, detail, newPages);
         }
 
-        var navigationPage = NavigationHelper.FindNavigationPage(detail);
-        if (navigationPage is null)
-        {
-            const string error = "Cannot navigate within FlyoutPage detail without a NavigationPage.";
-            _logger.LogWarning(error);
-            return Result.Fail<Page?>(ErrorCode.NotSupported, error);
-        }
-
         return Result.Ok<Page?>(detail);
     }
 
-    private static async Task<Result<Page?>> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
+    private async Task<Result<Page?>> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
     {
         // Store original Detail on first navigation
         _ = InitialFlyoutDetails.TryAdd(flyoutPage, detail);
-
-        var targetPage = newPages.First();
-        var initialDetailPage = InitialFlyoutDetails[flyoutPage];
+        
+        if (InitialFlyoutDetails.TryGetValue(flyoutPage, out var initialDetailPage) == false)
+        {
+            const string error = "The initial detail page was not found. The navigation cannot proceed.";
+            _logger.LogWarning(error);
+            return Result.Fail<Page?>(ErrorCode.InvalidState, error);
+        }
 
         // Check if navigating back to original Detail
+        var targetPage = newPages.First();
         var requestedViewModelName = PageHelper.ToViewModelName(targetPage.GetType());
         var originalViewModelName = initialDetailPage.BindingContext?.GetType().Name;
         var isNavigatingToOriginal = requestedViewModelName == originalViewModelName;
@@ -66,16 +64,13 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         if (flyoutPage.Detail is NavigationPage navPage)
         {
             await navPage.PopToRootAsync(animated: false);
-
-            var pageToInsert = isNavigatingToOriginal ? initialDetailPage : targetPage;
-            navPage.Navigation.InsertPageBefore(pageToInsert, navPage.RootPage);
+            navPage.Navigation.InsertPageBefore(targetPage, navPage.RootPage);
             await navPage.PopAsync(animated: false);
         }
         else
         {
             // Detail is not a NavigationPage - wrap in one (only happens once)
-            var pageToWrap = isNavigatingToOriginal ? initialDetailPage : targetPage;
-            navPage = new NavigationPage(pageToWrap);
+            navPage = new NavigationPage(targetPage);
             flyoutPage.Detail = navPage;
         }
         
