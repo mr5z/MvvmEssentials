@@ -15,7 +15,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
 
     bool IPageNavigationHandler.CanHandle(Page? page) => page is FlyoutPage;
 
-    async Task<Result<Page?>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
+    async Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var flyoutPage = (FlyoutPage)page;
         var detail = flyoutPage.Detail;
@@ -24,7 +24,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         {
             const string error = "FlyoutPage has no Detail page set.";
             _logger.LogWarning(error);
-            return Result.Fail<Page?>(ErrorCode.InvalidState, error);
+            return Result.Fail<NavigationContext>(ErrorCode.InvalidState, error);
         }
 
         var isFlyoutDetailRootRequest = parameters?.ContainsKey(NavigationHints.IsFlyoutDetailRoot) == true;
@@ -33,10 +33,10 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
             return await HandleFlyoutMenuNavigation(flyoutPage, detail, newPages);
         }
 
-        return Result.Ok<Page?>(detail);
+        return Result.Ok(NavigationContext.Into(detail));
     }
 
-    private async Task<Result<Page?>> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
+    private async Task<Result<NavigationContext>> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, Page[] newPages)
     {
         // Store original Detail on first navigation
         _ = InitialFlyoutDetails.TryAdd(flyoutPage, detail);
@@ -45,7 +45,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         {
             const string error = "The initial detail page was not found. The navigation cannot proceed.";
             _logger.LogWarning(error);
-            return Result.Fail<Page?>(ErrorCode.InvalidState, error);
+            return Result.Fail<NavigationContext>(ErrorCode.InvalidState, error);
         }
 
         // Check if navigating back to original Detail
@@ -57,7 +57,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         if (isNavigatingToOriginal)
         {
             flyoutPage.Detail = initialDetailPage;
-            return Result.Ok<Page?>(null);
+            return Result.Ok(NavigationContext.Complete());
         }
         
         // Workaround for MAUI bug: https://github.com/dotnet/maui/issues/22116
@@ -80,6 +80,6 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
             await navPage.PushAsync(nextPage, animated: false);
         }
 
-        return Result.Ok<Page?>(null);
+        return Result.Ok(NavigationContext.Complete());
     }
 }

@@ -295,15 +295,15 @@ internal sealed class NavigationService(
 
 		foreach (var handler in handlers)
 		{
-			if (handler.CanHandle(currentPage))
+			if (handler.CanHandle(currentPage) == false)
+				continue;
+			
+			var navigationContext = await handler.HandleAsync(currentPage!, newPages, parameters, animated);
+			if (navigationContext.TryGetValue(out var context) && context.Action ==  NavigationAction.ContinueInto)
 			{
-				var result = await handler.HandleAsync(currentPage!, newPages, parameters, animated);
-				if (result.TryGetValue(out var innerPage))
-				{
-					return await HandleContextualNavigationAsync(innerPage, newPages, parameters, animated);
-				}
-				return result;
+				return await HandleContextualNavigationAsync(context.NextPage, newPages, parameters, animated);
 			}
+			return navigationContext;
 		}
 
 		return Result.Fail(ErrorCode.NotSupported, "No handler found for current page.");

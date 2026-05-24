@@ -10,10 +10,10 @@ internal class UnsupportedPageHandler(ILogger logger) : IPageNavigationHandler
 
     bool IPageNavigationHandler.CanHandle(Page? page) => true;
 
-    Task<Result<Page?>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
+    Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         const string error = "Relative navigation is only supported when root page is a NavigationPage.";
         _logger.LogWarning(error);
-        return Task.FromResult(Result.Fail<Page?>(ErrorCode.NotSupported, error));
+        return Task.FromResult(Result.Fail<NavigationContext>(ErrorCode.NotSupported, error));
     }
 }

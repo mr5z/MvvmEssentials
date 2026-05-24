@@ -10,7 +10,7 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
 
     bool IPageNavigationHandler.CanHandle(Page? page) => page is TabbedPage;
 
-    async Task<Result<Page?>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
+    async Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
     {
         var tabbedPage = (TabbedPage)page;
     
@@ -25,14 +25,14 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
         {
             const string error = "No current tab found in the TabbedPage.";
             _logger.LogWarning(error);
-            return Result.Fail<Page?>(ErrorCode.NotSupported, error);
+            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
         }
 
         if (currentTab is not NavigationPage tabNavigationPage)
         {
             const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
             _logger.LogWarning(error);
-            return Result.Fail<Page?>(ErrorCode.NotSupported, error);
+            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
         }
 
         foreach (var newPage in newPages)
@@ -40,10 +40,10 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
             await tabNavigationPage.PushAsync(newPage, animated);
         }
 
-        return Result.Ok<Page?>(null);
+        return Result.Ok(NavigationContext.Complete());
     }
     
-    private Result<Page?> HandleTabSwitch(TabbedPage tabbedPage, Page[] newPages)
+    private Result<NavigationContext> HandleTabSwitch(TabbedPage tabbedPage, Page[] newPages)
     {
         var targetVmType = newPages.First().BindingContext?.GetType();
 
@@ -57,10 +57,10 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
         {
             const string error = "Attempted to switch to tab '{TargetVm}', but it is not registered in the TabbedPage.";
             _logger.LogWarning(error, targetVmType?.Name);
-            return Result.Fail<Page?>(ErrorCode.NotSupported, error);
+            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
         }
 
         tabbedPage.CurrentPage = targetTab;
-        return Result.Ok<Page?>(null);
+        return Result.Ok(NavigationContext.Complete());
     }
 }
