@@ -188,13 +188,34 @@ class LoginViewModel : PageViewModel
 await _navigationService.NavigateAsync<AccountViewModel>();
 ```
 
-**4. Select tab of TabbedPage**
+---
+
+## MapPage vs RegisterPage
+
+Both methods register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
+
+| | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` |
+|---|---|---|
+| Navigatable via `NavigateAsync` | ✅ Yes | ❌ No |
+| Creates a page–VM mapping | ✅ Yes | ❌ No |
+| Scoped DI lifetime | ✅ Yes | ✅ Yes |
+| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, flyout detail) |
+
+Use `RegisterPage` for any ViewModel that is wired to its page via XAML `BindingContext` rather than created by the navigation service. The navigation service has no knowledge of these VMs and will not be able to navigate to them by name.
 
 ```cs
-await _navigationService.Absolute(withNavigation: false)
-    .Push<MainViewModel, object>(new { SelectedTabIndex = 2 }) // switches to 3rd tab
-    .NavigateAsync();
+registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatable
+    .RegisterPage<MenuViewModel>()        // bound in XAML as FlyoutPage.Flyout
+    .RegisterPage<MainTabbedViewModel>()  // bound in XAML as FlyoutPage.Detail
+        .RegisterPage<HomeViewModel>()    // bound in XAML as a TabbedPage tab
+        .RegisterPage<SettingsViewModel>() // bound in XAML as a TabbedPage tab
+    .MapPage<OrdersPage, OrdersViewModel>()   // navigatable
+    .MapPage<SettingsPage, SettingsViewModel>(); // navigatable
 ```
+
+> **Note:** The indentation above is cosmetic. `IPageRegistry` returns `this` from every call, so the
+> chain is flat regardless of how it is formatted. Indent to reflect the conceptual parent–child
+> relationship between a host page and its XAML-bound ViewModels.
 
 ---
 
@@ -372,6 +393,31 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 }
 ```
 
+**5. Switch the current tab programmatically**
+
+From within `TabHostViewModel`, call `SwitchTabAsync<TTabViewModel>` to switch to a tab by ViewModel type:
+
+```cs
+public class MainViewModel(
+    HomeViewModel homeViewModel,
+    SettingsViewModel settingsViewModel,
+    INavigationService navigationService) : TabHostViewModel
+{
+    private readonly INavigationService _navigationService = navigationService;
+
+    protected override IReadOnlyCollection<ITabComponent> Tabs => [HomeViewModel, SettingsViewModel];
+
+    public HomeViewModel HomeViewModel { get; } = homeViewModel;
+    public SettingsViewModel SettingsViewModel { get; } = settingsViewModel;
+
+    [RelayCommand]
+    private async Task GoToSettings()
+    {
+        await SwitchTabAsync<SettingsViewModel>(_navigationService);
+    }
+}
+```
+
 ---
 
 ## FlyoutPage
@@ -402,14 +448,14 @@ registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true)
     <FlyoutPage.Behaviors>
         <!-- Required for IsPresented to sync with the ViewModel -->
         <behaviors:FlyoutPresentingBehavior />
-        <!-- Required when detail contains TabbedPage for lifecycle propagation -->
+        <!-- Required for the detail page to receive lifecycle events -->
         <behaviors:FlyoutDetailLifecycleBehavior />
     </FlyoutPage.Behaviors>
 
     <FlyoutPage.Flyout>
         <local:MenuPage BindingContext="{Binding MenuViewModel}" Title="Menu" />
     </FlyoutPage.Flyout>
-    
+
     <FlyoutPage.Detail>
         <local:MainTabbedPage BindingContext="{Binding DetailViewModel}" />
     </FlyoutPage.Detail>
@@ -442,23 +488,38 @@ public partial class MenuViewModel(INavigationService navigationService) : Flyou
         base.OnFlyoutClosed();
         Console.WriteLine("Flyout closed");
     }
-
-    [RelayCommand]
-    private async Task NavigateToOrders()
-    {
-        await ReplaceDetailAsync<OrdersViewModel>(_navigationService);
-    }
-
-    [RelayCommand]
-    private async Task NavigateToSettings()
-    {
-        var parameters = new NavigationParameters { { "Theme", "Dark" } };
-        await ReplaceDetailAsync<SettingsViewModel>(_navigationService, parameters);
-    }
 }
 ```
 
-**5. Toggle the flyout programmatically**
+**5. Replace the detail page programmatically**
+
+From within `FlyoutMenuViewModel`, call `ReplaceDetailAsync<TViewModel>` to swap the flyout's detail area by ViewModel type. The flyout is automatically dismissed after navigation.
+
+Navigating to a ViewModel that matches the original detail (the one set in XAML) restores it directly rather than wrapping it in a new `NavigationPage`:
+
+```cs
+[RelayCommand]
+private async Task NavigateToHome()
+{
+    // Restores the original detail page set in XAML
+    await ReplaceDetailAsync<MainTabbedViewModel>(_navigationService);
+}
+
+[RelayCommand]
+private async Task NavigateToOrders()
+{
+    await ReplaceDetailAsync<OrdersViewModel>(_navigationService);
+}
+
+[RelayCommand]
+private async Task NavigateToSettings()
+{
+    var parameters = new NavigationParameters { { "Theme", "Dark" } };
+    await ReplaceDetailAsync<SettingsViewModel>(_navigationService, parameters);
+}
+```
+
+**6. Toggle the flyout programmatically**
 
 ```cs
 // From MenuViewModel or MainHostViewModel
@@ -529,22 +590,19 @@ var result = await _popupService.PresentAsync<ConfirmViewModel, ConfirmResult>(n
 if (result.TryGetValue(out var confirmResult))
 {
     Console.WriteLine("User pressed: {0}", confirmResult.Confirm ? "Yes" : "No");
-    if (confirmResult.Confirm)
-        Count = 0;
-}
-else
-{
-    // User tapped the background or pressed back
-    Console.WriteLine("User cancelled the popup");
 }
 ```
 
 ---
 
-# Notes
+## Contributing
 
-- Inspired by [Prism](https://github.com/PrismLibrary/Prism)
+Contributions are welcome. To get started:
 
-# Contribution
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-change`)
+3. Commit your changes (`git commit -am 'Add my change'`)
+4. Push to the branch (`git push origin feature/my-change`)
+5. Open a pull request
 
-Pull requests and issues are welcome. Thanks!
+Please open an issue first for significant changes so the direction can be discussed before implementation.
