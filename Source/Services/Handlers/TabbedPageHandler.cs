@@ -17,7 +17,7 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
         var isExplicitTabSwitch = parameters?.ContainsKey(NavigationHints.IsTabbedPageSwitch) == true;
         if (isExplicitTabSwitch)
         {
-            return HandleTabSwitch(tabbedPage, newPages);
+            return HandleTabSwitch(tabbedPage, newPages.First());
         }
 
         var currentTab = tabbedPage.CurrentPage;
@@ -43,20 +43,18 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
         return Result.Ok(NavigationContext.Complete());
     }
     
-    private Result<NavigationContext> HandleTabSwitch(TabbedPage tabbedPage, Page[] newPages)
+    private Result<NavigationContext> HandleTabSwitch(TabbedPage tabbedPage, Page targetPage)
     {
-        var targetVmType = newPages.First().BindingContext?.GetType();
-
         var targetTab = tabbedPage.Children.FirstOrDefault(tab => 
         {
-            var targetPage = tab is NavigationPage navPage ? navPage.RootPage : tab;
-            return targetPage?.BindingContext?.GetType() == targetVmType;
+            var candidatePage = tab is NavigationPage navPage ? navPage.RootPage : tab;
+            return targetPage?.GetType() == candidatePage.GetType();
         });
 
         if (targetTab is null)
         {
-            const string error = "Attempted to switch to tab '{TargetVm}', but it is not registered in the TabbedPage.";
-            _logger.LogWarning(error, targetVmType?.Name);
+            const string error = "Attempted to switch to tab '{TargetPage}', but it is not registered in the TabbedPage.";
+            _logger.LogWarning(error, targetPage.GetType().Name);
             return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
         }
 
