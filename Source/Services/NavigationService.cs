@@ -162,7 +162,7 @@ internal sealed class NavigationService(
 		{
 			const string error = "An error occurred while trying to perform page navigation (Path: {Path}).";
 			_logger.LogError(ex, error, path);
-			return Result.Fail(ErrorCode.Unknown, error);
+			return Result.Fail(ErrorCode.Unknown, error, path);
 		}
 
 		return Result.Ok();

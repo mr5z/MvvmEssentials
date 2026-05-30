@@ -2,10 +2,15 @@ namespace Nkraft.MvvmEssentials.Helpers;
 
 internal static class PageHelper
 {
-    internal static string ToPageName<TViewModel>(string pagePattern)
+    internal static string ToPageName(Type viewModelType, string pagePattern)
     {
         const string knownViewModelPattern = "ViewModel";
-        return typeof(TViewModel).Name.Replace(knownViewModelPattern, pagePattern);
+        return viewModelType.Name.Replace(knownViewModelPattern, pagePattern);
+    }
+    
+    internal static string ToPageName<TViewModel>(string pagePattern)
+    {
+        return ToPageName(typeof(TViewModel), pagePattern);
     }
     
     internal static string ToViewModelName(Type pageType)

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Helpers;
