@@ -220,13 +220,14 @@ internal class PageFactory(
 		if (page.BindingContext is IPageLoadAware loadAware)
 		{
 			loadAware.OnPageUnloaded();
-			UnregisterPageEvents(page);
-			PageUnloaded?.Invoke(this, page);
+		}
+		
+		UnregisterPageEvents(page);
+		PageUnloaded?.Invoke(this, page);
 
-			if (_pageScopes.Remove(page, out var scope))
-			{
-				scope.Dispose();
-			}
+		if (_pageScopes.Remove(page, out var scope))
+		{
+			scope.Dispose();
 		}
 	}
 
