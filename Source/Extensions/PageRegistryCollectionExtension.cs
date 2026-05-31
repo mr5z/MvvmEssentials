@@ -5,11 +5,10 @@ namespace Nkraft.MvvmEssentials;
 
 internal static class PageRegistryCollectionExtension
 {
-	public static IServiceCollection AddPageRegistry(this IServiceCollection services, Action<IPageRegistry> configure)
+	public static void AddPageRegistry(this IServiceCollection services, Action<IPageRegistry> configure)
 	{
 		var registry = new PageRegistry(services);
 		configure(registry);
 		services.AddSingleton<IPageRegistry>(registry);
-		return services;
 	}
 }

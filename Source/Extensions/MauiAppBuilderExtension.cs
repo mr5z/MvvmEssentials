@@ -10,6 +10,7 @@ public static class MauiAppBuilderExtension
 	{
 		builder.Services.AddNavigationService(options => options.AssemblyPageSource = executingAssembly);
 		builder.Services.AddPageRegistry(configurePageRegistry);
+		builder.Services.AddContentViewFactory();
 		return builder;
 	}
 }

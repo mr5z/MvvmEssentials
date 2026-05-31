@@ -27,7 +27,7 @@ internal class PageFactory(
 	private readonly ILogger<PageFactory> _logger = logger;
 	private readonly IPageRegistry _pageRegistry = pageRegistry;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
-	private readonly Dictionary<Page, IServiceScope> _pageScopes = []; 
+	private readonly Dictionary<Page, IServiceScope> _pageScopes = [];
 
 	public event EventHandler<Page>? PageUnloaded;
 
@@ -147,6 +147,7 @@ internal class PageFactory(
 			{
 				appearingAwareAsync.OnPageAppearingAsync().FireAndForget(exception =>
 				{
+					// What if we throw Exception in UI thread via Dispatcher?
 					_logger.LogError(exception,
 						"An error occurred while trying to invoke {MethodName}.",
 						nameof(appearingAwareAsync.OnPageAppearingAsync)
@@ -202,7 +203,14 @@ internal class PageFactory(
 
 	private void Page_Unloaded(object? sender, EventArgs e)
 	{
-		if (sender is Page { BindingContext: IPageLoadAware loadAware } page)
+		if (sender is not Page page)
+		{
+			const string error = "Received a page unloaded event but the sender '{ActualType}' is not a Page";
+			_logger.LogWarning(error, sender?.GetType().Name);
+			return;
+		}
+		
+		if (page.BindingContext is IPageLoadAware loadAware)
 		{
 			loadAware.OnPageUnloaded();
 			UnregisterPageEvents(page);

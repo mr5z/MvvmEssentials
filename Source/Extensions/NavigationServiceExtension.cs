@@ -76,11 +76,25 @@ public static class NavigationExtension
 		/// <typeparam name="TParameter">The type of the parameters object. Properties will be mapped to navigation parameters.</typeparam>
 		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
 		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
-		public IPageLink Push<TViewModel, TParameter>(TParameter? parameters)
+		public IPageLink Push<TViewModel, TParameter>(TParameter? parameters = null)
 			where TViewModel : PageViewModel
 			where TParameter : class
 		{
 			var pageName = PageHelper.ToPageName<TViewModel>("Page");
+			return pageLink.AppendSegment(pageName, parameters);
+		}
+		
+		/// <summary>
+		/// Appends a page segment to the navigation path for the specified ViewModel type, using a strongly-typed parameters object.
+		/// </summary>
+		/// <typeparam name="TParameter">The type of the parameters object. Properties will be mapped to navigation parameters.</typeparam>
+		/// <param name="viewModelType">The type of ViewModel which should have the "ViewModel" in its name suffix convention.</param>
+		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
+		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
+		public IPageLink Push<TParameter>(Type viewModelType, TParameter? parameters = null)
+			where TParameter : class
+		{
+			var pageName = PageHelper.ToPageName(viewModelType, "Page");
 			return pageLink.AppendSegment(pageName, parameters);
 		}
 
