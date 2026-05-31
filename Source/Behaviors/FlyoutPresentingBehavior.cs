@@ -1,5 +1,7 @@
 using System.ComponentModel;
-using Nkraft.MvvmEssentials.Services.Navigation;
+using AsyncAwaitBestPractices;
+using Nkraft.MvvmEssentials.Services.FlyoutPages;
+using Nkraft.MvvmEssentials.Services.Helpers;
 using Nkraft.MvvmEssentials.ViewModels;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
@@ -41,7 +43,7 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         }
     }
 
-    private static async void FlyoutPage_IsPresentedChanged(object? sender, EventArgs e)
+    private static void FlyoutPage_IsPresentedChanged(object? sender, EventArgs e)
     {
         if (sender is not FlyoutPage flyoutPage)
             return;
@@ -58,7 +60,10 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             foreach (var component in components)
             {
                 component.OnFlyoutOpened();
-                await component.OnFlyoutOpenedAsync();
+                component.OnFlyoutOpenedAsync().SafeFireAndForget(ex =>
+                {
+                    ExceptionDispatcher.Handle<FlyoutPresentingBehavior>(ex, nameof(IFlyoutComponent.OnFlyoutOpenedAsync));
+                });
             }
         }
         else
@@ -66,7 +71,10 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             foreach (var component in components)
             {
                 component.OnFlyoutClosed();
-                await component.OnFlyoutClosedAsync();
+                component.OnFlyoutClosedAsync().SafeFireAndForget(ex =>
+                {
+                    ExceptionDispatcher.Handle<FlyoutPresentingBehavior>(ex, nameof(IFlyoutComponent.OnFlyoutClosedAsync));
+                });
             }
         }
     }

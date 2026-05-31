@@ -1,12 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Helpers;
+using Nkraft.MvvmEssentials.Services.Helpers;
+using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.ViewModels;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
-namespace Nkraft.MvvmEssentials.Services.Navigation;
+namespace Nkraft.MvvmEssentials.Services.Pages;
 
 internal interface IPageFactory
 {
@@ -21,12 +23,14 @@ internal class PageFactory(
 	IOptions<NavigationOptions> options,
 	ILogger<PageFactory> logger,
 	IPageRegistry pageRegistry,
-	IServiceProvider serviceProvider) : IPageFactory
+	IServiceProvider serviceProvider,
+	IDispatcher dispatcher) : IPageFactory
 {
 	private readonly Assembly? _assemblyPageSource = options.Value.AssemblyPageSource;
 	private readonly ILogger<PageFactory> _logger = logger;
 	private readonly IPageRegistry _pageRegistry = pageRegistry;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
+	private readonly IDispatcher _dispatcher = dispatcher;
 	private readonly Dictionary<Page, IServiceScope> _pageScopes = [];
 
 	public event EventHandler<Page>? PageUnloaded;
@@ -147,9 +151,10 @@ internal class PageFactory(
 			{
 				appearingAwareAsync.OnPageAppearingAsync().FireAndForget(exception =>
 				{
-					// What if we throw Exception in UI thread via Dispatcher?
-					_logger.LogError(exception,
-						"An error occurred while trying to invoke {MethodName}.",
+					ExceptionDispatcher.Handle(
+						exception,
+						_logger, 
+						_dispatcher, 
 						nameof(appearingAwareAsync.OnPageAppearingAsync)
 					);
 				});
@@ -170,8 +175,10 @@ internal class PageFactory(
 			{
 				appearingAwareAsync.OnPageDisappearingAsync().FireAndForget(exception =>
 				{
-					_logger.LogError(exception,
-						"An error occurred while trying to invoke {MethodName}.",
+					ExceptionDispatcher.Handle(
+						exception,
+						_logger, 
+						_dispatcher, 
 						nameof(appearingAwareAsync.OnPageDisappearingAsync)
 					);
 				});

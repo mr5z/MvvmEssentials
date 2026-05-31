@@ -1,4 +1,4 @@
-namespace Nkraft.MvvmEssentials.Services.Navigation;
+namespace Nkraft.MvvmEssentials.Services.FlyoutPages;
 
 public interface IFlyoutComponent
 {

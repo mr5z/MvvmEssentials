@@ -1,5 +1,8 @@
 using System.ComponentModel;
+using Nkraft.CrossUtility.Extensions;
+using Nkraft.MvvmEssentials.Services.Helpers;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
@@ -88,7 +91,10 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         
         if (targetPage.BindingContext is IAppearingAwareAsync appearingAsync)
         {
-            _ = appearingAsync.OnPageAppearingAsync();
+            appearingAsync.OnPageAppearingAsync().FireAndForget(ex =>
+            {
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IAppearingAwareAsync.OnPageAppearingAsync));
+            });
         }
         
         targetPage.SendAppearing();
@@ -107,7 +113,10 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         
         if (targetPage.BindingContext is IAppearingAwareAsync disappearingAsync)
         {
-            _ = disappearingAsync.OnPageDisappearingAsync();
+            disappearingAsync.OnPageDisappearingAsync().FireAndForget(ex =>
+            {
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IAppearingAwareAsync.OnPageDisappearingAsync));
+            });
         }
         
         targetPage.SendDisappearing();
@@ -116,11 +125,8 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     private static void TriggerDetailNavigatedTo(Page page)
     {
         var targetPage = GetTargetPage(page);
-        // ReSharper disable once UseNullPropagation
-        if (targetPage is null)
-            return;
-        
-        if (targetPage.BindingContext is INavigatedAware navigated)
+
+        if (targetPage?.BindingContext is INavigatedAware navigated)
         {
             navigated.OnNavigatedTo();
         }
@@ -130,4 +136,5 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     {
         return page is NavigationPage navPage ? navPage.CurrentPage : page;
     }
+
 }

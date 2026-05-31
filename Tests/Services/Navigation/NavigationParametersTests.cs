@@ -1,4 +1,4 @@
-using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services;
 using NUnit.Framework;
 
 namespace Nkraft.MvvmEssentials.UnitTest.Services.Navigation;

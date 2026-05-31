@@ -1,4 +1,5 @@
 ﻿using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 

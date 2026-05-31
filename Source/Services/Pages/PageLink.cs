@@ -1,7 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using Nkraft.CrossUtility.Helpers;
+﻿using Nkraft.CrossUtility.Helpers;
 
-namespace Nkraft.MvvmEssentials.Services.Navigation;
+namespace Nkraft.MvvmEssentials.Services.Pages;
 
 internal sealed class PageWithQuery(string? pageName, object? parameters)
 {

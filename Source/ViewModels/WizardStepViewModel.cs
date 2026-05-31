@@ -1,24 +1,25 @@
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Wizards;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public class WizardStepViewModel : BaseViewModel, IWizardStep, IDisposable
+public class WizardStepViewModel<TState> : BaseViewModel, IWizardStep<TState>, IDisposable
 {
-    void IWizardStep.OnStepEntered() => OnStepEntered();
+    void IWizardStep<TState>.OnStepEntered(TState state) => OnStepEntered(state);
     
-    Task IWizardStep.OnStepEnteredAsync() => OnStepEnteredAsync();
+    Task IWizardStep<TState>.OnStepEnteredAsync(TState state) => OnStepEnteredAsync(state);
     
-    void IWizardStep.OnStepExited() => OnStepExited();
+    TState IWizardStep<TState>.OnStepExited(TState state) => OnStepExited(state);
 
-    Task IWizardStep.OnStepExitedAsync() => OnStepExitedAsync();
+    Task<TState> IWizardStep<TState>.OnStepExitedAsync(TState state) => OnStepExitedAsync(state);
 
-    protected virtual void OnStepEntered() { }
+    protected virtual void OnStepEntered(TState state) { }
     
-    protected virtual Task OnStepEnteredAsync() => Task.CompletedTask;
+    protected virtual Task OnStepEnteredAsync(TState state) => Task.CompletedTask;
 
-    protected virtual void OnStepExited() { }
+    protected virtual TState OnStepExited(TState state) => state;
     
-    protected virtual Task OnStepExitedAsync() => Task.CompletedTask;
+    protected virtual Task<TState> OnStepExitedAsync(TState state) => Task.FromResult(state);
     
     protected virtual void OnDispose() { }
     

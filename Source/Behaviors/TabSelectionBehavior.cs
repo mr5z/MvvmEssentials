@@ -1,5 +1,8 @@
 ﻿using System.ComponentModel;
-using Nkraft.MvvmEssentials.Services.Navigation;
+using AsyncAwaitBestPractices;
+using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Helpers;
+using Nkraft.MvvmEssentials.Services.TabbedPages;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
@@ -28,7 +31,7 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		}
 	}
 
-	private async void TabbedPage_CurrentPageChanged(object? sender, EventArgs e)
+	private void TabbedPage_CurrentPageChanged(object? sender, EventArgs e)
 	{
 		if (sender is not TabbedPage tabbedPage)
 			return;
@@ -46,11 +49,17 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		{
 			var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
 			previousTab.OnTabUnselected();
-			await previousTab.OnTabUnselectedAsync();
+			previousTab.OnTabUnselectedAsync().SafeFireAndForget(ex =>
+			{
+				ExceptionDispatcher.Handle<TabSelectionBehavior>(ex, nameof(ITabComponent.OnTabUnselectedAsync));
+			});
 		}
 
 		tabHost.CurrentTab.OnTabSelected();
-		await tabHost.CurrentTab.OnTabSelectedAsync();
+		tabHost.CurrentTab.OnTabSelectedAsync().SafeFireAndForget(ex =>
+		{
+			ExceptionDispatcher.Handle<TabSelectionBehavior>(ex, nameof(ITabComponent.OnTabSelectedAsync));
+		});
 		_previousTabIndex = tabIndex;
 	}
 

@@ -1,4 +1,5 @@
-namespace Nkraft.MvvmEssentials.Services.Navigation;
+// ReSharper disable once CheckNamespace
+namespace Nkraft.MvvmEssentials.Services;
 
 public interface ITabComponent
 {

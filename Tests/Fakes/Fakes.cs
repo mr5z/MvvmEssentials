@@ -1,6 +1,7 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.TabbedPages;
 using Nkraft.MvvmEssentials.ViewModels;
 
 namespace Nkraft.MvvmEssentials.UnitTest.Fakes;

@@ -1,3 +1,4 @@
+using Nkraft.MvvmEssentials.Services.FlyoutPages;
 using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;

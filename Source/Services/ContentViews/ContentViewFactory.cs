@@ -1,12 +1,13 @@
 using Nkraft.MvvmEssentials.ViewModels;
 
-namespace Nkraft.MvvmEssentials.Services.Navigation;
+// ReSharper disable once CheckNamespace
+namespace Nkraft.MvvmEssentials.Services;
 
 public interface IContentViewFactory : IDisposable
 {
     ContentView CreateView<TContentView, TViewModel>()
         where TContentView : ContentView
-        where TViewModel : WizardStepViewModel;
+        where TViewModel : BaseViewModel;
 }
 
 internal sealed class ContentViewFactory(IServiceProvider serviceProvider) : IContentViewFactory
@@ -26,8 +27,12 @@ internal sealed class ContentViewFactory(IServiceProvider serviceProvider) : ICo
 
     void IDisposable.Dispose()
     {
-        foreach (var (_, scope) in _viewScopes)
+        foreach (var (view, scope) in _viewScopes)
         {
+            if (view.BindingContext is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
             scope.Dispose();
         }
         _viewScopes.Clear();

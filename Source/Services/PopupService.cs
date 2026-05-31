@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Mopups.Interfaces;
 using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
 using PopupPage = Mopups.Pages.PopupPage;
 

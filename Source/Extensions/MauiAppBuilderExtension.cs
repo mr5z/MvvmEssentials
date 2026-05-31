@@ -1,5 +1,5 @@
-﻿using Nkraft.MvvmEssentials.Services.Navigation;
-using System.Reflection;
+﻿using System.Reflection;
+using Nkraft.MvvmEssentials.Services;
 
 // ReSharper disable once CheckNamespace
 namespace Nkraft.MvvmEssentials;

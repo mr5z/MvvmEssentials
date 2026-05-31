@@ -1,4 +1,4 @@
-﻿namespace Nkraft.MvvmEssentials.Services.Navigation;
+﻿namespace Nkraft.MvvmEssentials.Services.Pages;
 
 internal sealed record PageInfo(
 	Type PageType,

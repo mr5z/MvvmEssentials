@@ -11,7 +11,7 @@ public class BaseViewModel : INotifyPropertyChanged
 		remove => _handler -= value;
 	}
 	
-	protected void OnPropertyChanged(PropertyChangedEventArgs args)
+	protected virtual void OnPropertyChanged(PropertyChangedEventArgs args)
 	{
 		_handler?.Invoke(this, args);
 	}

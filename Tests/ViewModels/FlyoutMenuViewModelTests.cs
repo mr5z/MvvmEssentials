@@ -1,3 +1,4 @@
+using Nkraft.MvvmEssentials.Services.FlyoutPages;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NUnit.Framework;

@@ -1,5 +1,7 @@
-﻿using Nkraft.MvvmEssentials.Services.Navigation;
-using System.Reflection;
+﻿using System.Reflection;
+using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 

@@ -2,6 +2,7 @@
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.TabbedPages;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
@@ -14,7 +15,14 @@ public abstract class TabHostViewModel : PageViewModel, ITabHost
 		// TODO OnTabSelected() gets called twice if SelectedTabIndex != 0
 		CurrentTab.OnTabSelected();
 	}
-	
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+		
+		await CurrentTab.OnTabSelectedAsync();
+	}
+
 	protected async Task<IResult> SwitchTabAsync<TTabViewModel>(
 		INavigationService navigationService,
 		INavigationParameters? parameters = null,
