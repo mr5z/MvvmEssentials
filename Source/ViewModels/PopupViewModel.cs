@@ -20,7 +20,7 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 	{
 		base.OnParametersSet(parameters);
 
-		if (parameters.TryGetValue<TaskCompletionSource<TResult>>("_completion", out var completion))
+		if (parameters.TryGetValue<TaskCompletionSource<TResult>>(NavigationHints.PopupCompletionParam, out var completion))
 		{
 			_completion = completion;
 		}

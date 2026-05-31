@@ -18,7 +18,7 @@ public static class PopupServiceExtension
 			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
 			var tcs = new TaskCompletionSource<TResult>();
 			parameters ??= new NavigationParameters();
-			parameters.Add("_completion", tcs);
+			parameters.Add(NavigationHints.PopupCompletionParam, tcs);
 			var navResult = await popupService.PresentAsync(popupName, parameters, animated);
 			if (navResult.IsFailure)
 			{
