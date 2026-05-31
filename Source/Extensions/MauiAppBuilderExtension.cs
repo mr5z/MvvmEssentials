@@ -6,9 +6,9 @@ namespace Nkraft.MvvmEssentials;
 
 public static class MauiAppBuilderExtension
 {
-	public static MauiAppBuilder ConfigureMvvmEssentials(this MauiAppBuilder builder, Assembly executingAssembly, Action<IPageRegistry> configurePageRegistry)
+	public static MauiAppBuilder ConfigureMvvmEssentials(this MauiAppBuilder builder, Action<IPageRegistry> configurePageRegistry)
 	{
-		builder.Services.AddNavigationService(options => options.AssemblyPageSource = executingAssembly);
+		builder.Services.AddNavigationService();
 		builder.Services.AddPageRegistry(configurePageRegistry);
 		builder.Services.AddContentViewFactory();
 		return builder;

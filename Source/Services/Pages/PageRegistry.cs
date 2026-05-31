@@ -29,6 +29,8 @@ public interface IPageRegistry
 
 	Type? ResolveViewModelType(Type pageType);
 	
+	Type? ResolvePageType(string pageName);
+	
 	Type? InitialViewModelType { get; }
 }
 
@@ -71,6 +73,13 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 	Type? IPageRegistry.ResolveViewModelType(Type pageType)
 	{
 		return _mappings.GetValueOrDefault(pageType);
+	}
+
+	Type? IPageRegistry.ResolvePageType(string pageName)
+	{
+		return pageName == nameof(NavigationPage)
+			? typeof(NavigationPage)
+			: _mappings.Keys.SingleOrDefault(t => t.Name == pageName);
 	}
 	
 	private Type? _initialViewModelType;

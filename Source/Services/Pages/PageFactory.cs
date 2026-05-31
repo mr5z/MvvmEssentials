@@ -20,13 +20,11 @@ internal interface IPageFactory
 }
 
 internal class PageFactory(
-	IOptions<NavigationOptions> options,
 	ILogger<PageFactory> logger,
 	IPageRegistry pageRegistry,
 	IServiceProvider serviceProvider,
 	IDispatcher dispatcher) : IPageFactory
 {
-	private readonly Assembly? _assemblyPageSource = options.Value.AssemblyPageSource;
 	private readonly ILogger<PageFactory> _logger = logger;
 	private readonly IPageRegistry _pageRegistry = pageRegistry;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
@@ -85,33 +83,11 @@ internal class PageFactory(
 			var pageName = parts[0];
 			var queryParameters = parts.Length > 1 ? parts[1] : string.Empty;
 			var queryDictionary = QueryStringHelper.ToDictionary(queryParameters);
-			var pageType = FindPageTypeByName(pageName, typeof(TBasePage));
+			var pageType = _pageRegistry.ResolvePageType(pageName);
 			return pageType == null
 				? throw new InvalidOperationException($"Page '{pageName}' not found.")
 				: new PageInfo(pageType, queryDictionary);
 		})];
-	}
-
-	private Type? FindPageTypeByName(string pageName, Type basePage)
-	{
-		var pageDictionary = GetAssemblyPageSourceTypes(basePage);
-		return pageDictionary.GetValueOrDefault(pageName);
-	}
-
-	private Dictionary<string, Type>? _cachedAssemblyPageSourceTypes;
-	private Dictionary<string, Type> GetAssemblyPageSourceTypes(Type basePage)
-	{
-		if (_cachedAssemblyPageSourceTypes is null)
-		{
-			var types = _assemblyPageSource?.GetTypes()
-				.Where(pageType => pageType.IsSubclassOf(basePage))
-				.Where(pageType => pageType.IsAbstract == false)
-				.Where(pageType => pageType.IsGenericType == false)
-				.Concat([typeof(NavigationPage)])
-				.ToDictionary(t => t.Name, t => t) ?? [];
-			_cachedAssemblyPageSourceTypes = types;
-		}
-		return _cachedAssemblyPageSourceTypes;
 	}
 
 	private void RegisterPageEvents(Page? page)

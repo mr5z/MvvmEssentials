@@ -216,11 +216,6 @@ public class NavigationServiceParameterMappingTests
     {
         var services = new ServiceCollection();
 
-        // Point AssemblyPageSource at the test assembly so PageFactory
-        // can resolve "MappablePage" by name
-        services.Configure<NavigationOptions>(options =>
-            options.AssemblyPageSource = typeof(MappablePage).Assembly);
-
         // Real registry — maps MappablePage → MappableViewModel
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<MappablePage, MappableViewModel>();
