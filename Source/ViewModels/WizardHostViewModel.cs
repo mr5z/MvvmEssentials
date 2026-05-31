@@ -1,6 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Wizards;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
@@ -12,17 +10,16 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
     
     protected TState State { get; set; } = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await base.OnInitializedAsync();
+        base.OnInitialized();
         
-        await SetStepAsync(0);
+        SetStep(0);
     }
 
-    [SuppressMessage("ReSharper", "MethodHasAsyncOverload", Justification = "It is by design.")]
-    private async Task SetStepAsync(int index)
+    private void SetStep(int index)
     {
-        State = await CommitCurrentStepAsync(State);
+        State = CommitCurrentStep(State);
 
         if (_stepCache.TryGetValue(index, out var view) == false)
         {
@@ -35,7 +32,6 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
 
         var incoming = (IWizardStep<TState>)view.BindingContext;
         incoming.OnStepEntered(State);
-        await incoming.OnStepEnteredAsync(State);
     }
 
     protected virtual bool CanAdvanceFrom(int index) => true;
@@ -49,30 +45,29 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         
         if (IsLastStep)
         {
-            State = await CommitCurrentStepAsync(State);
+            State = CommitCurrentStep(State);
             await OnCompletedAsync();
             return;
         }
         
-        await SetStepAsync(CurrentIndex + 1);
+        SetStep(CurrentIndex + 1);
     }
 
-    protected async Task GoBackAsync()
+    protected Task GoBackAsync()
     {
         if (CanGoBack)
         {
-            await SetStepAsync(CurrentIndex - 1);
+            SetStep(CurrentIndex - 1);
         }
+        
+        return Task.CompletedTask;
     }
     
-    [SuppressMessage("ReSharper", "MethodHasAsyncOverload", Justification = "It is by design.")]
-    private async Task<TState> CommitCurrentStepAsync(TState state)
+    private TState CommitCurrentStep(TState state)
     {
         if (CurrentStep?.BindingContext is IWizardStep<TState> outgoing)
         {
-            var newState = outgoing.OnStepExited(state);
-            newState = await outgoing.OnStepExitedAsync(newState);
-            return newState;
+            return outgoing.OnStepExited(state);
         }
         return state;
     }
