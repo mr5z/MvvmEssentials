@@ -1,10 +1,21 @@
 # MvvmEssentials
 
-Lightweight MVVM utility library for .NET MAUI that simplifies navigation, flyout menus, tabs, and popups with opinionated conventions and minimal boilerplate. An alternative to .NET MAUI Shell.
+Lightweight MVVM utility library for .NET MAUI that simplifies navigation, flyout menus, tabs, popups, and multi-step wizards with opinionated conventions and minimal boilerplate. An alternative to .NET MAUI Shell.
 
 [![NuGet Version](https://img.shields.io/nuget/v/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
 [![.NET](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml)
+
+## Page types
+
+This page covers setup and the concepts shared by every page type. For usage of a specific
+surface, see its guide:
+
+- [NavigationPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/navigation-page.md) — plain pages and the navigation service (push/replace, parameters)
+- [TabbedPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/tabbed-page.md) — bottom/top tabs with lifecycle propagation
+- [FlyoutPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/flyout-page.md) — hamburger menu with a swappable detail area
+- [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
+- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by Mopups)
 
 # Setup
 
@@ -110,87 +121,7 @@ public class AppStartup : IAppStartup
 
 ---
 
-# Usage
-
-## NavigationService
-
-```cs
-interface INavigationService
-{
-    // Under the hood, detects which current page type is active and performs either
-    // a page replacement or pushes onto the stack if it's a NavigationPage.
-    // Prefer the extensions below over calling this directly.
-    Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
-
-    // Wraps Navigation.PopAsync()
-    Task<IResult> NavigateBackAsync(bool animated = true);
-
-    // Wraps Navigation.PopToRootAsync()
-    Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
-}
-```
-
-### NavigationExtension Examples
-
-**1. Absolute navigation (page replacement)**
-
-```cs
-await _navigationService.Absolute(withNavigation: true)
-    .Push<FirstViewModel, object>(new { A = 1 }) // .Push can only handle "primitive" data types
-    .Push<SecondViewModel, object>(new { B = 2 })
-    .Push<ThirdViewModel, object>(new { C = 3 })
-    .NavigateAsync();
-// Constructs "//NavigationPage/FirstPage?A=1/SecondPage?B=2/ThirdPage?C=3"
-```
-
-**2. Navigation with parameters**
-
-```cs
-// Pass parameters via object type
-await _navigationService.NavigateAsync<LoginViewModel, object>(new { ErrorMessage = "Session expired", Test = 1 });
-
-// Pass parameters via custom type
-record LoginParameters(string ErrorMessage, int Test);
-await _navigationService.NavigateAsync<LoginViewModel, LoginParameters>(new("Session expired", 1));
-
-// Pass parameters via INavigationParameters
-var parameters = new NavigationParameters
-{
-    { "ErrorMessage", "Session expired" },
-    { "Test", 1 }
-};
-await _navigationService.NavigateAsync<LoginViewModel>(parameters);
-
-// LoginViewModel.cs
-class LoginViewModel : PageViewModel
-{
-    // Automatically mapped from navigation parameters
-    public int Id { get; set; }
-    public string? Email { get; set; }
-    public string? ErrorMessage { get; set; }
-
-    // Or handle manually
-    protected override void OnParametersSet(INavigationParameters parameters)
-    {
-        if (parameters.TryGetValue<int>("Test", out var testValue))
-        {
-            // ..
-        }
-    }
-}
-```
-
-**3. Contextual navigation**
-
-```cs
-// Replaces the page if the active page is not a NavigationPage,
-// or pushes onto the stack if it is.
-await _navigationService.NavigateAsync<AccountViewModel>();
-```
-
----
-
-## MapPage vs RegisterPage
+# MapPage vs RegisterPage
 
 Both methods register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
 
@@ -199,9 +130,11 @@ Both methods register a ViewModel with a scoped lifetime in the DI container, bu
 | Navigatable via `NavigateAsync` | ✅ Yes | ❌ No |
 | Creates a page–VM mapping | ✅ Yes | ❌ No |
 | Scoped DI lifetime | ✅ Yes | ✅ Yes |
-| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, flyout detail) |
+| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, flyout detail, wizard steps) |
 
-Use `RegisterPage` for any ViewModel that is wired to its page via XAML `BindingContext` rather than created by the navigation service. The navigation service has no knowledge of these VMs and will not be able to navigate to them by name.
+Use `RegisterPage` for any ViewModel that is wired to its page or view via XAML `BindingContext`
+rather than created by the navigation service. The navigation service has no knowledge of these VMs
+and will not be able to navigate to them by name.
 
 ```cs
 registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatable
@@ -219,7 +152,10 @@ registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatabl
 
 ---
 
-## ViewModel Lifecycle
+# ViewModel Lifecycle
+
+Every page-backing ViewModel derives from `PageViewModel` and shares the lifecycle below. Surface-specific
+hooks (tabs, flyout menus, wizard steps) are documented in each page type's guide.
 
 <details>
 <summary>PageViewModel</summary>
@@ -242,46 +178,11 @@ registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatabl
 
 </details>
 
-<details>
-<summary>TabViewModel</summary>
-
-| Method | When it is called |
-|---|---|
-| `OnInitialized` | Called once on the first tab selection |
-| `OnInitializedAsync` | Async version of `OnInitialized` |
-| `OnTabSelected` | Called every time the tab is selected |
-| `OnTabSelectedAsync` | Async version of `OnTabSelected` |
-| `OnTabUnselected` | Called every time the tab is unselected |
-| `OnTabUnselectedAsync` | Async version of `OnTabUnselected` |
-| `OnDispose` | Called when the parent host's DI scope is disposed |
-
-</details>
-
-<details>
-<summary>FlyoutMenuViewModel</summary>
-
-| Method | When it is called |
-|---|---|
-| `OnFlyoutOpened` | Called every time the flyout is opened |
-| `OnFlyoutOpenedAsync` | Async version of `OnFlyoutOpened` |
-| `OnFlyoutClosed` | Called every time the flyout is closed |
-| `OnFlyoutClosedAsync` | Async version of `OnFlyoutClosed` |
-| `OnDispose` | Called when the parent host's DI scope is disposed |
-
-</details>
-
-<details>
-<summary>PopupViewModel</summary>
-
-Inherits all lifecycle methods from `PageViewModel`.
-
-</details>
-
 ---
 
-## Resource Cleanup (IDisposable)
+# Resource Cleanup (IDisposable)
 
-All ViewModels (`PageViewModel`, `TabViewModel`, `FlyoutMenuViewModel`, `PopupViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope.
+All ViewModels (`PageViewModel`, `TabViewModel`, `FlyoutMenuViewModel`, `PopupViewModel`, `WizardStepViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope.
 
 To clean up resources, override `OnDispose()` in your ViewModel:
 
@@ -304,298 +205,7 @@ public class MyViewModel : PageViewModel
 
 ---
 
-## TabbedPage + NavigationPage
-
-**1. Register tabs in DI**
-
-```cs
-// Tab ViewModels are not mapped to pages. They are bound via XAML.
-// Use RegisterPage to ensure they are registered with the correct lifetime.
-registry.MapPage<MainPage, MainViewModel>()
-    .RegisterPage<HomeViewModel>()
-    .RegisterPage<SettingsViewModel>();
-```
-
-**2. Define tabs in XAML**
-
-```xaml
-<TabbedPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:behaviors="clr-namespace:Nkraft.MvvmEssentials.Behaviors;assembly=Nkraft.MvvmEssentials"
-    xmlns:local="clr-namespace:MauiApp1"
-    xmlns:android="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;assembly=Microsoft.Maui.Controls"
-    android:TabbedPage.ToolbarPlacement="Bottom"
-    x:DataType="local:MainViewModel"
-    x:Class="MauiApp1.MainPage">
-
-    <!-- Required for tab selection via ViewModel to work -->
-    <TabbedPage.Behaviors>
-        <behaviors:TabSelectionBehavior />
-    </TabbedPage.Behaviors>
-
-    <NavigationPage Title="Home">
-        <x:Arguments>
-            <local:HomePage BindingContext="{Binding HomeViewModel}" />
-        </x:Arguments>
-    </NavigationPage>
-
-    <NavigationPage Title="Settings">
-        <x:Arguments>
-            <local:SettingsPage BindingContext="{Binding SettingsViewModel}" />
-        </x:Arguments>
-    </NavigationPage>
-
-</TabbedPage>
-```
-
-**3. Define the tab host ViewModel**
-
-```cs
-public class MainViewModel(HomeViewModel homeViewModel, SettingsViewModel settingsViewModel) : TabHostViewModel
-{
-    protected override IReadOnlyCollection<ITabComponent> Tabs => [HomeViewModel, SettingsViewModel];
-
-    public HomeViewModel HomeViewModel { get; } = homeViewModel;
-    public SettingsViewModel SettingsViewModel { get; } = settingsViewModel;
-}
-```
-
-**4. Define tab ViewModels**
-
-```cs
-public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabViewModel
-{
-    private readonly ISemanticScreenReader _screenReader = screenReader;
-
-    protected override void OnTabSelected()
-    {
-        base.OnTabSelected();
-        Console.WriteLine("Home tab selected");
-    }
-
-    protected override void OnTabUnselected()
-    {
-        base.OnTabUnselected();
-        Console.WriteLine("Bye!");
-    }
-
-    [RelayCommand]
-    private void IncreaseCount()
-    {
-        Count++;
-        CountButtonText = Count == 1 ? $"Clicked {Count} time" : $"Clicked {Count} times";
-        _screenReader.Announce(CountButtonText);
-    }
-
-    public int Count { get; set; }
-    public string CountButtonText { get; set; } = "Click me";
-}
-```
-
-**5. Switch the current tab programmatically**
-
-From within `TabHostViewModel`, call `SwitchTabAsync<TTabViewModel>` to switch to a tab by ViewModel type:
-
-```cs
-public class MainViewModel(
-    HomeViewModel homeViewModel,
-    SettingsViewModel settingsViewModel,
-    INavigationService navigationService) : TabHostViewModel
-{
-    private readonly INavigationService _navigationService = navigationService;
-
-    protected override IReadOnlyCollection<ITabComponent> Tabs => [HomeViewModel, SettingsViewModel];
-
-    public HomeViewModel HomeViewModel { get; } = homeViewModel;
-    public SettingsViewModel SettingsViewModel { get; } = settingsViewModel;
-
-    [RelayCommand]
-    private async Task GoToSettings()
-    {
-        await SwitchTabAsync<SettingsViewModel>(_navigationService);
-    }
-}
-```
-
----
-
-## FlyoutPage
-
-**1. Register ViewModels in DI**
-
-```cs
-// The flyout menu and detail ViewModels are bound via XAML, so use RegisterPage.
-// Pages navigated to from the menu are pushed via the navigation service, so use MapPage.
-registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true)
-    .RegisterPage<MenuViewModel>()
-    .RegisterPage<MainTabbedViewModel>()
-    .MapPage<OrdersPage, OrdersViewModel>()
-    .MapPage<SettingsPage, SettingsViewModel>();
-```
-
-**2. Define the FlyoutPage in XAML**
-
-```xaml
-<FlyoutPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:behaviors="clr-namespace:Nkraft.MvvmEssentials.Behaviors;assembly=Nkraft.MvvmEssentials"
-    xmlns:local="clr-namespace:MauiApp1"
-    x:DataType="local:MainHostViewModel"
-    x:Class="MauiApp1.MainHostPage">
-
-    <FlyoutPage.Behaviors>
-        <!-- Required for IsPresented to sync with the ViewModel -->
-        <behaviors:FlyoutPresentingBehavior />
-        <!-- Required for the detail page to receive lifecycle events -->
-        <behaviors:FlyoutDetailLifecycleBehavior />
-    </FlyoutPage.Behaviors>
-
-    <FlyoutPage.Flyout>
-        <local:MenuPage BindingContext="{Binding MenuViewModel}" Title="Menu" />
-    </FlyoutPage.Flyout>
-
-    <FlyoutPage.Detail>
-        <local:MainTabbedPage BindingContext="{Binding DetailViewModel}" />
-    </FlyoutPage.Detail>
-
-</FlyoutPage>
-```
-
-**3. Define the flyout host ViewModel**
-
-```cs
-public sealed class MainHostViewModel(MenuViewModel menu, MainTabbedViewModel detail)
-    : FlyoutHostViewModel<MenuViewModel, MainTabbedViewModel>(menu, detail);
-```
-
-**4. Define the menu ViewModel**
-
-```cs
-public partial class MenuViewModel(INavigationService navigationService) : FlyoutMenuViewModel
-{
-    private readonly INavigationService _navigationService = navigationService;
-
-    protected override void OnFlyoutOpened()
-    {
-        base.OnFlyoutOpened();
-        Console.WriteLine("Flyout opened");
-    }
-
-    protected override void OnFlyoutClosed()
-    {
-        base.OnFlyoutClosed();
-        Console.WriteLine("Flyout closed");
-    }
-}
-```
-
-**5. Replace the detail page programmatically**
-
-From within `FlyoutMenuViewModel`, call `ReplaceDetailAsync<TViewModel>` to swap the flyout's detail area by ViewModel type. The flyout is automatically dismissed after navigation.
-
-Navigating to a ViewModel that matches the original detail (the one set in XAML) restores it directly rather than wrapping it in a new `NavigationPage`:
-
-```cs
-[RelayCommand]
-private async Task NavigateToHome()
-{
-    // Restores the original detail page set in XAML
-    await ReplaceDetailAsync<MainTabbedViewModel>(_navigationService);
-}
-
-[RelayCommand]
-private async Task NavigateToOrders()
-{
-    await ReplaceDetailAsync<OrdersViewModel>(_navigationService);
-}
-
-[RelayCommand]
-private async Task NavigateToSettings()
-{
-    var parameters = new NavigationParameters { { "Theme", "Dark" } };
-    await ReplaceDetailAsync<SettingsViewModel>(_navigationService, parameters);
-}
-```
-
-**6. Toggle the flyout programmatically**
-
-```cs
-// From MenuViewModel or MainHostViewModel
-IsPresented = !IsPresented;
-```
-
----
-
-## PopupPage
-
-This feature is made possible by the awesome [Mopups](https://github.com/LuckyDucko/Mopups) library.
-
-### Setup
-
-```cs
-builder
-    .UseMauiApp<App>()
-    .ConfigureMopups(); // Required for Mopups
-
-// Register popup pages alongside regular pages
-registry.MapPage<ConfirmPopup, ConfirmViewModel>();
-```
-
-### Usage
-
-**1. Define the popup in XAML**
-
-```xaml
-<nkraft:PopupPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:nkraft="clr-namespace:Nkraft.MvvmEssentials.Pages;assembly=Nkraft.MvvmEssentials"
-    x:DataType="local:ConfirmViewModel"
-    x:Class="MauiApp1.ConfirmPopup"
-    Title="Confirm">
-
-    <!-- layout omitted for brevity -->
-</nkraft:PopupPage>
-```
-
-**2. Define the backing ViewModel**
-
-```cs
-record ConfirmResult(bool Confirm);
-
-internal partial class ConfirmViewModel(IPopupService popupService) : PopupViewModel<ConfirmResult>(popupService)
-{
-    [RelayCommand]
-    private async Task Yes() => await Dismiss(new ConfirmResult(true));
-
-    [RelayCommand]
-    private async Task No() => await Dismiss(new ConfirmResult(false));
-
-    public string? ConfirmationMessage { get; set; }
-}
-```
-
-**3. Present the popup from another ViewModel**
-
-```cs
-var navParams = new NavigationParameters
-{
-    { nameof(ConfirmViewModel.ConfirmationMessage), "Reset counter?" }
-};
-
-var result = await _popupService.PresentAsync<ConfirmViewModel, ConfirmResult>(navParams);
-
-if (result.TryGetValue(out var confirmResult))
-{
-    Console.WriteLine("User pressed: {0}", confirmResult.Confirm ? "Yes" : "No");
-}
-```
-
----
-
-## Contributing
+# Contributing
 
 Contributions are welcome. To get started:
 
