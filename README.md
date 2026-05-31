@@ -31,7 +31,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .ConfigureMvvmEssentials(Assembly.GetExecutingAssembly(), registry =>
+            .ConfigureMvvmEssentials(registry =>
             {
                 // ViewModel and Page naming convention must strictly be followed:
                 // page_name + "Page", vm_name + "ViewModel", wherein page_name == vm_name
