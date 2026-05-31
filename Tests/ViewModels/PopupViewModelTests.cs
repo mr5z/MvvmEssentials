@@ -59,7 +59,7 @@ public class PopupViewModelTests
         // Given
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
-        parameters.Add("_completion", tcs);
+        parameters.Add(NavigationHints.PopupCompletionParam, tcs);
         ((IParameterSetAware)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Ok());
@@ -79,7 +79,7 @@ public class PopupViewModelTests
         // Given
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
-        parameters.Add("_completion", tcs);
+        parameters.Add(NavigationHints.PopupCompletionParam, tcs);
         ((IParameterSetAware)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Fail(ErrorCode.General, "error"));
@@ -101,7 +101,7 @@ public class PopupViewModelTests
         // Given
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
-        parameters.Add("_completion", tcs);
+        parameters.Add(NavigationHints.PopupCompletionParam, tcs);
         ((IParameterSetAware)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Ok());
@@ -119,7 +119,7 @@ public class PopupViewModelTests
         // Given
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
-        parameters.Add("_completion", tcs);
+        parameters.Add(NavigationHints.PopupCompletionParam, tcs);
         ((IParameterSetAware)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Fail(ErrorCode.General, "dismiss failed"));
@@ -141,7 +141,7 @@ public class PopupViewModelTests
         // Given
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
-        parameters.Add("_completion", tcs);
+        parameters.Add(NavigationHints.PopupCompletionParam, tcs);
         ((IParameterSetAware)_sut).OnParametersSet(parameters);
 
         // When

@@ -231,6 +231,7 @@ public class NavigationServiceParameterMappingTests
         services.AddSingleton<ILogger<NavigationService>>(NullLogger<NavigationService>.Instance);
         services.AddSingleton<IPageFactory, PageFactory>();
         services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton(Substitute.For<IDispatcher>());
 
         _applicationContext = Substitute.For<IApplicationContext>();
         services.AddSingleton(_applicationContext);
