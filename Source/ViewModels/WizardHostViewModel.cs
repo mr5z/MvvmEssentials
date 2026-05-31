@@ -22,11 +22,7 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
     [SuppressMessage("ReSharper", "MethodHasAsyncOverload", Justification = "It is by design.")]
     private async Task SetStepAsync(int index)
     {
-        if (CurrentStep?.BindingContext is IWizardStep<TState> outgoing)
-        {
-            State = outgoing.OnStepExited(State);
-            State = await outgoing.OnStepExitedAsync(State);
-        }
+        State = await CommitCurrentStepAsync(State);
 
         if (_stepCache.TryGetValue(index, out var view) == false)
         {
@@ -53,6 +49,7 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         
         if (IsLastStep)
         {
+            State = await CommitCurrentStepAsync(State);
             await OnCompletedAsync();
             return;
         }
@@ -66,6 +63,18 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         {
             await SetStepAsync(CurrentIndex - 1);
         }
+    }
+    
+    [SuppressMessage("ReSharper", "MethodHasAsyncOverload", Justification = "It is by design.")]
+    private async Task<TState> CommitCurrentStepAsync(TState state)
+    {
+        if (CurrentStep?.BindingContext is IWizardStep<TState> outgoing)
+        {
+            var newState = outgoing.OnStepExited(state);
+            newState = await outgoing.OnStepExitedAsync(newState);
+            return newState;
+        }
+        return state;
     }
 
     protected override void OnDispose()
