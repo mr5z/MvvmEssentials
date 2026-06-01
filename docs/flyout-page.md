@@ -7,13 +7,13 @@ the `MapPage` vs `RegisterPage` distinction.
 **1. Register ViewModels in DI**
 
 ```cs
-// The flyout menu and detail ViewModels are bound via XAML, so use RegisterPage.
-// Pages navigated to from the menu are pushed via the navigation service, so use MapPage.
+// ViewModels bound in XAML use RegisterPage; pages pushed via the navigation service use MapPage.
 registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true)
     .RegisterPage<MenuViewModel>()
-    .RegisterPage<MainTabbedViewModel>()
-    .MapPage<OrdersPage, OrdersViewModel>()
-    .MapPage<SettingsPage, SettingsViewModel>();
+    // Ideally RegisterPage, but the flyout has to return to its initial detail page, which needs MapPage.
+    .MapPage<MainTabbedPage, MainTabbedViewModel>()
+        .MapPage<OrdersPage, OrdersViewModel>()
+        .MapPage<SettingsPage, SettingsViewModel>();
 ```
 
 **2. Define the FlyoutPage in XAML**
