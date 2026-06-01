@@ -70,8 +70,7 @@ The matching view binds to the step VM's properties and commands:
 
 > **Note:** `WizardStepViewModel<TState>` derives from `BaseViewModel`. Change notification for your
 > own step properties (like `SelectedGoal`) works the same way it does elsewhere in your app (e.g.
-> CommunityToolkit `[ObservableProperty]` or Fody). Do not implement `IWizardStep<TState>` directly —
-> it is internal; always derive from `WizardStepViewModel<TState>`.
+> CommunityToolkit `[ObservableProperty]` or Fody).
 
 ## 3. Define the host
 
