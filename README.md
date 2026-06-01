@@ -124,28 +124,30 @@ public class AppStartup : IAppStartup
 # MapPage vs RegisterPage
 
 Both methods register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
-
 | | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` |
 |---|---|---|
 | Navigatable via `NavigateAsync` | ✅ Yes | ❌ No |
 | Creates a page–VM mapping | ✅ Yes | ❌ No |
 | Scoped DI lifetime | ✅ Yes | ✅ Yes |
-| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, flyout detail, wizard steps) |
+| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, wizard steps) |
 
 Use `RegisterPage` for any ViewModel that is wired to its page or view via XAML `BindingContext`
 rather than created by the navigation service. The navigation service has no knowledge of these VMs
 and will not be able to navigate to them by name.
 
+The flyout's initial detail is the one exception: it is bound in XAML like the others, but if your
+app returns to it (for example, a "home" action in the menu), it must use `MapPage` so the navigation
+service can find it again.
 ```cs
 registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatable
     .RegisterPage<MenuViewModel>()        // bound in XAML as FlyoutPage.Flyout
-    .RegisterPage<MainTabbedViewModel>()  // bound in XAML as FlyoutPage.Detail
-        .RegisterPage<HomeViewModel>()    // bound in XAML as a TabbedPage tab
-        .RegisterPage<SettingsViewModel>() // bound in XAML as a TabbedPage tab
-    .MapPage<OrdersPage, OrdersViewModel>()   // navigatable
+    // Ideally RegisterPage, but the flyout has to return to its initial detail page, which needs MapPage.
+    .MapPage<MainTabbedPage, MainTabbedViewModel>() // bound in XAML as FlyoutPage.Detail
+        .RegisterPage<HomeViewModel>()      // bound in XAML as a TabbedPage tab
+        .RegisterPage<ProfileViewModel>()   // bound in XAML as a TabbedPage tab
+    .MapPage<OrdersPage, OrdersViewModel>()      // navigatable
     .MapPage<SettingsPage, SettingsViewModel>(); // navigatable
 ```
-
 > **Note:** The indentation above is cosmetic. `IPageRegistry` returns `this` from every call, so the
 > chain is flat regardless of how it is formatted. Indent to reflect the conceptual parent–child
 > relationship between a host page and its XAML-bound ViewModels.
