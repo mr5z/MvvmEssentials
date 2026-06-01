@@ -200,6 +200,7 @@ public class MyViewModel : PageViewModel
 
     protected override void OnDispose()
     {
+        base.OnDispose();
         _timer.Dispose();
     }
 }
