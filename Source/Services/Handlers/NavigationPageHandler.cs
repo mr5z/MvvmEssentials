@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using NavigationRequest = Nkraft.MvvmEssentials.Services.Pages.NavigationRequest;
 
 namespace Nkraft.MvvmEssentials.Services.Handlers;
 
@@ -11,22 +11,22 @@ internal class NavigationPageHandler(ILogger logger) : IPageNavigationHandler
 
     bool IPageNavigationHandler.CanHandle(Page? page) => page is NavigationPage;
 
-    async Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, Page[] newPages, INavigationParameters? parameters, bool animated)
+    async Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, NavigationRequest request, bool animated)
     {
         var navigationPage = (NavigationPage)page;
-        
-        if (newPages.Length == 0)
+
+        if (request.Pages.Count == 0)
         {
             const string error = "No pages to navigate.";
             _logger.LogWarning(error);
             return Result.Fail<NavigationContext>(ErrorCode.General, error);
         }
-        
-        foreach (var newPage in newPages)
+
+        foreach (var pageInfo in request.Pages)
         {
-            await navigationPage.PushAsync(newPage, animated);
+            await navigationPage.PushAsync(request.Materialize(pageInfo), animated);
         }
-        
+
         return Result.Ok(NavigationContext.Complete());
     }
 }

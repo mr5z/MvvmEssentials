@@ -34,7 +34,7 @@ internal class PageFactory(
 	// TODO implement page reuse strategy if needed.
 	Page IPageFactory.CreatePage(PageInfo pageInfo, INavigationParameters? parameters)
 	{
-		var page = (Page?)Activator.CreateInstance(pageInfo.PageType)
+		var page = Activator.CreateInstance(pageInfo.PageType) as Page
 			?? throw new InvalidOperationException(
 				$"Could not create instance of page type '{pageInfo.PageType.FullName}'. " +
 				"Make sure the page is registered in the DI container and you are using the correct service.");

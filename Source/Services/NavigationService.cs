@@ -4,329 +4,292 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Handlers;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using NavigationRequest = Nkraft.MvvmEssentials.Services.Pages.NavigationRequest;
 
 namespace Nkraft.MvvmEssentials.Services;
 
-/// <summary>
-/// Defines navigation operations for navigating between pages in a .NET MAUI application.
-/// </summary>
 public interface INavigationService
 {
-	/// <summary>
-	/// Navigates to the sequence of pages defined by the specified <paramref name="path"/>.
-	/// </summary>
-	/// <remarks>
-	/// <list type="bullet">
-	///   <item>
-	///     <description>
-	///     Page names in the path must correspond to page types that exist in the configured assembly
-	///     (see <c>NavigationOptions.AssemblyPageSource</c>).
-	///     </description>
-	///   </item>
-	///   <item>
-	///     <description>
-	///     Prefix the path with <c>//</c> to perform absolute navigation, which replaces the application's
-	///     main page and clears the navigation stack.
-	///     </description>
-	///   </item>
-	///   <item>
-	///     <description>
-	///     Include <c>NavigationPage</c> in the path to wrap subsequent pages (separated by '/') inside
-	///     a <see cref="NavigationPage"/>.
-	///     </description>
-	///   </item>
-	///   <item>
-	///     <description>
-	///     Query parameters may be appended to page names using <c>?</c>
-	///     (for example, <c>MyPage?param1=value1</c>).
-	///     </description>
-	///   </item>
-	///   <item>
-	///     <description>
-	///     Relative navigation (paths without <c>//</c>) pushes pages onto the current navigation stack,
-	///     or onto the active tab's stack when hosted in a <see cref="TabbedPage"/>.
-	///     </description>
-	///   </item>
-	/// </list>
-	/// </remarks>
-	/// <param name="path">
-	/// Navigation path (for example, <c>//MainPage/NavigationPage/DetailsPage</c>).
-	/// </param>
-	/// <param name="parameters">
-	/// Optional parameters passed to the target page's view model.
-	/// </param>
-	/// <param name="animated">
-	/// Indicates whether the navigation transition should be animated.
-	/// </param>
-	/// <returns>
-	/// An <see cref="IResult"/> indicating whether the navigation operation succeeded.
-	/// </returns>
-	Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
+    /// <summary>
+    /// Navigates to the page(s) described by <paramref name="path"/>.
+    /// <para>
+    /// - An absolute path (starting with '/') replaces the current root page.
+    /// </para>
+    /// <para>
+    /// - A relative path navigates within the current page context.
+    /// </para>
+    /// </summary>
+    /// <param name="path">The navigation path, composed of page names and optional query parameters.</param>
+    /// <param name="parameters">Optional navigation parameters to pass to the target view model.</param>
+    /// <param name="animated">Whether to animate the navigation transition.</param>
+    /// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
+    Task<IResult> NavigateAsync(string path, INavigationParameters? parameters = null, bool animated = true);
 
-	/// <summary>
-	/// Navigates back to the previous page in the navigation stack.
-	/// <para>
-	/// - If the current page is within a <see cref="NavigationPage"/>, this will pop the top page from the navigation stack.
-	/// </para>
-	/// <para>
-	/// - If not within a <see cref="NavigationPage"/>, this will call <see cref="Page.SendBackButtonPressed()"/> on the current page.
-	/// </para>
-	/// </summary>
-	/// <param name="animated">Whether to animate the navigation transition.</param>
-	/// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
-	Task<IResult> NavigateBackAsync(bool animated = true);
+    /// <summary>
+    /// Navigates back to the previous page in the navigation stack.
+    /// <para>
+    /// - If the current page is within a <see cref="NavigationPage"/>, this will pop the top page from the navigation stack.
+    /// </para>
+    /// <para>
+    /// - If not within a <see cref="NavigationPage"/>, this will call <see cref="Page.SendBackButtonPressed()"/> on the current page.
+    /// </para>
+    /// </summary>
+    /// <param name="animated">Whether to animate the navigation transition.</param>
+    /// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
+    Task<IResult> NavigateBackAsync(bool animated = true);
 
-	/// <summary>
-	/// Navigates to the root page of the navigation stack.
-	/// <para>
-	/// - If the root page implements <see cref="IRootPageAware"/> or <see cref="IRootPageAwareAsync"/>, the corresponding event will be delivered.
-	/// </para>
-	/// - Only supported when the current page is a <see cref="NavigationPage"/> or the current tab of a <see cref="TabbedPage"/> is a <see cref="NavigationPage"/>.
-	/// </summary>
-	/// <param name="parameters">Optional navigation parameters to pass to the root page's view model.</param>
-	/// <param name="animated">Whether to animate the navigation transition.</param>
-	/// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
-	Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
+    /// <summary>
+    /// Navigates to the root page of the navigation stack.
+    /// <para>
+    /// - If the root page implements <see cref="IRootPageAware"/> or <see cref="IRootPageAwareAsync"/>, the corresponding event will be delivered.
+    /// </para>
+    /// - Only supported when the current page is a <see cref="NavigationPage"/> or the current tab of a <see cref="TabbedPage"/> is a <see cref="NavigationPage"/>.
+    /// </summary>
+    /// <param name="parameters">Optional navigation parameters to pass to the root page's view model.</param>
+    /// <param name="animated">Whether to animate the navigation transition.</param>
+    /// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
+    Task<IResult> NavigateToRootAsync(INavigationParameters? parameters = null, bool animated = true);
 }
 
 internal sealed class NavigationService(
-	ILogger<NavigationService> logger,
-	IPageFactory pageFactory,
-	IApplicationContext applicationContext) : INavigationService
+    ILogger<NavigationService> logger,
+    IPageFactory pageFactory,
+    IApplicationContext applicationContext) : INavigationService
 {
-	private readonly ILogger<NavigationService> _logger = logger;
-	private readonly IPageFactory _pageFactory = pageFactory;
-	private readonly IApplicationContext _applicationContext = applicationContext;
+    private readonly ILogger<NavigationService> _logger = logger;
+    private readonly IPageFactory _pageFactory = pageFactory;
+    private readonly IApplicationContext _applicationContext = applicationContext;
 
-	// Handle support for FlyoutPage, and nested NavigationPage if needed in the future.
-	async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
-	{
-		PageInfo[] pageInfoList;
+    // Handle support nested NavigationPage if needed in the future.
+    async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
+    {
+        PageInfo[] pageInfoList;
 
-		try
-		{
-			pageInfoList = _pageFactory.GetPageTypesFromPath<Page>(path);
-		}
-		catch (Exception ex)
-		{
-			const string error = "An error occurred while trying to fetch page information.";
-			_logger.LogError(ex, error);
-			return Result.Fail(ErrorCode.InvalidState, error);
-		}
+        try
+        {
+            pageInfoList = _pageFactory.GetPageTypesFromPath<Page>(path);
+        }
+        catch (Exception ex)
+        {
+            const string error = "An error occurred while trying to fetch page information.";
+            _logger.LogError(ex, error);
+            return Result.Fail(ErrorCode.InvalidState, error);
+        }
 
-		if (pageInfoList.Length == 0)
-		{
-			const string error = "No valid pages found in the navigation path.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.InvalidState, error);
-		}
+        if (pageInfoList.Length == 0)
+        {
+            const string error = "No valid pages found in the navigation path.";
+            _logger.LogWarning(error);
+            return Result.Fail(ErrorCode.InvalidState, error);
+        }
 
-		try
-		{
-			// Build the page stack
-			var pages = pageInfoList.Select(pageInfo => _pageFactory.CreatePage(pageInfo, parameters)).ToArray();
-			var replaceCurrentPage = path.StartsWith('/');
+        try
+        {
+            var request = new NavigationRequest(pageInfoList, parameters ?? new NavigationParameters(), _pageFactory);
+            var replaceCurrentPage = path.StartsWith('/');
 
-			if (replaceCurrentPage)
-			{
-				if (pages.Length == 0)
-				{
-					const string error = "No valid pages to navigate to.";
-					_logger.LogWarning(error);
-					return Result.Fail(ErrorCode.InvalidState, error);
-				}
+            if (replaceCurrentPage)
+            {
+                // Build the page stack
+                var pages = request.MaterializeAll();
+                if (pages.Length == 0)
+                {
+                    const string error = "No valid pages to navigate to.";
+                    _logger.LogWarning(error);
+                    return Result.Fail(ErrorCode.InvalidState, error);
+                }
 
-				var firstPage = pages.First();
-				var mainPageResult = await BuildRootPageAsync(firstPage, pages, animated);
-				if (mainPageResult.TryGetValue(out var mainPage))
-				{
-					_applicationContext.MainPage = mainPage;
-				}
-				else
-				{
-					return mainPageResult;
-				}
-			}
-			else
-			{
-				var currentPage = _applicationContext.MainPage;
-				if (currentPage is null)
-				{
-					const string error = "Current page is null.";
-					_logger.LogWarning(error);
-					return Result.Fail(ErrorCode.InvalidState, error);
-				}
-				return await HandleContextualNavigationAsync(currentPage, pages, parameters, animated);
-			}
-		}
-		catch (Exception ex)
-		{
-			const string error = "An error occurred while trying to perform page navigation (Path: {Path}).";
-			_logger.LogError(ex, error, path);
-			return Result.Fail(ErrorCode.Unknown, error, path);
-		}
+                var firstPage = pages.First();
+                var mainPageResult = await BuildRootPageAsync(firstPage, pages, animated);
+                if (mainPageResult.TryGetValue(out var mainPage))
+                {
+                    _applicationContext.MainPage = mainPage;
+                }
+                else
+                {
+                    return mainPageResult;
+                }
+            }
+            else
+            {
+                var currentPage = _applicationContext.MainPage;
+                if (currentPage is null)
+                {
+                    const string error = "Current page is null.";
+                    _logger.LogWarning(error);
+                    return Result.Fail(ErrorCode.InvalidState, error);
+                }
+                return await HandleContextualNavigationAsync(currentPage, request, animated);
+            }
+        }
+        catch (Exception ex)
+        {
+            const string error = "An error occurred while trying to perform page navigation (Path: {Path}).";
+            _logger.LogError(ex, error, path);
+            return Result.Fail(ErrorCode.Unknown, error, path);
+        }
 
-		return Result.Ok();
-	}
+        return Result.Ok();
+    }
 
-	async Task<IResult> INavigationService.NavigateBackAsync(bool animated)
-	{
-		if (TryGetCurrentPage(out var currentPage) == false)
-		{
-			const string error = "Main page is not set for current window.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.InvalidState, error);
-		}
-		
-		var navigationPage = currentPage switch
-		{
-			NavigationPage navPage => navPage,
-			TabbedPage tabbedPage => tabbedPage.CurrentPage as NavigationPage,
-			FlyoutPage flyoutPage => flyoutPage.Detail as NavigationPage,
-			_ => null
-		};
+    async Task<IResult> INavigationService.NavigateBackAsync(bool animated)
+    {
+        if (TryGetCurrentPage(out var currentPage) == false)
+        {
+            const string error = "Main page is not set for current window.";
+            _logger.LogWarning(error);
+            return Result.Fail(ErrorCode.InvalidState, error);
+        }
 
-		if (navigationPage is not null)
-		{
-			var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
-			if (isRootPage)
-			{
-				const string error = "No page to navigate back to.";
-				_logger.LogWarning(error);
-				return Result.Fail(ErrorCode.InvalidState, error);
-			}
+        var navigationPage = currentPage switch
+        {
+            NavigationPage navPage => navPage,
+            TabbedPage tabbedPage => tabbedPage.CurrentPage as NavigationPage,
+            FlyoutPage flyoutPage => flyoutPage.Detail as NavigationPage,
+            _ => null
+        };
 
-			var previousPage = await navigationPage.PopAsync(animated);
-			if (previousPage is null)
-			{
-				const string error = "Popped page returns null.";
-				_logger.LogWarning(error);
-				return Result.Fail(ErrorCode.InvalidState, error);
-			}
-			
-			return Result.Ok();
-		}
-		
-		var navigatedBack = currentPage.SendBackButtonPressed();
-		if (navigatedBack)
-			return Result.Ok();
-		
-		const string errorMessage = "Back navigation got cancelled.";
-		_logger.LogWarning(errorMessage);
-		return Result.Fail(ErrorCode.Cancelled, errorMessage);
-	}
+        if (navigationPage is not null)
+        {
+            var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
+            if (isRootPage)
+            {
+                const string error = "No page to navigate back to.";
+                _logger.LogWarning(error);
+                return Result.Fail(ErrorCode.InvalidState, error);
+            }
 
-	async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
-	{
-		if (TryGetCurrentPage(out var currentPage) == false)
-		{
-			const string error = "Main page is not set for current window.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.InvalidState, error);
-		}
+            var previousPage = await navigationPage.PopAsync(animated);
+            if (previousPage is null)
+            {
+                const string error = "Popped page returns null.";
+                _logger.LogWarning(error);
+                return Result.Fail(ErrorCode.InvalidState, error);
+            }
 
-		var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
-		if (navigationPage is null)
-		{
-			const string error = "Root navigation is only supported within NavigationPage.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.NotSupported, error);
-		}
+            return Result.Ok();
+        }
 
-		if (navigationPage.Navigation.NavigationStack.Count <= 1)
-		{
-			const string error = "No page to navigate back to.";
-			_logger.LogWarning(error);
-			return Result.Fail(ErrorCode.InvalidState, error);
-		}
+        var navigatedBack = currentPage.SendBackButtonPressed();
+        if (navigatedBack)
+            return Result.Ok();
 
-		try
-		{
-			await navigationPage.PopToRootAsync(animated);
-			var rootPage = navigationPage.CurrentPage;
-			if (rootPage.BindingContext is IRootPageAware rootPageAware)
-			{
-				rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
-			}
+        const string errorMessage = "Back navigation got cancelled.";
+        _logger.LogWarning(errorMessage);
+        return Result.Fail(ErrorCode.Cancelled, errorMessage);
+    }
 
-			if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
-			{
-				await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
-			}
-		}
-		catch (Exception ex)
-		{
-			const string error = "An error occurred while trying to navigate to root.";
-			_logger.LogError(ex, error);
-			return Result.Fail(ErrorCode.General, error);
-		}
+    async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
+    {
+        if (TryGetCurrentPage(out var currentPage) == false)
+        {
+            const string error = "Main page is not set for current window.";
+            _logger.LogWarning(error);
+            return Result.Fail(ErrorCode.InvalidState, error);
+        }
 
-		return Result.Ok();
-	}
+        var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
+        if (navigationPage is null)
+        {
+            const string error = "Root navigation is only supported within NavigationPage.";
+            _logger.LogWarning(error);
+            return Result.Fail(ErrorCode.NotSupported, error);
+        }
 
-	private async Task<Result<Page>> BuildRootPageAsync(Page firstPage, Page[] pages, bool animated)
-	{
-		// If there's only one page or no pages to push, just return as-is
-		if (pages.Length <= 1)
-		{
-			return Result.Ok(firstPage);
-		}
+        if (navigationPage.Navigation.NavigationStack.Count <= 1)
+        {
+            const string error = "No page to navigate back to.";
+            _logger.LogWarning(error);
+            return Result.Fail(ErrorCode.InvalidState, error);
+        }
 
-		var navigationPage = NavigationHelper.FindNavigationPage(firstPage);
-		if (navigationPage is not null)
-		{
-			await PushPagesAsync(navigationPage, pages.Skip(1), animated);
-			return Result.Ok(firstPage);
-		}
+        try
+        {
+            await navigationPage.PopToRootAsync(animated);
+            var rootPage = navigationPage.CurrentPage;
+            if (rootPage.BindingContext is IRootPageAware rootPageAware)
+            {
+                rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
+            }
 
-		const string error = "No NavigationPage found in the page hierarchy and multiple pages were requested.";
-		_logger.LogWarning(error);
-		return Result.Fail<Page>(ErrorCode.NotSupported, error);
-	}
-	
-	private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, Page[] newPages, INavigationParameters? parameters, bool animated)
-	{
-		var handlers = new IPageNavigationHandler[]
-		{
-			new NavigationPageHandler(_logger),
-			new TabbedPageHandler(_logger),
-			new FlyoutPageHandler(_logger),
-			new UnsupportedPageHandler(_logger)
-		};
+            if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
+            {
+                await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
+            }
+        }
+        catch (Exception ex)
+        {
+            const string error = "An error occurred while trying to navigate to root.";
+            _logger.LogError(ex, error);
+            return Result.Fail(ErrorCode.General, error);
+        }
 
-		foreach (var handler in handlers)
-		{
-			if (handler.CanHandle(currentPage) == false)
-				continue;
-			
-			var navigationContext = await handler.HandleAsync(currentPage!, newPages, parameters, animated);
-			if (navigationContext.TryGetValue(out var context) && context.Action ==  NavigationAction.ContinueInto)
-			{
-				return await HandleContextualNavigationAsync(context.NextPage, newPages, parameters, animated);
-			}
-			return navigationContext;
-		}
+        return Result.Ok();
+    }
 
-		return Result.Fail(ErrorCode.NotSupported, "No handler found for current page.");
-	}
+    private async Task<Result<Page>> BuildRootPageAsync(Page firstPage, Page[] pages, bool animated)
+    {
+        // If there's only one page or no pages to push, just return as-is
+        if (pages.Length <= 1)
+        {
+            return Result.Ok(firstPage);
+        }
 
-	private static async Task PushPagesAsync(NavigationPage navigationPage, IEnumerable<Page> newPages, bool animated)
-	{
-		foreach (var page in newPages)
-		{
-			await navigationPage.PushAsync(page, animated);
-		}
-	}
+        var navigationPage = NavigationHelper.FindNavigationPage(firstPage);
+        if (navigationPage is not null)
+        {
+            await PushPagesAsync(navigationPage, pages.Skip(1), animated);
+            return Result.Ok(firstPage);
+        }
 
-	private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
-	{
-		if (_applicationContext.Windows.Count > 0 && _applicationContext.Windows[0].Page is { } currentPage)
-		{
-			page = currentPage;
-			return true;
-		}
+        const string error = "No NavigationPage found in the page hierarchy and multiple pages were requested.";
+        _logger.LogWarning(error);
+        return Result.Fail<Page>(ErrorCode.NotSupported, error);
+    }
 
-		page = null;
-		return false;
-	}
+    private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, NavigationRequest request, bool animated)
+    {
+        var handlers = new IPageNavigationHandler[]
+        {
+            new NavigationPageHandler(_logger),
+            new TabbedPageHandler(_logger),
+            new FlyoutPageHandler(_logger),
+            new UnsupportedPageHandler(_logger)
+        };
+
+        foreach (var handler in handlers)
+        {
+            if (handler.CanHandle(currentPage) == false)
+                continue;
+
+            var navigationContext = await handler.HandleAsync(currentPage!, request, animated);
+            if (navigationContext.TryGetValue(out var context) && context.Action == NavigationAction.ContinueInto)
+            {
+                return await HandleContextualNavigationAsync(context.NextPage, request, animated);
+            }
+            return navigationContext;
+        }
+
+        return Result.Fail(ErrorCode.NotSupported, "No handler found for current page.");
+    }
+
+    private static async Task PushPagesAsync(NavigationPage navigationPage, IEnumerable<Page> newPages, bool animated)
+    {
+        foreach (var page in newPages)
+        {
+            await navigationPage.PushAsync(page, animated);
+        }
+    }
+
+    private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
+    {
+        if (_applicationContext.Windows.Count > 0 && _applicationContext.Windows[0].Page is { } currentPage)
+        {
+            page = currentPage;
+            return true;
+        }
+
+        page = null;
+        return false;
+    }
 }
