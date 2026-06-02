@@ -172,6 +172,31 @@ hooks (tabs, flyout menus, wizard steps) are documented in each page type's guid
 | `OnPageUnloaded` | Called when the page is removed from the visual tree |
 | `OnDispose` | Called when the DI scope is disposed |
 
+```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+    START([ViewModel created]):::created
+    START -->|navigation parameters passed in| A[OnParametersSet]:::method
+    A -->|first appearance only| C[OnInitialized<br/>+ Async]:::method
+    C --> NT[OnNavigatedTo]:::method
+    NT --> AP[OnPageAppearing<br/>+ Async]:::method
+    AP --> RUN([Page active]):::running
+
+    RUN -->|another page comes to the front| DP[OnPageDisappearing<br/>+ Async]:::method
+    DP --> NF[OnNavigatedFrom]:::method
+
+    NF -->|page removed from the visual tree| UL[OnPageUnloaded]:::method
+    UL --> DS[OnDispose]:::method
+    DS -->|DI scope disposed| END([ViewModel disposed]):::shutdown
+
+    NF -->|stack popped back to this page as root| RT[OnNavigatedToRoot<br/>+ Async]:::method
+    RT -->|page shown again| AP
+
+    classDef method fill:#EFEAFB,stroke:#512BD4,stroke-width:1.5px,color:#2E1A66;
+    classDef created fill:#DCEAFB,stroke:#3B7DD8,stroke-width:1.5px,color:#0F3C6E,font-weight:bold;
+    classDef running fill:#E4F0D6,stroke:#6FA03C,stroke-width:1.5px,color:#33530F,font-weight:bold;
+    classDef shutdown fill:#FBE3D2,stroke:#D98A3B,stroke-width:1.5px,color:#6E3A0F,font-weight:bold;
+```
 </details>
 
 ---
