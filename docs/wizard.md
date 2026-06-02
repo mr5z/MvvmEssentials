@@ -112,7 +112,8 @@ internal sealed partial class OnboardingHostViewModel(
 }
 ```
 
-> **Important — surfacing the wizard's state to XAML.** The host
+> **Important — surfacing the wizard's state to XAML.** `CurrentStep` is the only public member;
+> `GoNextAsync`, `GoBackAsync`, `CurrentIndex`, `CanGoBack`, and `IsLastStep` are `protected`. The host
 > *does* raise `PropertyChanged` for `CurrentStep`, `CurrentIndex`, `CanGoBack`, and `IsLastStep` as the
 > wizard advances, so the clean pattern is to expose `[RelayCommand]` wrappers for the actions (above)
 > and mirror the protected state into public properties by overriding `OnPropertyChanged`:
