@@ -91,16 +91,10 @@ implement `IAppStartup` anywhere in your project. The source generator will find
 no registration needed.
 
 ```cs
-public class AppStartup : IAppStartup
+public class AppStartup(INavigationService navigationService, IAuthService authService) : IAppStartup
 {
-    private readonly INavigationService _navigationService;
-    private readonly IAuthService _authService;
-
-    public AppStartup(INavigationService navigationService, IAuthService authService)
-    {
-        _navigationService = navigationService;
-        _authService = authService;
-    }
+    private readonly INavigationService _navigationService = navigationService;
+    private readonly IAuthService _authService = authService;
 
     public async Task OnInitializedAsync()
     {
