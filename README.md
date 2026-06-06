@@ -120,7 +120,7 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
 Both methods register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
 | | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` |
 |---|---|---|
-| Navigatable via `NavigateAsync` | ✅ Yes | ❌ No |
+| Navigable via `NavigateAsync` | ✅ Yes | ❌ No |
 | Creates a page–VM mapping | ✅ Yes | ❌ No |
 | Scoped DI lifetime | ✅ Yes | ✅ Yes |
 | Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, wizard steps) |
