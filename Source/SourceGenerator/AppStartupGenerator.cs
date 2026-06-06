@@ -149,12 +149,12 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
             {
                 private readonly INavigationService _navigationService = navigationService;
 
-                public async Task OnInitializedAsync()
+                async Task IAppStartup.OnInitializedAsync()
                 {
                     await _navigationService
                         .Absolute(withNavigation: false)
                         .Push<{{initialViewModelFullName}}>()
-                        .NavigateAsync();
+                        .NavigateAsync(animated: false);
                 }
             }
             """;
