@@ -96,7 +96,7 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
     private readonly INavigationService _navigationService = navigationService;
     private readonly IAuthService _authService = authService;
 
-    public async Task OnInitializedAsync()
+    async Task IAppStartup.OnInitializedAsync()
     {
         var isLoggedIn = await _authService.CheckAsync();
 
