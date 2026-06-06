@@ -4,8 +4,8 @@ using Nkraft.MvvmEssentials.Services.Pages;
 namespace Nkraft.MvvmEssentials.ViewModels;
 
 public class PageViewModel : NavigableEntryViewModel,
-	IAppearingAware,
-	IAppearingAwareAsync,
+	IPageAppearingAware,
+	IPageAppearingAwareAsync,
 	INavigatedAware,
 	IPageLoadAware,
 	IDisposable
@@ -51,13 +51,13 @@ public class PageViewModel : NavigableEntryViewModel,
 
 	protected virtual void OnDispose() { }
 	
-	void IAppearingAware.OnPageAppearing() => OnPageAppearing();
+	void IPageAppearingAware.OnPageAppearing() => OnPageAppearing();
 	
-	void IAppearingAware.OnPageDisappearing() => OnPageDisappearing();
+	void IPageAppearingAware.OnPageDisappearing() => OnPageDisappearing();
 	
-	Task IAppearingAwareAsync.OnPageAppearingAsync() => OnPageAppearingAsync();
+	Task IPageAppearingAwareAsync.OnPageAppearingAsync() => OnPageAppearingAsync();
 	
-	Task IAppearingAwareAsync.OnPageDisappearingAsync() => Task.CompletedTask;
+	Task IPageAppearingAwareAsync.OnPageDisappearingAsync() => Task.CompletedTask;
 	
 	void INavigatedAware.OnNavigatedTo() => OnNavigatedTo();
 	

@@ -84,16 +84,16 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage is null)
             return;
         
-        if (targetPage.BindingContext is IAppearingAware appearing)
+        if (targetPage.BindingContext is IPageAppearingAware appearing)
         {
             appearing.OnPageAppearing();
         }
         
-        if (targetPage.BindingContext is IAppearingAwareAsync appearingAsync)
+        if (targetPage.BindingContext is IPageAppearingAwareAsync appearingAsync)
         {
             appearingAsync.OnPageAppearingAsync().FireAndForget(ex =>
             {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IAppearingAwareAsync.OnPageAppearingAsync));
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearingAwareAsync.OnPageAppearingAsync));
             });
         }
         
@@ -106,16 +106,16 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage is null)
             return;
         
-        if (targetPage.BindingContext is IAppearingAware disappearing)
+        if (targetPage.BindingContext is IPageAppearingAware disappearing)
         {
             disappearing.OnPageDisappearing();
         }
         
-        if (targetPage.BindingContext is IAppearingAwareAsync disappearingAsync)
+        if (targetPage.BindingContext is IPageAppearingAwareAsync disappearingAsync)
         {
             disappearingAsync.OnPageDisappearingAsync().FireAndForget(ex =>
             {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IAppearingAwareAsync.OnPageDisappearingAsync));
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearingAwareAsync.OnPageDisappearingAsync));
             });
         }
         

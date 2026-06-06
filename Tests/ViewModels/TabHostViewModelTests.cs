@@ -27,7 +27,7 @@ public class TabHostViewModelTests
     public void OnInitialized_WhenPageFirstAppears_CallsOnTabSelectedOnCurrentTab()
     {
         // When
-        ((IAppearingAware)_sut).OnPageAppearing();
+        ((IPageAppearingAware)_sut).OnPageAppearing();
 
         // Then
         Assert.That(_tab.SelectedCount, Is.EqualTo(1));
@@ -37,8 +37,8 @@ public class TabHostViewModelTests
     public void OnInitialized_SubsequentAppearings_DoesNotCallOnTabSelectedAgain()
     {
         // When
-        ((IAppearingAware)_sut).OnPageAppearing();
-        ((IAppearingAware)_sut).OnPageAppearing();
+        ((IPageAppearingAware)_sut).OnPageAppearing();
+        ((IPageAppearingAware)_sut).OnPageAppearing();
 
         // Then
         Assert.That(_tab.SelectedCount, Is.EqualTo(1));

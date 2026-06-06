@@ -1,13 +1,13 @@
 ﻿namespace Nkraft.MvvmEssentials.Services.Pages;
 
-internal interface IAppearingAware
+internal interface IPageAppearingAware
 {
 	void OnPageAppearing();
 
 	void OnPageDisappearing();
 }
 
-internal interface IAppearingAwareAsync
+internal interface IPageAppearingAwareAsync
 {
 	Task OnPageAppearingAsync();
 

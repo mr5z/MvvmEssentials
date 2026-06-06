@@ -21,13 +21,13 @@ internal sealed class NavigationRequest(
     INavigationParameters parameters,
     IPageFactory pageFactory)
 {
-    public IReadOnlyList<PageInfo> Pages => pages;
+    public IReadOnlyList<PageInfo> Pages { get; } = pages;
 
-    public INavigationParameters Parameters => parameters;
+    public INavigationParameters Parameters { get; } = parameters;
 
-    public Page Materialize(PageInfo pageInfo) => pageFactory.CreatePage(pageInfo, parameters);
+    public Page Materialize(PageInfo pageInfo) => pageFactory.CreatePage(pageInfo, Parameters);
 
-    public Page[] MaterializeAll() => [.. pages.Select(Materialize)];
+    public IReadOnlyList<Page> MaterializeAll() => [.. Pages.Select(Materialize)];
 }
 
 internal interface IPageNavigationHandler

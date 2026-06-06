@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel;
-using AsyncAwaitBestPractices;
+using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Helpers;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
@@ -43,20 +43,21 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		if (tabbedPage.BindingContext is not ITabHost tabHost)
 			return;
 		
+		// TODO should we handle invalid index here?
 		tabHost.SelectedTabIndex = tabIndex;
 
 		if (_previousTabIndex != -1)
 		{
 			var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
 			previousTab.OnTabUnselected();
-			previousTab.OnTabUnselectedAsync().SafeFireAndForget(ex =>
+			previousTab.OnTabUnselectedAsync().FireAndForget(ex =>
 			{
 				ExceptionDispatcher.Handle<TabSelectionBehavior>(ex, nameof(ITabComponent.OnTabUnselectedAsync));
 			});
 		}
 
 		tabHost.CurrentTab.OnTabSelected();
-		tabHost.CurrentTab.OnTabSelectedAsync().SafeFireAndForget(ex =>
+		tabHost.CurrentTab.OnTabSelectedAsync().FireAndForget(ex =>
 		{
 			ExceptionDispatcher.Handle<TabSelectionBehavior>(ex, nameof(ITabComponent.OnTabSelectedAsync));
 		});

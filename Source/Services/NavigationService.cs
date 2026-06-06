@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
@@ -92,14 +93,14 @@ internal sealed class NavigationService(
             {
                 // Build the page stack
                 var pages = request.MaterializeAll();
-                if (pages.Length == 0)
+                if (pages.Count == 0)
                 {
                     const string error = "No valid pages to navigate to.";
                     _logger.LogWarning(error);
                     return Result.Fail(ErrorCode.InvalidState, error);
                 }
 
-                var firstPage = pages.First();
+                var firstPage = pages[0];
                 var mainPageResult = await BuildRootPageAsync(firstPage, pages, animated);
                 if (mainPageResult.TryGetValue(out var mainPage))
                 {
@@ -227,10 +228,10 @@ internal sealed class NavigationService(
         return Result.Ok();
     }
 
-    private async Task<Result<Page>> BuildRootPageAsync(Page firstPage, Page[] pages, bool animated)
+    private async Task<Result<Page>> BuildRootPageAsync(Page firstPage, IReadOnlyCollection<Page> pages, bool animated)
     {
         // If there's only one page or no pages to push, just return as-is
-        if (pages.Length <= 1)
+        if (pages.Count <= 1)
         {
             return Result.Ok(firstPage);
         }

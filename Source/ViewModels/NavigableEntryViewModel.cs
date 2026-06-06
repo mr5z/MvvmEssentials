@@ -12,7 +12,8 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 {
 	internal void SetNavigationParameter(string key, object? value)
 	{
-		var property = GetType().GetProperty(key, BindingFlags.Public | BindingFlags.Instance);
+		var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+		var property = GetType().GetProperty(key, bindingFlags);
 		if (property is null || property.CanWrite == false)
 			return;
 		

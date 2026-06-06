@@ -7,8 +7,6 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
 {
     private readonly IContentViewFactory _viewFactory = viewFactory;
     private readonly Dictionary<int, ContentView> _stepCache = [];
-    
-    protected TState State { get; set; } = new();
 
     protected override void OnInitialized()
     {
@@ -78,10 +76,12 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         _viewFactory.Dispose();
         _stepCache.Clear();
     }
-    
-    protected abstract IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
 
     public ContentView? CurrentStep { get; private set; }
+    
+    protected TState State { get; set; } = new();
+    
+    protected abstract IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
 
     protected int CurrentIndex { get; private set; }
 

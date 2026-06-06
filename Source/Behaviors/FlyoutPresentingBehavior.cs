@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using AsyncAwaitBestPractices;
+using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services.FlyoutPages;
 using Nkraft.MvvmEssentials.Services.Helpers;
 using Nkraft.MvvmEssentials.ViewModels;
@@ -60,7 +61,7 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             foreach (var component in components)
             {
                 component.OnFlyoutOpened();
-                component.OnFlyoutOpenedAsync().SafeFireAndForget(ex =>
+                component.OnFlyoutOpenedAsync().FireAndForget(ex =>
                 {
                     ExceptionDispatcher.Handle<FlyoutPresentingBehavior>(ex, nameof(IFlyoutComponent.OnFlyoutOpenedAsync));
                 });
@@ -71,7 +72,7 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             foreach (var component in components)
             {
                 component.OnFlyoutClosed();
-                component.OnFlyoutClosedAsync().SafeFireAndForget(ex =>
+                component.OnFlyoutClosedAsync().FireAndForget(ex =>
                 {
                     ExceptionDispatcher.Handle<FlyoutPresentingBehavior>(ex, nameof(IFlyoutComponent.OnFlyoutClosedAsync));
                 });

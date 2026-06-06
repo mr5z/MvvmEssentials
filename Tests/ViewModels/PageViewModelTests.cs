@@ -14,9 +14,9 @@ public class PageViewModelTests
     [SetUp]
     public void SetUp() => _sut = new TrackablePageViewModel();
 
-    private void TriggerAppearing() => ((IAppearingAware)_sut).OnPageAppearing();
-    private void TriggerDisappearing() => ((IAppearingAware)_sut).OnPageDisappearing();
-    private Task TriggerAppearingAsync() => ((IAppearingAwareAsync)_sut).OnPageAppearingAsync();
+    private void TriggerAppearing() => ((IPageAppearingAware)_sut).OnPageAppearing();
+    private void TriggerDisappearing() => ((IPageAppearingAware)_sut).OnPageDisappearing();
+    private Task TriggerAppearingAsync() => ((IPageAppearingAwareAsync)_sut).OnPageAppearingAsync();
     private void TriggerNavigatedTo() => ((INavigatedAware)_sut).OnNavigatedTo();
     private void TriggerNavigatedFrom() => ((INavigatedAware)_sut).OnNavigatedFrom();
     private void TriggerPageUnloaded() => ((IPageLoadAware)_sut).OnPageUnloaded();
@@ -198,7 +198,7 @@ public class PageViewModelTests
 
         // When
         TriggerAppearing();
-        ((IAppearingAware)second).OnPageAppearing();
+        ((IPageAppearingAware)second).OnPageAppearing();
 
         // Then
         Assert.That(_sut.InitializedCount, Is.EqualTo(1));

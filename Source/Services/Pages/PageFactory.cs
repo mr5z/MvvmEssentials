@@ -116,12 +116,12 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IAppearingAware appearingAware)
+			if (viewModel is IPageAppearingAware appearingAware)
 			{
 				appearingAware.OnPageAppearing();
 			}
 
-			if (viewModel is IAppearingAwareAsync appearingAwareAsync)
+			if (viewModel is IPageAppearingAwareAsync appearingAwareAsync)
 			{
 				appearingAwareAsync.OnPageAppearingAsync().FireAndForget(exception =>
 				{
@@ -140,12 +140,12 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IAppearingAware appearingAware)
+			if (viewModel is IPageAppearingAware appearingAware)
 			{
 				appearingAware.OnPageDisappearing();
 			}
 
-			if (viewModel is IAppearingAwareAsync appearingAwareAsync)
+			if (viewModel is IPageAppearingAwareAsync appearingAwareAsync)
 			{
 				appearingAwareAsync.OnPageDisappearingAsync().FireAndForget(exception =>
 				{
