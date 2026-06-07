@@ -1,9 +1,13 @@
 using Nkraft.MvvmEssentials.Services.FlyoutPages;
-using Nkraft.MvvmEssentials.Services.Navigation;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract class FlyoutHostViewModel<TMenu, TDetail>(TMenu menu, TDetail detail) : PageViewModel, IFlyoutHost
+internal interface IInitialDetail
+{
+    Page? DetailPage { get; set; } 
+}
+
+public abstract class FlyoutViewModel<TMenu, TDetail>(TMenu menu, TDetail detail) : PageViewModel, IFlyoutHost, IInitialDetail
     where TMenu : FlyoutMenuViewModel
     where TDetail : IFlyoutComponent
 {
@@ -13,4 +17,6 @@ public abstract class FlyoutHostViewModel<TMenu, TDetail>(TMenu menu, TDetail de
     
     IFlyoutComponent IFlyoutHost.MenuViewModel => MenuViewModel;
     IFlyoutComponent IFlyoutHost.DetailViewModel => DetailViewModel;
+    
+    Page? IInitialDetail.DetailPage { get; set; }
 }

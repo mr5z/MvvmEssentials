@@ -1,9 +1,9 @@
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.ViewModels;
 using NavigationRequest = Nkraft.MvvmEssentials.Services.Pages.NavigationRequest;
 
 namespace Nkraft.MvvmEssentials.Services.Handlers;
@@ -11,9 +11,6 @@ namespace Nkraft.MvvmEssentials.Services.Handlers;
 internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
 {
     private readonly ILogger _logger = logger;
-
-    // Track original Detail pages per FlyoutPage because MAUI made it so complicated.
-    private static readonly ConditionalWeakTable<FlyoutPage, Page> InitialFlyoutDetails = [];
 
     bool IPageNavigationHandler.CanHandle(Page? page) => page is FlyoutPage;
 
@@ -40,29 +37,31 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
 
     private async Task<Result<NavigationContext>> HandleFlyoutMenuNavigation(FlyoutPage flyoutPage, Page detail, NavigationRequest request)
     {
-        // Store original Detail on first navigation
-        _ = InitialFlyoutDetails.TryAdd(flyoutPage, detail);
-
-        if (InitialFlyoutDetails.TryGetValue(flyoutPage, out var initialDetailPage) == false)
+        var detailHost = flyoutPage.BindingContext as IInitialDetail;
+        // Store original Detail on first navigation due to weird design of MAUI
+        // I.e., if we don't, initial BindingContext will not match the injected VM from Flyout's VM and that's a recipe
+        // for a disaztah
+        detailHost?.DetailPage ??= detail;
+        
+        if (detailHost?.DetailPage is not { } detailPage)
         {
             const string error = "The initial detail page was not found. The navigation cannot proceed.";
             _logger.LogWarning(error);
             return Result.Fail<NavigationContext>(ErrorCode.InvalidState, error);
         }
 
-        // Check if navigating back to original Detail
+        // Check if navigating back to initial Detail
         var requestedViewModelName = PageHelper.ToViewModelName(request.Pages[0].PageType);
-        var originalViewModelName = initialDetailPage.BindingContext?.GetType().Name;
-        var isNavigatingToOriginal = requestedViewModelName == originalViewModelName;
+        var initialViewModelName = detailPage.BindingContext?.GetType().Name;
+        var isNavigatingToInitial = requestedViewModelName == initialViewModelName;
 
-        if (isNavigatingToOriginal)
+        if (isNavigatingToInitial)
         {
-            flyoutPage.Detail = initialDetailPage;
+            flyoutPage.Detail = detailPage;
             return Result.Ok(NavigationContext.Complete());
         }
 
         var targetPage = request.Materialize(request.Pages[0]);
-
         // Workaround for MAUI bug: https://github.com/dotnet/maui/issues/22116
         if (flyoutPage.Detail is NavigationPage navPage)
         {

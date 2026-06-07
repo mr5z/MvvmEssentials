@@ -18,7 +18,8 @@ public static class PopupServiceExtension
 			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
 			var tcs = new TaskCompletionSource<TResult>();
 			parameters ??= new NavigationParameters();
-			parameters.Add(NavigationHints.PopupCompletionParam, tcs);
+			parameters[NavigationHints.PopupCompletionParam] = tcs;
+			
 			var navResult = await popupService.PresentAsync(popupName, parameters, animated);
 			if (navResult.IsFailure)
 			{
@@ -32,9 +33,11 @@ public static class PopupServiceExtension
 			}
 			catch (TaskCanceledException)
 			{
-				const string error = "Failed to dismiss popup '{PopupName}' after a request for cancellation; Additional info: {AdditionalInfo}";
-				var dismissResult = await popupService.DismissAsync(popupName, animated);
-				return Result.Fail<TResult>(ErrorCode.Cancelled, error, popupName, dismissResult.ErrorMessage);
+				const string error = "Popup '{PopupName}' has been cancelled.";
+				// Intentionally discarding the result since we're fairly certain this is a canceled operation
+				// and there's no more information to extract from that state
+				_ = await popupService.DismissAsync(popupName, animated);
+				return Result.Fail<TResult>(ErrorCode.Cancelled, error, popupName);
 			}
 			catch (Exception ex)
 			{

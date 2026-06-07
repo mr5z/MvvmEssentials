@@ -21,17 +21,20 @@ internal sealed class PopupService : IPopupService
 	private readonly ILogger<PopupService> _logger;
 	private readonly IPopupNavigation _popupNavigation;
 	private readonly IPageFactory _pageFactory;
+	private readonly IPageRegistry _pageRegistry;
 
-	private readonly OrderedDictionary<string, WeakReference<PopupPage>> _activePopups = [];
+	private readonly OrderedDictionary<Type, WeakReference<PopupPage>> _activePopups = [];
 
 	public PopupService(
 		ILogger<PopupService> logger, 
 		IPopupNavigation popupNavigation,
-		IPageFactory pageFactory)
+		IPageFactory pageFactory,
+		IPageRegistry pageRegistry)
 	{
 		_logger = logger;
 		_popupNavigation = popupNavigation;
 		_pageFactory = pageFactory;
+		_pageRegistry = pageRegistry;
 
 		_pageFactory.PageUnloaded += PageFactory_PageUnloaded;
 	}
@@ -41,11 +44,11 @@ internal sealed class PopupService : IPopupService
 		if (page is PopupPage popup)
 		{
 			var viewModel = popup.BindingContext as BaseViewModel;
-			var popupKey = viewModel?.PageName ?? popup.GetType().Name;
-			var popupRemoved = _activePopups.Remove(popupKey);
+			var popupRemoved = _activePopups.Remove(popup.GetType());
 			if (popupRemoved == false)
 			{
-				_logger.LogWarning("Popup '{PopupName}' was unloaded but not found in active popups.", popupKey);
+				var popupName = viewModel?.PageName ?? popup.GetType().Name;
+				_logger.LogWarning("Popup '{PopupName}' was unloaded but not found in active popups.", popupName);
 			}
 		}
 	}
@@ -67,17 +70,18 @@ internal sealed class PopupService : IPopupService
 
 		if (pageInfoList.Length > 1)
 		{
-			const string error = "More than one popup found with a name '{PopupName}'.";
+			const string error = "More than one popup found with name '{PopupName}'.";
 			_logger.LogWarning(error, popupName);
-			return Result.Fail(ErrorCode.General, error, popupName);
+			return Result.Fail(ErrorCode.InvalidParameter, error, popupName);
 		}
 
 		try
 		{
 			var pageInfo = pageInfoList.Single();
 			var popupPage = (PopupPage)_pageFactory.CreatePage(pageInfo, parameters);
+			var popupType = popupPage.GetType();
 			await _popupNavigation.PushAsync(popupPage, animated);
-			_activePopups[popupName] = new WeakReference<PopupPage>(popupPage);
+			_activePopups[popupType] = new WeakReference<PopupPage>(popupPage);
 			return Result.Ok();
 		}
 		catch (Exception ex)
@@ -95,20 +99,36 @@ internal sealed class PopupService : IPopupService
 			if (string.IsNullOrEmpty(popupName))
 			{
 				await _popupNavigation.PopAsync(animated);
+				_logger.LogInformation("No popup name specified. Dismissing current active popup.");
 				// No need to manually remove from _activePopups here, as it will be handled in PageFactory_PageUnloaded.
 				return Result.Ok();
 			}
-
-			if (_activePopups.TryGetValue(popupName, out var popupRef) && popupRef.TryGetTarget(out var popupPage))
+			
+			var popupType = _pageRegistry.ResolvePageType(popupName);
+			if (popupType is null)
 			{
-				await _popupNavigation.RemovePageAsync(popupPage, animated);
-				// Ditto regarding removal from _activePopups.
-				return Result.Ok();
+				const string error = "Unable to resolve popup '{PopupName}' from registry.";
+				_logger.LogWarning(error, popupName);
+				Result.Fail(ErrorCode.General, popupName, popupType);
 			}
 
-			const string error = "Failed dismiss popup '{PopupName}'.";
-			_logger.LogWarning(error, popupName);
-			return Result.Fail(ErrorCode.InvalidState, error, popupName);
+			if (_activePopups.TryGetValue(popupType!, out var popupRef) == false)
+			{
+				const string error = "No active popup found with name '{PopupName}'.";
+				_logger.LogWarning(error, popupName);
+				return Result.Fail(ErrorCode.InvalidState, error, popupName);
+			}
+
+			if (popupRef.TryGetTarget(out var popupPage) == false)
+			{
+				const string error = "Referenced popup '{PopupName}' could not be recovered.";
+				_logger.LogWarning(error, popupName);
+				return Result.Fail(ErrorCode.InvalidState, error, popupName);
+			}
+			
+			await _popupNavigation.RemovePageAsync(popupPage, animated);
+			// Ditto regarding removal from _activePopups.
+			return Result.Ok();
 		}
 		catch (Exception ex)
 		{

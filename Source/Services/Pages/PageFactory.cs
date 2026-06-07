@@ -82,7 +82,7 @@ internal class PageFactory(
 			var queryParameters = parts.Length > 1 ? parts[1] : string.Empty;
 			var queryDictionary = QueryStringHelper.ToDictionary(queryParameters);
 			var pageType = _pageRegistry.ResolvePageType(pageName);
-			return pageType == null
+			return pageType is null
 				? throw new InvalidOperationException($"Page '{pageName}' not found.")
 				: new PageInfo(pageType, queryDictionary);
 		})];
