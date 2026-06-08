@@ -149,7 +149,7 @@ The host is a `PageViewModel`, so map it like any page. Each step VM is resolved
 factory (`GetRequiredService<TViewModel>()`), so it must be registered too — use `RegisterPage`:
 
 ```cs
-registry.MapPage<OnboardingHostPage, OnboardingHostViewModel>()  // navigatable host page
+registry.MapPage<OnboardingHostPage, OnboardingHostViewModel>()  // navigable host page
     .RegisterPage<OnboardingGoalViewModel>()
     .RegisterPage<OnboardingExperienceViewModel>()
     .RegisterPage<OnboardingScheduleViewModel>();
