@@ -17,7 +17,7 @@ A wizard has three pieces:
 
 ## 1. Define the shared state
 
-`TState` must have a public parameterless constructor (`where TState : new()`); the host creates an
+`TState` must have a public parameterless constructor; the host creates an
 instance on construction. A `record` works well — each step returns an updated copy with `with`:
 
 ```cs
