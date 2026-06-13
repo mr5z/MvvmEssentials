@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
@@ -232,9 +231,7 @@ internal sealed class NavigationService(
     {
         // If there's only one page or no pages to push, just return as-is
         if (pages.Count <= 1)
-        {
             return Result.Ok(firstPage);
-        }
 
         var navigationPage = NavigationHelper.FindNavigationPage(firstPage);
         if (navigationPage is not null)
@@ -265,9 +262,8 @@ internal sealed class NavigationService(
 
             var navigationContext = await handler.HandleAsync(currentPage!, request, animated);
             if (navigationContext.TryGetValue(out var context) && context.Action == NavigationAction.ContinueInto)
-            {
                 return await HandleContextualNavigationAsync(context.NextPage, request, animated);
-            }
+            
             return navigationContext;
         }
 
