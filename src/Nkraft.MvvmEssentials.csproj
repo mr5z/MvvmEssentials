@@ -73,8 +73,14 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
     <ProjectReference Include="SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
-                      PrivateAssets="all" />
+                      PrivateAssets="all"
+                      Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      Condition="'$(Configuration)' != 'Debug'" />
   </ItemGroup>
 
 </Project>

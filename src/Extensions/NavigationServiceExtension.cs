@@ -8,10 +8,24 @@ using Nkraft.MvvmEssentials.ViewModels;
 // ReSharper disable once CheckNamespace
 namespace Nkraft.MvvmEssentials;
 
+public interface INavigationTarget;
+
 public static class NavigationExtension
 {
 	extension(INavigationService navigationService)
 	{
+		public async Task<IResult> NavigateAsync<TViewModel>(
+			INavigationTarget parameters, bool animated = true)
+			where TViewModel : PageViewModel
+		{
+			var pageName = PageHelper.ToPageName<TViewModel>("Page");
+			var navParam = new NavigationParameters();
+			foreach (var (key, value) in ObjectHelper.ToDictionary(parameters))
+				navParam.Add(key, value);
+			return await navigationService.NavigateAsync(pageName, navParam, animated);
+		}
+		
+		
 		/// <summary>
 		/// Navigates to the page associated with the specified ViewModel type, passing parameters as a strongly-typed object.
 		/// </summary>

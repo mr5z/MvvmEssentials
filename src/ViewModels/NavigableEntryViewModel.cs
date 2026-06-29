@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using Nkraft.CrossUtility.Helpers;
+using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
@@ -12,9 +14,10 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 {
 	internal void SetNavigationParameter(string key, object? value)
 	{
-		var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+		const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 		var property = GetType().GetProperty(key, bindingFlags);
-		if (property is null || property.CanWrite == false)
+		var hasParameterAttribute = property?.GetCustomAttributes<ParameterAttribute>().Any();
+		if (hasParameterAttribute == false || property is null || property.CanWrite == false)
 			return;
 		
 		if (value is null || AreTypesEqual(property.PropertyType, value.GetType()))
