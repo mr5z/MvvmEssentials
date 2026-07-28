@@ -415,4 +415,84 @@ public class NavigationServiceParameterMappingTests
         // Then — Age stays at default value
         Assert.That(GetBoundViewModel().Age, Is.EqualTo(0));
     }
+    
+    [Test]
+    public async Task NavigateAsync_WithUnattributedPropertyKey_DoesNotSetProperty()
+    {
+        // Given — key matches a real property, but it has no [NavigationParameter]
+        var parameters = new NavigationParameters { { "UnmappedName", "Mallory" } };
+
+        // When
+        await _sut.NavigateAsync("//MappablePage", parameters);
+
+        // Then
+        Assert.That(GetBoundViewModel().UnmappedName, Is.Null);
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithUnattributedPrivateSetProperty_DoesNotSetProperty()
+    {
+        // Given — private setters were reachable before the gate (BindingFlags.NonPublic)
+        var parameters = new NavigationParameters { { "UnmappedPrivateSet", "Mallory" } };
+
+        // When
+        await _sut.NavigateAsync("//MappablePage", parameters);
+
+        // Then
+        Assert.That(GetBoundViewModel().UnmappedPrivateSet, Is.Null);
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithQueryStringTargetingUnattributedProperty_DoesNotSetProperty()
+    {
+        // When — the gate must apply to the query-string path too, not just INavigationParameters
+        await _sut.NavigateAsync("//MappablePage?UnmappedAge=77");
+
+        // Then
+        Assert.That(GetBoundViewModel().UnmappedAge, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithMixedKeys_MapsOnlyAttributedProperties()
+    {
+        // Given
+        var parameters = new NavigationParameters
+        {
+            { "Name", "Alice" },
+            { "UnmappedName", "Mallory" }
+        };
+
+        // When
+        await _sut.NavigateAsync("//MappablePage", parameters);
+
+        // Then
+        var vm = GetBoundViewModel();
+        Assert.That(vm.Name, Is.EqualTo("Alice"));
+        Assert.That(vm.UnmappedName, Is.Null);
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithUnattributedKey_StillDeliversParametersToOnParametersSet()
+    {
+        // Given — gating property writes must not filter the dictionary itself
+        var parameters = new NavigationParameters { { "UnmappedName", "Mallory" } };
+
+        // When
+        await _sut.NavigateAsync("//MappablePage", parameters);
+
+        // Then
+        var vm = GetBoundViewModel();
+        Assert.That(vm.OnParametersSetCount, Is.EqualTo(1));
+        Assert.That(vm.LastParameters!.ContainsKey("UnmappedName"), Is.True);
+    }
+
+    [Test]
+    public void NavigateAsync_WithKeyMatchingReadOnlyProperty_DoesNotThrow()
+    {
+        // Given — no setter and no attribute
+        var parameters = new NavigationParameters { { "ReadOnlyProp", "value" } };
+
+        // Then
+        Assert.DoesNotThrowAsync(async () => await _sut.NavigateAsync("//MappablePage", parameters));
+    }
 }

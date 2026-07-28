@@ -15,14 +15,20 @@ internal sealed record ViewModelParameter(
 internal sealed record ViewModelTarget(
     string Namespace,
     string ClassName,
+    string TypeKeyword,
+    string Suffix,
+    string? ResultType,
     string Accessibility,
     EquatableArray<ViewModelParameter> Parameters);
 
 [Generator]
 public sealed class NavigationParametersGenerator : IIncrementalGenerator
 {
-    private const string NavigableViewModelName  = "Nkraft.MvvmEssentials.ViewModels.NavigableEntryViewModel";
+    private const string TargetBaseViewModelName = "Nkraft.MvvmEssentials.ViewModels.PageViewModel";
     private const string NavigationParameterName = "Nkraft.MvvmEssentials.Attributes.NavigationParameterAttribute";
+    private const string PopupViewModelNamespace = "Nkraft.MvvmEssentials.ViewModels";
+    private const string PopupViewModelMetadataName = "IPopupViewModel`1";
+    private const string GeneratorName = "Nkraft.MvvmEssentials.SourceGenerator";
 
     private static readonly SymbolDisplayFormat TypeFormat =
         SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
@@ -36,14 +42,12 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
                 transform: static (ctx, _) => ToViewModelTarget(ctx.TargetSymbol.ContainingType))
             .Where(static t => t is not null)
             .Select(static (t, _) => t!)
-            .Collect();
+            .Collect()
+            // one attributed property -> one pipeline item, so the same VM appears N times.
+            // dedup, then fan back out so each VM caches independently.
+            .SelectMany(static (all, _) => all.Distinct());
 
-        context.RegisterSourceOutput(targets, static (spc, all) =>
-        {
-            // one attributed property -> one pipeline item, so the same VM appears N times
-            foreach (var t in all.Distinct())
-                Emit(spc, t);
-        });
+        context.RegisterSourceOutput(targets, static (spc, t) => Emit(spc, t));
     }
 
     private static ViewModelTarget? ToViewModelTarget(INamedTypeSymbol? symbol)
@@ -51,26 +55,32 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
         if (symbol is null)
             return null;
 
-        // skip framework bases, generic and nested VMs — none of these can host a valid partial emit
         if (symbol.IsAbstract || symbol.IsStatic || symbol.IsGenericType || symbol.ContainingType is not null)
             return null;
 
-        if (IsDerivedFrom(symbol, NavigableViewModelName) == false)
+        if (IsDerivedFrom(symbol, TargetBaseViewModelName) == false)
             return null;
 
         var props = CollectParameters(symbol);
         if (props.Length == 0)
             return null;
 
+        var popupInterface = symbol.AllInterfaces.FirstOrDefault(i =>
+            i.MetadataName == PopupViewModelMetadataName &&
+            i.ContainingNamespace.ToDisplayString() == PopupViewModelNamespace);
+
         var ns = symbol.ContainingNamespace.IsGlobalNamespace
             ? string.Empty
             : symbol.ContainingNamespace.ToDisplayString();
 
         return new ViewModelTarget(
-            ns,
-            symbol.Name,
-            ToKeyword(symbol.DeclaredAccessibility),
-            new EquatableArray<ViewModelParameter>(props));
+            Namespace: ns,
+            ClassName: symbol.Name,
+            TypeKeyword: symbol.IsRecord ? "record" : "class",
+            Suffix: popupInterface is not null ? "Popup" : "Page",
+            ResultType: popupInterface?.TypeArguments[0].ToDisplayString(TypeFormat),
+            Accessibility: ToKeyword(symbol.DeclaredAccessibility),
+            Parameters: new EquatableArray<ViewModelParameter>(props));
     }
 
     private static ViewModelParameter[] CollectParameters(INamedTypeSymbol symbol)
@@ -82,7 +92,7 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
         // most-derived wins on name collision
         for (var t = symbol; t is not null; t = t.BaseType)
         {
-            if (t.ToDisplayString() == NavigableViewModelName)
+            if (t.ToDisplayString() == TargetBaseViewModelName)
                 break;
 
             foreach (var p in t.GetMembers().OfType<IPropertySymbol>())
@@ -94,7 +104,7 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
 
                 var isRequired = attr.NamedArguments
                     .FirstOrDefault(na => na.Key == "IsRequired").Value.Value as bool? ?? true;
-                
+
                 result.Add(new ViewModelParameter(
                     PropertyName: p.Name,
                     Type: p.Type.ToDisplayString(TypeFormat),
@@ -102,7 +112,8 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
             }
         }
 
-        // required first (C# demands optionals last); OrderBy is stable, so declaration order holds within each group
+        // required first (C# demands optionals last); OrderByDescending is stable,
+        // so declaration order holds within each group
         return result.OrderByDescending(p => p.IsRequired).ToArray();
     }
 
@@ -114,10 +125,15 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
         if (t.Namespace.Length > 0)
             sb.Append("namespace ").Append(t.Namespace).AppendLine(";").AppendLine();
 
-        sb.Append(t.Accessibility).Append(" partial class ").AppendLine(t.ClassName);
+        sb.Append(t.Accessibility).Append(" partial ").Append(t.TypeKeyword).Append(' ').AppendLine(t.ClassName);
         sb.AppendLine("{");
 
-        sb.Append("    public static global::Nkraft.MvvmEssentials.Services.Pages.PageDestination With(");
+        var returnType = t.ResultType is null
+            ? "global::Nkraft.MvvmEssentials.Services.Pages.PageDestination"
+            : $"global::Nkraft.MvvmEssentials.Services.Pages.PopupDestination<{t.ResultType}>";
+
+        sb.Append("    [global::System.CodeDom.Compiler.GeneratedCode(\"").Append(GeneratorName).AppendLine("\", \"1.0\")]");
+        sb.Append("    public static ").Append(returnType).Append(" With(");
         sb.Append(string.Join(", ", t.Parameters.Array.Select(p => p.IsRequired
             ? $"{p.Type} {ToParameterName(p.PropertyName)}"
             : $"{ToNullable(p.Type)} {ToParameterName(p.PropertyName)} = default")));
@@ -134,9 +150,10 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
                 sb.Append("        if (").Append(name).Append(" is not null) __p.Add(\"")
                     .Append(p.PropertyName).Append("\", ").Append(name).AppendLine(");");
         }
-        
-        var pageName = t.ClassName.Replace("ViewModel", "Page");
-        sb.AppendLine($"        return new global::Nkraft.MvvmEssentials.Services.Pages.PageDestination(\"{pageName}\", __p);");
+
+        var destinationName = t.ClassName.Replace("ViewModel", t.Suffix);
+
+        sb.AppendLine($"        return new {returnType}(\"{destinationName}\", __p);");
         sb.AppendLine("    }");
         sb.AppendLine("}");
 
@@ -151,7 +168,7 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
                 return true;
         return false;
     }
-    
+
     private static string ToNullable(string type) =>
         type.EndsWith("?", StringComparison.Ordinal) ? type : type + "?";
 
@@ -173,24 +190,32 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
 internal readonly struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>
     where T : IEquatable<T>
 {
-    public readonly T[] Array = array;
+    private readonly T[]? _array = array;
+
+    public T[] Array => _array ?? [];
 
     public bool Equals(EquatableArray<T> other)
     {
-        if (Array.Length != other.Array.Length)
+        var mine = Array;
+        var theirs = other.Array;
+        if (mine.Length != theirs.Length)
             return false;
-        return !Array.Where((t, i) => t.Equals(other.Array[i]) == false).Any();
+        for (var i = 0; i < mine.Length; i++)
+            if (mine[i].Equals(theirs[i]) == false)
+                return false;
+        return true;
     }
 
     public override bool Equals(object? obj) => obj is EquatableArray<T> o && Equals(o);
 
     public override int GetHashCode()
     {
-        if (Array is null)
-            return 0;
         unchecked
         {
-            return Array.Aggregate(17, (current, item) => current * 31 + item.GetHashCode());
+            var hash = 17;
+            foreach (var item in Array)
+                hash = hash * 31 + item.GetHashCode();
+            return hash;
         }
     }
 }

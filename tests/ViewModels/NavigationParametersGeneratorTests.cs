@@ -15,10 +15,10 @@ public class NavigationParametersGeneratorTests
             using Nkraft.MvvmEssentials.ViewModels;
             using Nkraft.MvvmEssentials.Attributes;
 
-            public class MyViewModel : NavigableEntryViewModel
+            public class MyViewModel : PageViewModel
             {
-             [NavigationParameter]
-             public string Name { get; set; }
+                [NavigationParameter]
+                public string Name { get; set; }
             }
 """;
         
@@ -26,7 +26,7 @@ public class NavigationParametersGeneratorTests
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
             .Select(a => MetadataReference.CreateFromFile(a.Location));
         
-        var mvvmEssentialsAssembly = typeof(Nkraft.MvvmEssentials.ViewModels.NavigableEntryViewModel).Assembly.Location;
+        var mvvmEssentialsAssembly = typeof(Nkraft.MvvmEssentials.ViewModels.PageViewModel).Assembly.Location;
 
         // 1. Create an EMPTY compilation baseline first
         var baselineCompilation = CSharpCompilation.Create(

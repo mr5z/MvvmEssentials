@@ -2,6 +2,7 @@
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
 
 // ReSharper disable once CheckNamespace
@@ -11,20 +12,36 @@ public static class PopupServiceExtension
 {
 	extension(IPopupService popupService)
 	{
-		public async Task<Result<TResult>> PresentAsync<TViewModel, TResult>(INavigationParameters? parameters = null,
-			bool animated = true)
+		public async Task<Result<TResult>> PresentAsync<TResult>(
+			PopupDestination<TResult> destination, bool animated = true)
+			=> await IPopupService.PresentAsync<TResult>(
+				popupService, destination.PopupName, destination.Parameters, animated);
+		
+		public async Task<Result<TResult>> PresentAsync<TViewModel, TResult>(
+			INavigationParameters? parameters = null, bool animated = true)
 			where TViewModel : IPopupViewModel<TResult>
+			=> await IPopupService.PresentAsync<TResult>(
+				popupService,
+				PageHelper.ToPageName<TViewModel>("Popup"),
+				parameters ?? new NavigationParameters(),
+				animated);
+
+		public async Task<IResult> DismissAsync<TViewModel>(bool animated = true)
+			where TViewModel : IPopupViewModel
 		{
 			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
+			return await popupService.DismissAsync(popupName, animated);
+		}
+		
+		private static async Task<Result<TResult>> PresentAsync<TResult>(
+			IPopupService popup, string popupName, INavigationParameters parameters, bool animated)
+		{
 			var tcs = new TaskCompletionSource<TResult>();
-			parameters ??= new NavigationParameters();
 			parameters[NavigationHints.PopupCompletionParam] = tcs;
-			
-			var navResult = await popupService.PresentAsync(popupName, parameters, animated);
+
+			var navResult = await popup.PresentAsync(popupName, parameters, animated);
 			if (navResult.IsFailure)
-			{
 				return Result.Fail<TResult>(ErrorCode.InvalidState, "Failed to display popup '{PopupName}'.", popupName);
-			}
 
 			try
 			{
@@ -36,7 +53,7 @@ public static class PopupServiceExtension
 				const string error = "Popup '{PopupName}' has been cancelled.";
 				// Intentionally discarding the result since we're fairly certain this is a canceled operation
 				// and there's no more information to extract from that state
-				_ = await popupService.DismissAsync(popupName, animated);
+				_ = await popup.DismissAsync(popupName, animated);
 				return Result.Fail<TResult>(ErrorCode.Cancelled, error, popupName);
 			}
 			catch (Exception ex)
@@ -44,13 +61,6 @@ public static class PopupServiceExtension
 				const string error = "Failed to dismiss popup '{PopupName}'; Additional info: {AdditionalInfo}";
 				return Result.Fail<TResult>(ErrorCode.Unknown, error, popupName, ex.Message);
 			}
-		}
-
-		public async Task<IResult> DismissAsync<TViewModel>(bool animated = true)
-			where TViewModel : IPopupViewModel
-		{
-			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
-			return await popupService.DismissAsync(popupName, animated);
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
@@ -137,9 +138,15 @@ internal partial class TestPopupViewModel(IPopupService popupService)
 
 internal class PropertiedViewModel : NavigableEntryViewModel
 {
+    [NavigationParameter]
     public string? Name { get; set; }
+    
+    [NavigationParameter]
     public int Age { get; set; }
+    
+    [NavigationParameter]
     public int? NullableAge { get; set; }
+    
     public string ReadOnlyProp { get; } = "fixed";
 }
 
@@ -152,9 +159,19 @@ internal class MappablePage : Page { }
 
 internal class MappableViewModel : PageViewModel
 {
+    [NavigationParameter]
     public string? Name { get; set; }
+    
+    [NavigationParameter]
     public int Age { get; set; }
+    
+    [NavigationParameter]
     public int? NullableAge { get; set; }
+    
+    public string? UnmappedName { get; set; }
+    public int UnmappedAge { get; set; }
+    public string? UnmappedPrivateSet { get; private set; }
+    
     public int OnParametersSetCount { get; private set; }
     public INavigationParameters? LastParameters { get; private set; }
 
