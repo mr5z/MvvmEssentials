@@ -125,7 +125,7 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
             {
                 internal static IServiceCollection AddDiscoveredAppStartup(this IServiceCollection services)
                 {
-                    services.AddTransient<IAppStartup, {{fullName}}>();
+                    services.AddTransient<IAppStartup, global::{{fullName}}>();
                     return services;
                 }
             }
@@ -153,7 +153,7 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
                 {
                     await _navigationService
                         .Absolute(withNavigation: false)
-                        .Push<{{initialViewModelFullName}}>()
+                        .Push<global::{{initialViewModelFullName}}>()
                         .NavigateAsync(animated: false);
                 }
             }

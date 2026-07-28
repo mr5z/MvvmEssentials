@@ -4,6 +4,7 @@ using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Helpers;
 using Nkraft.MvvmEssentials.Services.Helpers;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
 
 namespace Nkraft.MvvmEssentials.Services.Pages;
@@ -61,7 +62,7 @@ internal class PageFactory(
 				}
 			}
 
-			if (viewModel is IParameterSetAware parameterSetAware)
+			if (viewModel is IParametersSet parameterSetAware)
 			{
 				parameterSetAware.OnParametersSet(parameters ?? new NavigationParameters());
 			}
@@ -116,20 +117,16 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IPageAppearingAware appearingAware)
+			if (viewModel is IPageAppearing appearingAware)
 			{
 				appearingAware.OnPageAppearing();
-			}
-
-			if (viewModel is IPageAppearingAwareAsync appearingAwareAsync)
-			{
-				appearingAwareAsync.OnPageAppearingAsync().FireAndForget(exception =>
+				appearingAware.OnPageAppearingAsync().FireAndForget(exception =>
 				{
 					ExceptionDispatcher.Handle(
 						exception,
 						_logger, 
 						_dispatcher, 
-						nameof(appearingAwareAsync.OnPageAppearingAsync)
+						nameof(appearingAware.OnPageAppearingAsync)
 					);
 				});
 			}
@@ -140,20 +137,16 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IPageAppearingAware appearingAware)
+			if (viewModel is IPageAppearing appearingAware)
 			{
 				appearingAware.OnPageDisappearing();
-			}
-
-			if (viewModel is IPageAppearingAwareAsync appearingAwareAsync)
-			{
-				appearingAwareAsync.OnPageDisappearingAsync().FireAndForget(exception =>
+				appearingAware.OnPageDisappearingAsync().FireAndForget(exception =>
 				{
 					ExceptionDispatcher.Handle(
 						exception,
 						_logger, 
 						_dispatcher, 
-						nameof(appearingAwareAsync.OnPageDisappearingAsync)
+						nameof(appearingAware.OnPageDisappearingAsync)
 					);
 				});
 			}
@@ -164,9 +157,9 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is INavigatedAware navigatedAware)
+			if (viewModel is IPageNavigated navigatedAware)
 			{
-				navigatedAware.OnNavigatedTo();
+				navigatedAware.OnPageNavigatedTo();
 			}
 		}
 	}
@@ -175,9 +168,9 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is INavigatedAware navigatedAware)
+			if (viewModel is IPageNavigated navigatedAware)
 			{
-				navigatedAware.OnNavigatedFrom();
+				navigatedAware.OnPageNavigatedFrom();
 			}
 		}
 	}
@@ -191,7 +184,7 @@ internal class PageFactory(
 			return;
 		}
 		
-		if (page.BindingContext is IPageLoadAware loadAware)
+		if (page.BindingContext is IPageLoad loadAware)
 		{
 			loadAware.OnPageUnloaded();
 		}

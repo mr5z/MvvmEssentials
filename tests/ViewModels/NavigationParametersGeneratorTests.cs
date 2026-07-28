@@ -12,15 +12,15 @@ public class NavigationParametersGeneratorTests
     public void Generator_ShouldGenerateRecord_WhenClassHasParameterAttribute()
     {
         var source = """
-                     using Nkraft.MvvmEssentials.ViewModels;
-                     using Nkraft.MvvmEssentials.Attributes;
+            using Nkraft.MvvmEssentials.ViewModels;
+            using Nkraft.MvvmEssentials.Attributes;
 
-                     public class MyViewModel : NavigableEntryViewModel
-                     {
-                         [Parameter]
-                         public string Name { get; set; }
-                     }
-                     """;
+            public class MyViewModel : NavigableEntryViewModel
+            {
+             [NavigationParameter]
+             public string Name { get; set; }
+            }
+""";
         
         var dotNetAssemblies = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))

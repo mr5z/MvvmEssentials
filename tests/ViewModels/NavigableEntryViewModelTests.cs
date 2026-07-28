@@ -1,5 +1,6 @@
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NUnit.Framework;
 
@@ -101,7 +102,7 @@ public class NavigableEntryViewModelTests
         parameters.Add("x", 1);
 
         // When
-        ((IParameterSetAware)trackable).OnParametersSet(parameters);
+        ((IParametersSet)trackable).OnParametersSet(parameters);
 
         // Then
         Assert.That(trackable.LastParameters, Is.SameAs(parameters));

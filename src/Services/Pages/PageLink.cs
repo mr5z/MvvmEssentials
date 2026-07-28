@@ -14,7 +14,7 @@ internal sealed class PageWithQuery(string? pageName, object? parameters)
 			return PageName;
 
 		var queryString = QueryStringHelper.ToQueryString(Parameters);
-		return $"{PageName}?{queryString}";
+		return string.IsNullOrEmpty(queryString) ? PageName : $"{PageName}?{queryString}";
 	}
 }
 

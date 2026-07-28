@@ -1,18 +1,15 @@
-﻿using Nkraft.MvvmEssentials.Services.Navigation;
-using Nkraft.MvvmEssentials.Services.Pages;
+﻿using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
 public class PageViewModel : NavigableEntryViewModel,
-	IPageAppearingAware,
-	IPageAppearingAwareAsync,
-	INavigatedAware,
-	IPageLoadAware,
+	IPageAppearing,
+	IPageNavigated,
+	IPageLoad,
 	IDisposable
 {
-	private bool _isInitialized = false;
-	private bool _isInitializedAsync = false;
 
+	private bool _isInitialized = false;
 	protected virtual void OnPageAppearing()
 	{
 		if (_isInitialized == false)
@@ -22,8 +19,7 @@ public class PageViewModel : NavigableEntryViewModel,
 		}
 	}
 
-	protected virtual void OnPageDisappearing() { }
-
+	private bool _isInitializedAsync = false;
 	protected virtual async Task OnPageAppearingAsync() 
 	{
 		if (_isInitializedAsync == false)
@@ -32,6 +28,8 @@ public class PageViewModel : NavigableEntryViewModel,
 			await OnInitializedAsync();
 		}
 	}
+
+	protected virtual void OnPageDisappearing() { }
 
 	protected virtual Task OnPageDisappearingAsync() => Task.CompletedTask;
 
@@ -51,19 +49,19 @@ public class PageViewModel : NavigableEntryViewModel,
 
 	protected virtual void OnDispose() { }
 	
-	void IPageAppearingAware.OnPageAppearing() => OnPageAppearing();
+	void IPageAppearing.OnPageAppearing() => OnPageAppearing();
 	
-	void IPageAppearingAware.OnPageDisappearing() => OnPageDisappearing();
+	void IPageAppearing.OnPageDisappearing() => OnPageDisappearing();
 	
-	Task IPageAppearingAwareAsync.OnPageAppearingAsync() => OnPageAppearingAsync();
+	Task IPageAppearing.OnPageAppearingAsync() => OnPageAppearingAsync();
 	
-	Task IPageAppearingAwareAsync.OnPageDisappearingAsync() => Task.CompletedTask;
+	Task IPageAppearing.OnPageDisappearingAsync() => Task.CompletedTask;
 	
-	void INavigatedAware.OnNavigatedTo() => OnNavigatedTo();
+	void IPageNavigated.OnPageNavigatedTo() => OnNavigatedTo();
 	
-	void INavigatedAware.OnNavigatedFrom() => OnNavigatedFrom();
+	void IPageNavigated.OnPageNavigatedFrom() => OnNavigatedFrom();
 	
-	void IPageLoadAware.OnPageUnloaded() => OnPageUnloaded();
+	void IPageLoad.OnPageUnloaded() => OnPageUnloaded();
 	
 #pragma warning disable CA1816
 	void IDisposable.Dispose() => OnDispose();

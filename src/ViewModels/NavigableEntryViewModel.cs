@@ -1,22 +1,19 @@
 ﻿using System.Reflection;
-using Nkraft.CrossUtility.Helpers;
 using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
-using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
 public abstract class NavigableEntryViewModel : BaseViewModel,
-	IParameterSetAware,
-	IRootPageAware,
-	IRootPageAwareAsync
+	IParametersSet,
+	IRootPageNavigated
 {
 	internal void SetNavigationParameter(string key, object? value)
 	{
 		const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 		var property = GetType().GetProperty(key, bindingFlags);
-		var hasParameterAttribute = property?.GetCustomAttributes<ParameterAttribute>().Any();
+		var hasParameterAttribute = property?.GetCustomAttributes<NavigationParameterAttribute>().Any();
 		if (hasParameterAttribute == false || property is null || property.CanWrite == false)
 			return;
 		
@@ -32,11 +29,11 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 
 	protected virtual Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
 
-	void IParameterSetAware.OnParametersSet(INavigationParameters parameters) => OnParametersSet(parameters);
+	void IParametersSet.OnParametersSet(INavigationParameters parameters) => OnParametersSet(parameters);
 	
-	void IRootPageAware.OnNavigatedToRoot(INavigationParameters parameters) => OnNavigatedToRoot(parameters);
+	void IRootPageNavigated.OnNavigatedToRoot(INavigationParameters parameters) => OnNavigatedToRoot(parameters);
 	
-	Task IRootPageAwareAsync.OnNavigatedToRootAsync(INavigationParameters parameters) => OnNavigatedToRootAsync(parameters);
+	Task IRootPageNavigated.OnNavigatedToRootAsync(INavigationParameters parameters) => OnNavigatedToRootAsync(parameters);
 
 	private static bool AreTypesEqual(Type typeA, Type typeB)
 	{

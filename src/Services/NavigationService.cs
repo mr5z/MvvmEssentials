@@ -4,6 +4,7 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Handlers;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using NavigationRequest = Nkraft.MvvmEssentials.Services.Pages.NavigationRequest;
 
 namespace Nkraft.MvvmEssentials.Services;
@@ -41,7 +42,7 @@ public interface INavigationService
     /// <summary>
     /// Navigates to the root page of the navigation stack.
     /// <para>
-    /// - If the root page implements <see cref="IRootPageAware"/> or <see cref="IRootPageAwareAsync"/>, the corresponding event will be delivered.
+    /// - If the root page implements <see cref="IRootPageNavigated"/>, the corresponding event will be delivered.
     /// </para>
     /// - Only supported when the current page is a <see cref="NavigationPage"/> or the current tab of a <see cref="TabbedPage"/> is a <see cref="NavigationPage"/>.
     /// </summary>
@@ -207,14 +208,10 @@ internal sealed class NavigationService(
         {
             await navigationPage.PopToRootAsync(animated);
             var rootPage = navigationPage.CurrentPage;
-            if (rootPage.BindingContext is IRootPageAware rootPageAware)
+            if (rootPage.BindingContext is IRootPageNavigated rootPageAware)
             {
                 rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
-            }
-
-            if (rootPage.BindingContext is IRootPageAwareAsync rootPageAwareAsync)
-            {
-                await rootPageAwareAsync.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
+                await rootPageAware.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
             }
         }
         catch (Exception ex)

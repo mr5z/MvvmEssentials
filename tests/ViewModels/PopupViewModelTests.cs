@@ -2,6 +2,7 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.Services.Popups;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
@@ -60,7 +61,7 @@ public class PopupViewModelTests
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
         parameters.Add(NavigationHints.PopupCompletionParam, tcs);
-        ((IParameterSetAware)_sut).OnParametersSet(parameters);
+        ((IParametersSet)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Ok());
 
@@ -80,7 +81,7 @@ public class PopupViewModelTests
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
         parameters.Add(NavigationHints.PopupCompletionParam, tcs);
-        ((IParameterSetAware)_sut).OnParametersSet(parameters);
+        ((IParametersSet)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Fail(ErrorCode.General, "error"));
 
@@ -102,7 +103,7 @@ public class PopupViewModelTests
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
         parameters.Add(NavigationHints.PopupCompletionParam, tcs);
-        ((IParameterSetAware)_sut).OnParametersSet(parameters);
+        ((IParametersSet)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Ok());
 
@@ -120,7 +121,7 @@ public class PopupViewModelTests
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
         parameters.Add(NavigationHints.PopupCompletionParam, tcs);
-        ((IParameterSetAware)_sut).OnParametersSet(parameters);
+        ((IParametersSet)_sut).OnParametersSet(parameters);
 
         _popupService.DismissAsync().Returns(Result.Fail(ErrorCode.General, "dismiss failed"));
 
@@ -142,7 +143,7 @@ public class PopupViewModelTests
         var tcs = new TaskCompletionSource<TestPopupResult>();
         var parameters = new NavigationParameters();
         parameters.Add(NavigationHints.PopupCompletionParam, tcs);
-        ((IParameterSetAware)_sut).OnParametersSet(parameters);
+        ((IParametersSet)_sut).OnParametersSet(parameters);
 
         // When
         ((IPopupDismissible)_sut).NotifyCancellation();

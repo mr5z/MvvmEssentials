@@ -1,6 +1,5 @@
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
-using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NUnit.Framework;
 
@@ -14,19 +13,19 @@ public class PageViewModelTests
     [SetUp]
     public void SetUp() => _sut = new TrackablePageViewModel();
 
-    private void TriggerAppearing() => ((IPageAppearingAware)_sut).OnPageAppearing();
-    private void TriggerDisappearing() => ((IPageAppearingAware)_sut).OnPageDisappearing();
-    private Task TriggerAppearingAsync() => ((IPageAppearingAwareAsync)_sut).OnPageAppearingAsync();
-    private void TriggerNavigatedTo() => ((INavigatedAware)_sut).OnNavigatedTo();
-    private void TriggerNavigatedFrom() => ((INavigatedAware)_sut).OnNavigatedFrom();
-    private void TriggerPageUnloaded() => ((IPageLoadAware)_sut).OnPageUnloaded();
+    private void TriggerAppearing() => ((IPageAppearing)_sut).OnPageAppearing();
+    private void TriggerDisappearing() => ((IPageAppearing)_sut).OnPageDisappearing();
+    private Task TriggerAppearingAsync() => ((IPageAppearing)_sut).OnPageAppearingAsync();
+    private void TriggerNavigatedTo() => ((IPageNavigated)_sut).OnPageNavigatedTo();
+    private void TriggerNavigatedFrom() => ((IPageNavigated)_sut).OnPageNavigatedFrom();
+    private void TriggerPageUnloaded() => ((IPageLoad)_sut).OnPageUnloaded();
     private void TriggerDispose() => ((IDisposable)_sut).Dispose();
 
     private void TriggerNavigatedToRoot(INavigationParameters? p = null)
-        => ((IRootPageAware)_sut).OnNavigatedToRoot(p ?? new NavigationParameters());
+        => ((IRootPageNavigated)_sut).OnNavigatedToRoot(p ?? new NavigationParameters());
 
     private Task TriggerNavigatedToRootAsync(INavigationParameters? p = null)
-        => ((IRootPageAwareAsync)_sut).OnNavigatedToRootAsync(p ?? new NavigationParameters());
+        => ((IRootPageNavigated)_sut).OnNavigatedToRootAsync(p ?? new NavigationParameters());
 
     // -----------------------------------------------------------------------
     // OnInitialized — called exactly once
@@ -198,7 +197,7 @@ public class PageViewModelTests
 
         // When
         TriggerAppearing();
-        ((IPageAppearingAware)second).OnPageAppearing();
+        ((IPageAppearing)second).OnPageAppearing();
 
         // Then
         Assert.That(_sut.InitializedCount, Is.EqualTo(1));

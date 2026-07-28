@@ -4,60 +4,61 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Nkraft.MvvmEssentials.SourceGenerator;
 
-// per-property (your type, now a record so it has value equality for the incremental cache)
-public sealed record ViewModelParameters(string PropertyName, string PropertyType, bool IsRequired);
+internal sealed record ViewModelParameter(
+    string PropertyName,
+    string Type,
+    bool IsRequired);
 
-// per-VM — this is what was missing: carries where to emit
-internal sealed record ViewModelTarget(string Namespace, string ClassName, EquatableArray<ViewModelParameters> Parameters);
+internal sealed record ViewModelTarget(
+    string Namespace,
+    string ClassName,
+    string Accessibility,
+    EquatableArray<ViewModelParameter> Parameters);
 
 [Generator]
-public class NavigationParametersGenerator : IIncrementalGenerator
+public sealed class NavigationParametersGenerator : IIncrementalGenerator
 {
     private const string NavigableViewModelName  = "Nkraft.MvvmEssentials.ViewModels.NavigableEntryViewModel";
-    private const string NavigationParameterName = "Nkraft.MvvmEssentials.Attributes.ParameterAttribute";
+    private const string NavigationParameterName = "Nkraft.MvvmEssentials.Attributes.NavigationParameterAttribute";
+
+    private static readonly SymbolDisplayFormat TypeFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
     void IIncrementalGenerator.Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var targets = context.SyntaxProvider.CreateSyntaxProvider(
-                predicate: static (node, _) => ClassPropertiesHasAttributes(node),
-                transform: static (ctx, _) => ToViewModelTarget(ctx))
+        var targets = context.SyntaxProvider.ForAttributeWithMetadataName(
+                NavigationParameterName,
+                predicate: static (node, _) => node.IsKind(SyntaxKind.PropertyDeclaration),
+                transform: static (ctx, _) => ToViewModelTarget(ctx.TargetSymbol.ContainingType))
             .Where(static t => t is not null)
-            .Select(static (t, _) => t!);
+            .Select(static (t, _) => t!)
+            .Collect();
 
-        context.RegisterSourceOutput(targets, static (spc, t) => Emit(spc, t));
+        context.RegisterSourceOutput(targets, static (spc, all) =>
+        {
+            // one attributed property -> one pipeline item, so the same VM appears N times
+            foreach (var t in all.Distinct())
+                Emit(spc, t);
+        });
     }
 
-    private static bool ClassPropertiesHasAttributes(SyntaxNode node) =>
-        node is ClassDeclarationSyntax cls &&
-        cls.Members.OfType<PropertyDeclarationSyntax>().Any(p => p.AttributeLists.Count > 0);
-
-    private static ViewModelTarget? ToViewModelTarget(GeneratorSyntaxContext ctx)
+    private static ViewModelTarget? ToViewModelTarget(INamedTypeSymbol? symbol)
     {
-        var classDecl = (ClassDeclarationSyntax)ctx.Node;
-        if (ctx.SemanticModel.GetDeclaredSymbol(classDecl) is not INamedTypeSymbol symbol)
+        if (symbol is null)
             return null;
+
+        // skip framework bases, generic and nested VMs — none of these can host a valid partial emit
+        if (symbol.IsAbstract || symbol.IsStatic || symbol.IsGenericType || symbol.ContainingType is not null)
+            return null;
+
         if (IsDerivedFrom(symbol, NavigableViewModelName) == false)
             return null;
 
-        var props = symbol.GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(p => p.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NavigationParameterName))
-            .Select(p =>
-            {
-                var attr = p.GetAttributes().First(a => a.AttributeClass?.ToDisplayString() == NavigationParameterName);
-                // absent → required by default; opt out with [Parameter(IsRequired = false)]
-                var isRequired = attr.NamedArguments.FirstOrDefault(na => na.Key == "IsRequired").Value.Value as bool? ?? true;
-                return new ViewModelParameters(
-                    p.Name,
-                    p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), // global:: → no resolution surprises
-                    isRequired);
-            })
-            .ToArray();
-
+        var props = CollectParameters(symbol);
         if (props.Length == 0)
             return null;
 
@@ -65,7 +66,44 @@ public class NavigationParametersGenerator : IIncrementalGenerator
             ? string.Empty
             : symbol.ContainingNamespace.ToDisplayString();
 
-        return new ViewModelTarget(ns, symbol.Name, new EquatableArray<ViewModelParameters>(props));
+        return new ViewModelTarget(
+            ns,
+            symbol.Name,
+            ToKeyword(symbol.DeclaredAccessibility),
+            new EquatableArray<ViewModelParameter>(props));
+    }
+
+    private static ViewModelParameter[] CollectParameters(INamedTypeSymbol symbol)
+    {
+        var result = new List<ViewModelParameter>();
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        // walk the hierarchy so parameters declared on an intermediate VM are included;
+        // most-derived wins on name collision
+        for (var t = symbol; t is not null; t = t.BaseType)
+        {
+            if (t.ToDisplayString() == NavigableViewModelName)
+                break;
+
+            foreach (var p in t.GetMembers().OfType<IPropertySymbol>())
+            {
+                var attr = p.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NavigationParameterName);
+                if (attr is null || names.Add(p.Name) == false)
+                    continue;
+
+                var isRequired = attr.NamedArguments
+                    .FirstOrDefault(na => na.Key == "IsRequired").Value.Value as bool? ?? true;
+                
+                result.Add(new ViewModelParameter(
+                    PropertyName: p.Name,
+                    Type: p.Type.ToDisplayString(TypeFormat),
+                    IsRequired: isRequired));
+            }
+        }
+
+        // required first (C# demands optionals last); OrderBy is stable, so declaration order holds within each group
+        return result.OrderByDescending(p => p.IsRequired).ToArray();
     }
 
     private static void Emit(SourceProductionContext spc, ViewModelTarget t)
@@ -76,41 +114,30 @@ public class NavigationParametersGenerator : IIncrementalGenerator
         if (t.Namespace.Length > 0)
             sb.Append("namespace ").Append(t.Namespace).AppendLine(";").AppendLine();
 
-        sb.Append("partial class ").AppendLine(t.ClassName);
+        sb.Append(t.Accessibility).Append(" partial class ").AppendLine(t.ClassName);
         sb.AppendLine("{");
 
-        sb.Append("    public sealed record Parameters : global::Nkraft.MvvmEssentials.INavigationTarget<")
-          .Append(t.ClassName).AppendLine(">");
+        sb.Append("    public static global::Nkraft.MvvmEssentials.Services.Pages.PageDestination With(");
+        sb.Append(string.Join(", ", t.Parameters.Array.Select(p => p.IsRequired
+            ? $"{p.Type} {ToParameterName(p.PropertyName)}"
+            : $"{ToNullable(p.Type)} {ToParameterName(p.PropertyName)} = default")));
+        sb.AppendLine(")");
         sb.AppendLine("    {");
+        sb.AppendLine("        var __p = new global::Nkraft.MvvmEssentials.Services.NavigationParameters();");
+
         foreach (var p in t.Parameters.Array)
         {
-            sb.Append("        public ");
-            if (p.IsRequired) sb.Append("required ");
-            sb.Append(p.PropertyType).Append(' ').Append(p.PropertyName).AppendLine(" { get; init; }");
+            var name = ToParameterName(p.PropertyName);
+            if (p.IsRequired)
+                sb.Append("        __p.Add(\"").Append(p.PropertyName).Append("\", ").Append(name).AppendLine(");");
+            else
+                sb.Append("        if (").Append(name).Append(" is not null) __p.Add(\"")
+                    .Append(p.PropertyName).Append("\", ").Append(name).AppendLine(");");
         }
-        sb.AppendLine();
-        sb.AppendLine("        public global::Nkraft.MvvmEssentials.Services.INavigationParameters ToNavigationParameters()");
-        sb.AppendLine("        {");
-        sb.AppendLine("            var __p = new global::Nkraft.MvvmEssentials.Services.NavigationParameters();");
-        foreach (var p in t.Parameters.Array)
-            sb.Append("            __p.Add(\"").Append(p.PropertyName).Append("\", ").Append(p.PropertyName).AppendLine(");");
-        sb.AppendLine("            return __p;");
-        sb.AppendLine("        }");
+        
+        var pageName = t.ClassName.Replace("ViewModel", "Page");
+        sb.AppendLine($"        return new global::Nkraft.MvvmEssentials.Services.Pages.PageDestination(\"{pageName}\", __p);");
         sb.AppendLine("    }");
-        sb.AppendLine();
-
-        sb.AppendLine("    protected internal override void ApplyNavigationParameters(global::Nkraft.MvvmEssentials.Services.INavigationParameters parameters)");
-        sb.AppendLine("    {");
-        var i = 0;
-        foreach (var p in t.Parameters.Array)
-        {
-            var v = "__v" + i++;
-            sb.Append("        if (parameters.TryGetValue<").Append(p.PropertyType).Append(">(\"")
-              .Append(p.PropertyName).Append("\", out var ").Append(v).Append(")) this.")
-              .Append(p.PropertyName).Append(" = ").Append(v).AppendLine("!;");
-        }
-        sb.AppendLine("    }");
-
         sb.AppendLine("}");
 
         var hint = (t.Namespace.Length > 0 ? t.Namespace + "." : string.Empty) + t.ClassName + ".NavigationParameters.g.cs";
@@ -119,31 +146,48 @@ public class NavigationParametersGenerator : IIncrementalGenerator
 
     private static bool IsDerivedFrom(INamedTypeSymbol symbol, string baseTypeName)
     {
-        for (var t = symbol; t is not null; t = t.BaseType)
+        for (var t = symbol.BaseType; t is not null; t = t.BaseType)
             if (t.ToDisplayString() == baseTypeName)
                 return true;
         return false;
     }
+    
+    private static string ToNullable(string type) =>
+        type.EndsWith("?", StringComparison.Ordinal) ? type : type + "?";
+
+    private static string ToKeyword(Accessibility accessibility) => accessibility switch
+    {
+        Accessibility.Public => "public",
+        Accessibility.Internal => "internal",
+        _ => "internal"
+    };
+
+    private static string ToParameterName(string propertyName)
+    {
+        var name = char.ToLowerInvariant(propertyName[0]) + propertyName.Substring(1);
+        return SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ? "@" + name : name;
+    }
 }
 
-// arrays don't have structural equality, which silently breaks incremental caching.
-// this wrapper restores it so the pipeline actually memoizes per-VM.
-internal readonly struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>> where T : IEquatable<T>
+// arrays lack structural equality, which silently defeats incremental caching.
+internal readonly struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>
+    where T : IEquatable<T>
 {
     public readonly T[] Array = array;
 
     public bool Equals(EquatableArray<T> other)
     {
-        if (Array is null) return false;
-        if (Array.Length != other.Array.Length) return false;
-        return Array.Where((t, i) => !t.Equals(other.Array[i])).Any() == false;
+        if (Array.Length != other.Array.Length)
+            return false;
+        return !Array.Where((t, i) => t.Equals(other.Array[i]) == false).Any();
     }
 
     public override bool Equals(object? obj) => obj is EquatableArray<T> o && Equals(o);
 
     public override int GetHashCode()
     {
-        if (Array is null) return 0;
+        if (Array is null)
+            return 0;
         unchecked
         {
             return Array.Aggregate(17, (current, item) => current * 31 + item.GetHashCode());

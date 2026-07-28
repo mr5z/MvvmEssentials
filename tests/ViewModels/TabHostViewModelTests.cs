@@ -1,5 +1,6 @@
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NUnit.Framework;
@@ -27,7 +28,7 @@ public class TabHostViewModelTests
     public void OnInitialized_WhenPageFirstAppears_CallsOnTabSelectedOnCurrentTab()
     {
         // When
-        ((IPageAppearingAware)_sut).OnPageAppearing();
+        ((IPageAppearing)_sut).OnPageAppearing();
 
         // Then
         Assert.That(_tab.SelectedCount, Is.EqualTo(1));
@@ -37,8 +38,8 @@ public class TabHostViewModelTests
     public void OnInitialized_SubsequentAppearings_DoesNotCallOnTabSelectedAgain()
     {
         // When
-        ((IPageAppearingAware)_sut).OnPageAppearing();
-        ((IPageAppearingAware)_sut).OnPageAppearing();
+        ((IPageAppearing)_sut).OnPageAppearing();
+        ((IPageAppearing)_sut).OnPageAppearing();
 
         // Then
         Assert.That(_tab.SelectedCount, Is.EqualTo(1));

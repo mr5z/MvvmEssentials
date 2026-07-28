@@ -41,7 +41,7 @@ public abstract partial class TabHostViewModel : PageViewModel, ITabHost
 
 	protected ITabComponent CurrentTab => Tabs.ElementAt(SelectedTabIndex);
 
-	[Parameter]
+	[NavigationParameter]
 	protected int SelectedTabIndex { get; set; }
 	
 	IReadOnlyCollection<ITabComponent> ITabHost.Tabs => Tabs;

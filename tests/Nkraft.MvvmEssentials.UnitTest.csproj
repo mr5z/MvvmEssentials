@@ -8,8 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Source\Nkraft.MvvmEssentials.csproj" />
-      <ProjectReference Include="..\Source\SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj" />
+      <ProjectReference Include="..\src\Nkraft.MvvmEssentials.csproj" />
+      <ProjectReference Include="..\src\SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj" />
     </ItemGroup>
 
     <ItemGroup>

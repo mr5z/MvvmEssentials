@@ -1,8 +1,7 @@
 using System.ComponentModel;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services.Helpers;
-using Nkraft.MvvmEssentials.Services.Navigation;
-using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
 
@@ -84,16 +83,12 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage is null)
             return;
         
-        if (targetPage.BindingContext is IPageAppearingAware appearing)
+        if (targetPage.BindingContext is IPageAppearing appearing)
         {
             appearing.OnPageAppearing();
-        }
-        
-        if (targetPage.BindingContext is IPageAppearingAwareAsync appearingAsync)
-        {
-            appearingAsync.OnPageAppearingAsync().FireAndForget(ex =>
+            appearing.OnPageAppearingAsync().FireAndForget(ex =>
             {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearingAwareAsync.OnPageAppearingAsync));
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageAppearingAsync));
             });
         }
         
@@ -106,16 +101,12 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage is null)
             return;
         
-        if (targetPage.BindingContext is IPageAppearingAware disappearing)
+        if (targetPage.BindingContext is IPageAppearing disappearing)
         {
             disappearing.OnPageDisappearing();
-        }
-        
-        if (targetPage.BindingContext is IPageAppearingAwareAsync disappearingAsync)
-        {
-            disappearingAsync.OnPageDisappearingAsync().FireAndForget(ex =>
+            disappearing.OnPageDisappearingAsync().FireAndForget(ex =>
             {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearingAwareAsync.OnPageDisappearingAsync));
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageDisappearingAsync));
             });
         }
         
@@ -126,9 +117,9 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     {
         var targetPage = GetTargetPage(page);
 
-        if (targetPage?.BindingContext is INavigatedAware navigated)
+        if (targetPage?.BindingContext is IPageNavigated navigated)
         {
-            navigated.OnNavigatedTo();
+            navigated.OnPageNavigatedTo();
         }
     }
     

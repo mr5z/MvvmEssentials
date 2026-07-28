@@ -14,6 +14,15 @@ public static class NavigationExtension
 {
 	extension(INavigationService navigationService)
 	{
+		/// <summary>
+		/// Navigates to the page associated with the specified ViewModel type.
+		/// </summary>
+		/// <param name="pageDestination"></param>
+		/// <param name="animated"></param>
+		/// <returns></returns>
+		public Task<IResult> NavigateAsync(PageDestination pageDestination, bool animated = true)
+			=> navigationService.NavigateAsync(pageDestination.PageName, pageDestination.Parameters, animated);
+		
 		public async Task<IResult> NavigateAsync<TViewModel>(
 			INavigationTarget parameters, bool animated = true)
 			where TViewModel : PageViewModel
@@ -24,7 +33,6 @@ public static class NavigationExtension
 				navParam.Add(key, value);
 			return await navigationService.NavigateAsync(pageName, navParam, animated);
 		}
-		
 		
 		/// <summary>
 		/// Navigates to the page associated with the specified ViewModel type, passing parameters as a strongly-typed object.
@@ -83,6 +91,16 @@ public static class NavigationExtension
 	
 	extension(IPageLink pageLink)
 	{
+		/// <summary>
+		/// Appends a page segment to the navigation path for the specified ViewModel type.
+		/// </summary>
+		/// <param name="dest"></param>
+		/// <returns></returns>
+		public IPageLink Push(PageDestination dest)
+		{
+			return pageLink.AppendSegment(dest.PageName, dest.Parameters);
+		}
+		
 		/// <summary>
 		/// Appends a page segment to the navigation path for the specified ViewModel type.
 		/// </summary>
