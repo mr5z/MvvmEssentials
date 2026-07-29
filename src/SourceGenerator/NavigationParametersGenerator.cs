@@ -4,13 +4,16 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Nkraft.MvvmEssentials.SourceGenerator;
 
 internal sealed record ViewModelParameter(
     string PropertyName,
     string Type,
-    bool IsRequired);
+    bool IsOptional,
+    string? PreferredName);
 
 internal sealed record ViewModelTarget(
     string Namespace,
@@ -19,6 +22,8 @@ internal sealed record ViewModelTarget(
     string Suffix,
     string? ResultType,
     string Accessibility,
+    bool IsPartial,
+    LocationInfo? Location,
     EquatableArray<ViewModelParameter> Parameters);
 
 [Generator]
@@ -45,7 +50,8 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
             .Collect()
             // one attributed property -> one pipeline item, so the same VM appears N times.
             // dedup, then fan back out so each VM caches independently.
-            .SelectMany(static (all, _) => all.Distinct());
+            .SelectMany(static (all, _) => all.Distinct())
+            ;
 
         context.RegisterSourceOutput(targets, static (spc, t) => Emit(spc, t));
     }
@@ -64,6 +70,14 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
         var props = CollectParameters(symbol);
         if (props.Length == 0)
             return null;
+        
+        var declarations = symbol.DeclaringSyntaxReferences
+            .Select(r => r.GetSyntax())
+            .OfType<TypeDeclarationSyntax>()
+            .ToArray();
+
+        var isPartial = declarations.Any(d => d.Modifiers.Any(SyntaxKind.PartialKeyword));
+        var location = declarations.Length > 0 ? LocationInfo.From(declarations[0]) : null;
 
         var popupInterface = symbol.AllInterfaces.FirstOrDefault(i =>
             i.MetadataName == PopupViewModelMetadataName &&
@@ -80,6 +94,8 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
             Suffix: popupInterface is not null ? "Popup" : "Page",
             ResultType: popupInterface?.TypeArguments[0].ToDisplayString(TypeFormat),
             Accessibility: ToKeyword(symbol.DeclaredAccessibility),
+            IsPartial: isPartial,
+            Location: location,
             Parameters: new EquatableArray<ViewModelParameter>(props));
     }
 
@@ -102,23 +118,67 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
                 if (attr is null || names.Add(p.Name) == false)
                     continue;
 
-                var isRequired = attr.NamedArguments
-                    .FirstOrDefault(na => na.Key == "IsRequired").Value.Value as bool? ?? true;
+                var isOptional = attr.NamedArguments
+                    .FirstOrDefault(na => na.Key == "IsOptional").Value.Value as bool? ?? false;
+                
+                var preferredName = attr.NamedArguments
+                    .FirstOrDefault(na => na.Key == "PreferredName").Value.Value as string;
 
                 result.Add(new ViewModelParameter(
                     PropertyName: p.Name,
                     Type: p.Type.ToDisplayString(TypeFormat),
-                    IsRequired: isRequired));
+                    IsOptional: isOptional,
+                    PreferredName: preferredName));
             }
         }
 
-        // required first (C# demands optionals last); OrderByDescending is stable,
-        // so declaration order holds within each group
-        return result.OrderByDescending(p => p.IsRequired).ToArray();
+        // required first (C# demands optionals last)
+        return result.OrderBy(p => p.IsOptional).ToArray();
     }
 
     private static void Emit(SourceProductionContext spc, ViewModelTarget t)
     {
+        if (t.IsPartial == false)
+        {
+            spc.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.NotPartial,
+                t.Location?.ToLocation() ?? Location.None,
+                t.ClassName));
+            return;
+        }
+        
+        var invalidNames = t.Parameters.Array
+            .Where(p => p.PreferredName is not null && IsValidIdentifier(p.PreferredName) == false)
+            .ToArray();
+
+        if (invalidNames.Length > 0)
+        {
+            foreach (var p in invalidNames)
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.InvalidPreferredName, 
+                    t.Location?.ToLocation() ?? Location.None, 
+                    p.PreferredName, 
+                    t.ClassName));
+            return;
+        }
+        
+        var duplicateNames = t.Parameters.Array
+            .GroupBy(GetParameterName, StringComparer.Ordinal)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToArray();
+
+        if (duplicateNames.Length > 0)
+        {
+            foreach (var name in duplicateNames)
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.DuplicateParameterName,
+                    t.Location?.ToLocation() ?? Location.None, 
+                    name, 
+                    t.ClassName));
+            return;
+        }
+        
         var sb = new StringBuilder();
         sb.AppendLine("// <auto-generated/>");
         sb.AppendLine("#nullable enable");
@@ -134,21 +194,19 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
 
         sb.Append("    [global::System.CodeDom.Compiler.GeneratedCode(\"").Append(GeneratorName).AppendLine("\", \"1.0\")]");
         sb.Append("    public static ").Append(returnType).Append(" With(");
-        sb.Append(string.Join(", ", t.Parameters.Array.Select(p => p.IsRequired
-            ? $"{p.Type} {ToParameterName(p.PropertyName)}"
-            : $"{ToNullable(p.Type)} {ToParameterName(p.PropertyName)} = default")));
+        sb.Append(string.Join(", ", t.Parameters.Array.Select(p => p.IsOptional
+            ? $"{ToNullable(p.Type)} {GetParameterName(p)} = default"
+            : $"{p.Type} {GetParameterName(p)}"))
+        );
         sb.AppendLine(")");
         sb.AppendLine("    {");
         sb.AppendLine("        var __p = new global::Nkraft.MvvmEssentials.Services.NavigationParameters();");
 
         foreach (var p in t.Parameters.Array)
         {
-            var name = ToParameterName(p.PropertyName);
-            if (p.IsRequired)
-                sb.Append("        __p.Add(\"").Append(p.PropertyName).Append("\", ").Append(name).AppendLine(");");
-            else
-                sb.Append("        if (").Append(name).Append(" is not null) __p.Add(\"")
-                    .Append(p.PropertyName).Append("\", ").Append(name).AppendLine(");");
+            var name = GetParameterName(p);
+            var guard = p.IsOptional ? $"if ({name} is not null) " : string.Empty;
+            sb.AppendLine($"        {guard}__p.Add(\"{p.PropertyName}\", {name});");
         }
 
         var destinationName = t.ClassName.Replace("ViewModel", t.Suffix);
@@ -179,10 +237,26 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
         _ => "internal"
     };
 
-    private static string ToParameterName(string propertyName)
+    private static string GetParameterName(ViewModelParameter parameter)
     {
+        var propertyName = string.IsNullOrEmpty(parameter.PreferredName) ? parameter.PropertyName : parameter.PreferredName!;
         var name = char.ToLowerInvariant(propertyName[0]) + propertyName.Substring(1);
         return SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ? "@" + name : name;
+    }
+    
+    private static bool IsValidIdentifier(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+
+        if (SyntaxFacts.IsIdentifierStartCharacter(name[0]) == false)
+            return false;
+
+        for (var i = 1; i < name.Length; i++)
+            if (SyntaxFacts.IsIdentifierPartCharacter(name[i]) == false)
+                return false;
+
+        return true;
     }
 }
 
@@ -217,5 +291,21 @@ internal readonly struct EquatableArray<T>(T[] array) : IEquatable<EquatableArra
                 hash = hash * 31 + item.GetHashCode();
             return hash;
         }
+    }
+}
+
+internal sealed record LocationInfo(string FilePath, TextSpan TextSpan, LinePositionSpan LineSpan)
+{
+    public Location ToLocation() => Location.Create(FilePath, TextSpan, LineSpan);
+
+    public static LocationInfo? From(SyntaxNode node)
+    {
+        var location = node.GetLocation();
+        return location.SourceTree is null
+            ? null
+            : new LocationInfo(
+                location.SourceTree.FilePath,
+                location.SourceSpan,
+                location.GetLineSpan().Span);
     }
 }

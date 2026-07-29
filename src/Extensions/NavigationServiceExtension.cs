@@ -79,10 +79,15 @@ public static class NavigationExtension
 	extension(IPageLink pageLink)
 	{
 		/// <summary>
-		/// Appends a page segment to the navigation path for the specified ViewModel type.
+		/// Appends the destination as a path segment. Parameters are serialized into the
+		/// segment's query string, so only path-safe values (string, numeric, bool, char,
+		/// Guid, enum) are permitted — the same restriction as every other <c>Push</c>
+		/// overload. For richer parameter types, skip <see cref="IPageLink"/> entirely and
+		/// call <c>NavigateAsync(PageDestination, bool)</c> directly, which passes
+		/// values through without serialization.
 		/// </summary>
-		/// <param name="dest"></param>
-		/// <returns></returns>
+		/// <param name="dest">The destination produced by a generated <c>With(...)</c> factory.</param>
+		/// <returns>An updated <see cref="IPageLink" /> with the new segment appended.</returns>
 		public IPageLink Push(PageDestination dest)
 		{
 			return pageLink.AppendSegment(dest.PageName, dest.Parameters);
@@ -90,6 +95,11 @@ public static class NavigationExtension
 		
 		/// <summary>
 		/// Appends a page segment to the navigation path for the specified ViewModel type.
+		/// Parameters are serialized into the query string, so only path-safe values
+		/// (string, numeric, bool, char, Guid, enum) are permitted. For richer parameter
+		/// types, skip <see cref="IPageLink"/> entirely and call
+		/// <c>NavigateAsync(PageDestination, bool)</c> directly, which passes values
+		/// through without serialization.
 		/// </summary>
 		/// <param name="viewModelType">The type of ViewModel which should have the "ViewModel" in its name suffix convention.</param>
 		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
