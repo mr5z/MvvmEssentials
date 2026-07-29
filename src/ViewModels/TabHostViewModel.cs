@@ -1,5 +1,4 @@
 ﻿using Nkraft.CrossUtility.Patterns;
-using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
@@ -7,7 +6,7 @@ using Nkraft.MvvmEssentials.Services.TabbedPages;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract partial class TabHostViewModel : PageViewModel, ITabHost
+public abstract class TabHostViewModel : PageViewModel, ITabHost
 {
 	protected override void OnInitialized()
 	{
@@ -22,6 +21,16 @@ public abstract partial class TabHostViewModel : PageViewModel, ITabHost
 		await base.OnInitializedAsync();
 		
 		await CurrentTab.OnTabSelectedAsync();
+	}
+
+	protected override void OnParametersSet(INavigationParameters parameters)
+	{
+		base.OnParametersSet(parameters);
+
+		if (parameters.TryGetValue<int>(nameof(SelectedTabIndex), out var selectedTabIndex))
+		{
+			SelectedTabIndex = selectedTabIndex;
+		}
 	}
 
 	protected async Task<IResult> SwitchTabAsync<TTabViewModel>(
@@ -41,7 +50,6 @@ public abstract partial class TabHostViewModel : PageViewModel, ITabHost
 
 	protected ITabComponent CurrentTab => Tabs.ElementAt(SelectedTabIndex);
 
-	[NavigationParameter]
 	protected int SelectedTabIndex { get; set; }
 	
 	IReadOnlyCollection<ITabComponent> ITabHost.Tabs => Tabs;

@@ -29,6 +29,7 @@ internal sealed record ViewModelTarget(
 [Generator]
 public sealed class NavigationParametersGenerator : IIncrementalGenerator
 {
+    private const string NavigableEntryViewModelName = "Nkraft.MvvmEssentials.ViewModels.NavigableEntryViewModel";
     private const string TargetBaseViewModelName = "Nkraft.MvvmEssentials.ViewModels.PageViewModel";
     private const string NavigationParameterName = "Nkraft.MvvmEssentials.Attributes.NavigationParameterAttribute";
     private const string PopupViewModelNamespace = "Nkraft.MvvmEssentials.ViewModels";
