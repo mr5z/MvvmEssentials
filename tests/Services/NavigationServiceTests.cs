@@ -243,7 +243,12 @@ public class NavigationServiceParameterMappingTests
     {
         var page = _applicationContext.MainPage;
         Assert.That(page, Is.Not.Null, "MainPage was not set after navigation");
-        var vm = page!.BindingContext as MappableViewModel;
+
+        // MainPage may be the target page itself, or a NavigationPage wrapping it
+        var target = page is NavigationPage navPage ? navPage.CurrentPage : page;
+        Assert.That(target, Is.Not.Null, "NavigationPage has no CurrentPage");
+
+        var vm = target!.BindingContext as MappableViewModel;
         Assert.That(vm, Is.Not.Null, "BindingContext is not a MappableViewModel");
         return vm!;
     }
@@ -344,6 +349,60 @@ public class NavigationServiceParameterMappingTests
         var vm = GetBoundViewModel();
         Assert.That(vm.Name, Is.EqualTo("Dave"));
         Assert.That(vm.Age, Is.EqualTo(40));
+    }
+    
+    [Test]
+    public async Task NavigateAsync_WithQueryString_DeliversParametersToOnParametersSet()
+    {
+        // When
+        await _sut.NavigateAsync("//MappablePage?Age=99");
+
+        // Then
+        var vm = GetBoundViewModel();
+        Assert.That(vm.LastParameters, Is.Not.Null);
+        Assert.That(vm.LastParameters!.ContainsKey("Age"), Is.True);
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithQueryStringTargetingUnattributedProperty_StillDeliversParameter()
+    {
+        // When — the gate blocks the write, not the delivery
+        await _sut.NavigateAsync("//MappablePage?UnmappedAge=77");
+
+        // Then
+        var vm = GetBoundViewModel();
+        Assert.That(vm.UnmappedAge, Is.EqualTo(0));
+        Assert.That(vm.LastParameters!.ContainsKey("UnmappedAge"), Is.True);
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithQueryStringAndDirectParameters_MergesBoth()
+    {
+        // Given
+        var parameters = new NavigationParameters { { "Name", "Alice" } };
+
+        // When
+        await _sut.NavigateAsync("//MappablePage?Age=99", parameters);
+
+        // Then
+        var vm = GetBoundViewModel();
+        Assert.That(vm.Name, Is.EqualTo("Alice"));
+        Assert.That(vm.Age, Is.EqualTo(99));
+        Assert.That(vm.LastParameters!.ContainsKey("Name"), Is.True);
+        Assert.That(vm.LastParameters!.ContainsKey("Age"), Is.True);
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithSameKeyInQueryStringAndParameters_DirectParameterWins()
+    {
+        // Given — duplicate key across both sources previously risked a double write
+        var parameters = new NavigationParameters { { "Age", 30 } };
+
+        // When
+        await _sut.NavigateAsync("//MappablePage?Age=99", parameters);
+
+        // Then
+        Assert.That(GetBoundViewModel().Age, Is.EqualTo(30));
     }
 
     // -----------------------------------------------------------------------
@@ -494,5 +553,54 @@ public class NavigationServiceParameterMappingTests
 
         // Then
         Assert.DoesNotThrowAsync(async () => await _sut.NavigateAsync("//MappablePage", parameters));
+    }
+    
+    [Test]
+    public async Task NavigateAsync_ViaPushDestination_BindsPropertiesOnArrival()
+    {
+        // Given — end-to-end: With() -> Push() -> query string -> property
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "Name", "Alice" }, { "Age", 30 } });
+
+        // When
+        var result = await _sut.Absolute().Push(destination).NavigateAsync();
+
+        // Then
+        var vm = GetBoundViewModel();
+        Assert.That(vm.Name, Is.EqualTo("Alice"));
+        Assert.That(vm.Age, Is.EqualTo(30));
+    }
+
+    [Test]
+    public async Task NavigateAsync_ViaPushDestination_RoundTripsBool()
+    {
+        // Given — IsPathSafe permits bool; this fails if QueryStringHelper.ToDictionary
+        // hands back a string, because AreTypesEqual demands an exact match
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "IsEditing", true } });
+
+        // When
+        await _sut.Absolute().Push(destination).NavigateAsync();
+
+        // Then
+        Assert.That(GetBoundViewModel().IsEditing, Is.True);
+    }
+
+    [Test]
+    public async Task NavigateAsync_ViaPushDestination_RoundTripsGuid()
+    {
+        // Given — same question for Guid
+        var id = Guid.NewGuid();
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "CorrelationId", id } });
+
+        // When
+        await _sut.Absolute().Push(destination).NavigateAsync();
+
+        // Then
+        Assert.That(GetBoundViewModel().CorrelationId, Is.EqualTo(id));
     }
 }

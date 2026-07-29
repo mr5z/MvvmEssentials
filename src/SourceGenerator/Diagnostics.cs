@@ -25,4 +25,32 @@ internal static class Diagnostics
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+    
+    /// <summary>
+    /// MVE003: ViewModel with navigation parameters without partial modifier found.
+    /// </summary>
+    public static readonly DiagnosticDescriptor NotPartial = new(
+        id: "MVE003",
+        title: "ViewModel with navigation parameters must be partial",
+        messageFormat: "'{0}' declares [NavigationParameter] properties but is not partial, so the "
+                       + "With(...) factory cannot be generated. Add the 'partial' modifier.",
+        category: "Nkraft.MvvmEssentials",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+    
+    public static readonly DiagnosticDescriptor InvalidPreferredName = new(
+        id: "MVE004",
+        title: "Invalid PreferredName on [NavigationParameter]",
+        messageFormat: "'{0}' on '{1}' is not a valid C# identifier and cannot be used as a With(...) parameter name",
+        category: "Nkraft.MvvmEssentials",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+    
+    public static readonly DiagnosticDescriptor DuplicateParameterName = new(
+        id: "MVE005",
+        title: "Duplicate With(...) parameter name",
+        messageFormat: "Parameter name '{0}' on '{1}' is used by more than one [NavigationParameter] property (check PreferredName)",
+        category: "Nkraft.MvvmEssentials",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

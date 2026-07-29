@@ -168,6 +168,12 @@ internal class MappableViewModel : PageViewModel
     [NavigationParameter]
     public int? NullableAge { get; set; }
     
+    [NavigationParameter]
+    public bool IsEditing { get; set; }
+
+    [NavigationParameter]
+    public Guid CorrelationId { get; set; }
+    
     public string? UnmappedName { get; set; }
     public int UnmappedAge { get; set; }
     public string? UnmappedPrivateSet { get; private set; }

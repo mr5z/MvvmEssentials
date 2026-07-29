@@ -13,8 +13,8 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 	{
 		const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 		var property = GetType().GetProperty(key, bindingFlags);
-		var hasParameterAttribute = property?.GetCustomAttributes<NavigationParameterAttribute>().Any();
-		if (hasParameterAttribute == false || property is null || property.CanWrite == false)
+		var navParameterAttribute = property?.GetCustomAttribute<NavigationParameterAttribute>();
+		if (navParameterAttribute is null || property is null || property.CanWrite == false)
 			return;
 		
 		if (value is null || AreTypesEqual(property.PropertyType, value.GetType()))

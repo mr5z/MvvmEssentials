@@ -1,6 +1,7 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
 using NUnit.Framework;
@@ -258,6 +259,109 @@ public class PageLinkTests
             Arg.Any<INavigationParameters?>(),
             Arg.Any<bool>());
     }
+    
+    
+    [Test]
+    public void Push_WithPageDestination_SerializesParametersIntoQueryString()
+    {
+        // Given — regression: INavigationParameters reflected as a POCO yielded no query string
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "Name", "Alice" }, { "Age", 30 } });
+
+        // When
+        var link = _navigationService.Relative().Push(destination);
+
+        // Then
+        Assert.That(link.FullPath, Does.Contain("Name=Alice"));
+        Assert.That(link.FullPath, Does.Contain("Age=30"));
+    }
+
+    [Test]
+    public void Push_WithEmptyPageDestination_OmitsQuestionMark()
+    {
+        // Given
+        var destination = new PageDestination("MappablePage", new NavigationParameters());
+
+        // When
+        var link = _navigationService.Relative().Push(destination);
+
+        // Then
+        Assert.That(link.FullPath, Is.EqualTo("MappablePage"));
+    }
+
+    [Test]
+    public void Push_WithNullParameterValue_OmitsTheKey()
+    {
+        // Given
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "Name", null } });
+
+        // When
+        var link = _navigationService.Relative().Push(destination);
+
+        // Then
+        Assert.That(link.FullPath, Is.EqualTo("MappablePage"));
+    }
+
+    [Test]
+    public void Push_WithValueNeedingEscaping_EscapesIt()
+    {
+        // Given
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "Name", "a b&c" } });
+
+        // When
+        var link = _navigationService.Relative().Push(destination);
+
+        // Then
+        Assert.That(link.FullPath, Does.Contain("Name=a+b%26c"));
+    }
+
+    [Test]
+    public void Push_WithDecimalValue_UsesInvariantCulture()
+    {
+        // Given — a comma decimal separator would split the query string
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "Price", 12.5m } });
+
+        // When
+        var link = _navigationService.Relative().Push(destination);
+
+        // Then
+        Assert.That(link.FullPath, Does.Contain("Price=12.5"));
+    }
+
+    [Test]
+    public void Push_WithNonPathSafeParameterValue_Throws()
+    {
+        // Given — a reference type cannot survive the round trip through a query string
+        var destination = new PageDestination(
+            "MappablePage",
+            new NavigationParameters { { "Item", new object() } });
+
+        // Then
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => _navigationService.Relative().Push(destination));
+        Assert.That(ex!.Message, Does.Contain("Item"));
+    }
+
+    [Test]
+    public void Push_MultipleSegments_JoinsWithSlash()
+    {
+        // Given
+        var first = new PageDestination("FirstPage", new NavigationParameters { { "Age", 1 } });
+        var second = new PageDestination("SecondPage", new NavigationParameters { { "Age", 2 } });
+
+        // When
+        var link = _navigationService.Relative().Push(first).Push(second);
+
+        // Then
+        Assert.That(link.FullPath, Is.EqualTo("FirstPage?Age=1/SecondPage?Age=2"));
+    }
 
     [Test]
     public async Task NavigateAsync_PassesINavigationParametersToService()
@@ -349,4 +453,5 @@ public class PageLinkTests
         // Then
         Assert.That(link.FullPath, Does.Contain("SelectedTabIndex=2"));
     }
+    
 }

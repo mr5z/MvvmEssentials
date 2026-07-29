@@ -6,3 +6,4 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|------
 MVE001  | Design   | Warning  | No app startup defined
 MVE002  | Design   | Error    | Multiple IAppStartup implementations
+MVE003  | Design   | Error    | ViewModel with navigation parameters without partial modifier

@@ -48,24 +48,21 @@ internal class PageFactory(
 		{
 			var viewModel = scope.ServiceProvider.GetRequiredService(viewModelType);
 			page.BindingContext = viewModel;
-
+			
+			var mergedParameters = MergeParameters(pageInfo.Parameters, parameters);
 			if (viewModel is NavigableEntryViewModel baseViewModel)
 			{
-				foreach (var param in pageInfo.Parameters ?? [])
+				foreach (var parameter in mergedParameters)
 				{
-					baseViewModel.SetNavigationParameter(param.Key, param.Value);
-				}
-
-				foreach (var param in parameters ?? new NavigationParameters())
-				{
-					baseViewModel.SetNavigationParameter(param.Key, param.Value);
+					baseViewModel.SetNavigationParameter(parameter.Key, parameter.Value);
 				}
 			}
 
 			if (viewModel is IParametersSet parameterSetAware)
 			{
-				parameterSetAware.OnParametersSet(parameters ?? new NavigationParameters());
+				parameterSetAware.OnParametersSet(mergedParameters);
 			}
+
 		}
 
 		RegisterPageEvents(page);
@@ -87,6 +84,25 @@ internal class PageFactory(
 				? throw new InvalidOperationException($"Page '{pageName}' not found.")
 				: new PageInfo(pageType, queryDictionary);
 		})];
+	}
+	
+	private static INavigationParameters MergeParameters(
+		Dictionary<string, object>? segmentParameters,
+		INavigationParameters? parameters)
+	{
+		var merged = new NavigationParameters();
+
+		foreach (var (key, value) in segmentParameters ?? [])
+		{
+			merged[key] = value;
+		}
+
+		foreach (var (key, value) in parameters ?? new NavigationParameters())
+		{
+			merged[key] = value;
+		}
+
+		return merged;
 	}
 
 	private void RegisterPageEvents(Page? page)
