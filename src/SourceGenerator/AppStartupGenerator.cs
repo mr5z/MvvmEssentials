@@ -1,29 +1,24 @@
 using System.Collections.Immutable;
-using System.Text;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using Location = Microsoft.CodeAnalysis.Location;
 
 namespace Nkraft.MvvmEssentials.SourceGenerator;
 
 [Generator]
 public sealed class AppStartupGenerator : IIncrementalGenerator
 {
-    private const string IAppStartupFullName = "Nkraft.MvvmEssentials.Services.IAppStartup";
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // --- Pipeline 1: user-defined IAppStartup classes ---
         var userStartups = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => node is ClassDeclarationSyntax { BaseList: not null },
-                transform: static (ctx, _) => GetIfImplementsIAppStartup(ctx))
+                transform: static (ctx, _) => AppStartupSymbolCollector.GetIfImplementsIAppStartup(ctx))
             .Where(static x => x is not null)
             .Collect();
 
-        // --- Pipeline 2: MapPage<TPage, TViewModel>(isInitial: true) calls ---
         var initialViewModels = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => node is InvocationExpressionSyntax,
@@ -31,21 +26,9 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
             .Where(static x => x is not null)
             .Collect();
 
-        // --- Combine and emit ---
         context.RegisterSourceOutput(
             userStartups.Combine(initialViewModels),
             static (ctx, source) => Execute(ctx, source.Left, source.Right));
-    }
-
-    private static INamedTypeSymbol? GetIfImplementsIAppStartup(GeneratorSyntaxContext ctx)
-    {
-        var classDecl = (ClassDeclarationSyntax)ctx.Node;
-        if (ctx.SemanticModel.GetDeclaredSymbol(classDecl) is not INamedTypeSymbol symbol)
-            return null;
-
-        return symbol.AllInterfaces.Any(i => i.ToDisplayString() == IAppStartupFullName)
-            ? symbol
-            : null;
     }
 
     private static void Execute(
@@ -59,144 +42,41 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
         // MVE002 — more than one IAppStartup
         if (validStartups.Count > 1)
         {
-            var names = string.Join(", ", validStartups.Select(s => s!.Name));
             ctx.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.MultipleStartupsDefined, Location.None, names));
+                Diagnostics.MultipleStartupsDefined, Location.None,
+                string.Join(", ", validStartups.Select(s => s!.Name))));
             return;
         }
 
         // MVE001 — nothing defined at all
         if (validStartups.Count == 0 && validInitials.Count == 0)
         {
-            ctx.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.NoStartupDefined, Location.None));
+            ctx.ReportDiagnostic(Diagnostic.Create(Diagnostics.NoStartupDefined, Location.None));
             ctx.AddSource("AppStartup.Registration.g.cs",
-                SourceText.From(GenerateNoOpRegistration(), Encoding.UTF8));
+                SourceText.From(AppStartupCodeTemplates.NoOpRegistration(), Encoding.UTF8));
             return;
         }
 
         if (validStartups.Count == 1)
         {
-            // User-defined IAppStartup — just wire it up
             ctx.AddSource("AppStartup.Registration.g.cs",
-                SourceText.From(
-                    GenerateUserStartupRegistration(validStartups[0]!),
-                    Encoding.UTF8));
+                SourceText.From(AppStartupCodeTemplates.UserStartupRegistration(validStartups[0]!), Encoding.UTF8));
+            return;
         }
-        else
+
+        // No IAppStartup found — generate default from isInitial: true
+        if (validInitials.Count > 1)
         {
-            // No IAppStartup found — generate default from isInitial: true
-            if (validInitials.Count > 1)
-            {
-                ctx.ReportDiagnostic(Diagnostic.Create(
-                    Diagnostics.MultipleStartupsDefined, Location.None,
-                    string.Join(", ", validInitials)));
-                return;
-            }
-
-            var initialVmFullName = validInitials[0]!;
-
-            ctx.AddSource("AppStartup.Default.g.cs",
-                SourceText.From(GenerateDefaultStartup(initialVmFullName), Encoding.UTF8));
-
-            ctx.AddSource("AppStartup.Registration.g.cs",
-                SourceText.From(GenerateDefaultStartupRegistration(), Encoding.UTF8));
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.MultipleStartupsDefined, Location.None,
+                string.Join(", ", validInitials)));
+            return;
         }
-    }
 
-    // -------------------------------------------------------------------------
-    // Code templates
-    // -------------------------------------------------------------------------
-
-    private static string GenerateUserStartupRegistration(INamedTypeSymbol startup)
-    {
-        var fullName = startup.ToDisplayString();
-        return $$"""
-            // <auto-generated/>
-            // Detected user-defined IAppStartup: {{fullName}}
-            #nullable enable
-
-            using Microsoft.Extensions.DependencyInjection;
-            using Nkraft.MvvmEssentials.Services;
-
-            namespace Nkraft.MvvmEssentials;
-
-            internal static class AppStartupRegistrationExtensions
-            {
-                internal static IServiceCollection AddDiscoveredAppStartup(this IServiceCollection services)
-                {
-                    services.AddTransient<IAppStartup, global::{{fullName}}>();
-                    return services;
-                }
-            }
-            """;
-    }
-
-    private static string GenerateDefaultStartup(string initialViewModelFullName)
-    {
-        return $$"""
-            // <auto-generated/>
-            // Default IAppStartup generated from MapPage<_, {{initialViewModelFullName}}>(isInitial: true)
-            #nullable enable
-
-            using System.Threading.Tasks;
-            using Nkraft.MvvmEssentials;
-            using Nkraft.MvvmEssentials.Services;
-
-            namespace Nkraft.MvvmEssentials;
-            
-            internal sealed class GeneratedAppStartup(INavigationService navigationService) : IAppStartup
-            {
-                private readonly INavigationService _navigationService = navigationService;
-
-                async Task IAppStartup.OnInitializedAsync()
-                {
-                    await _navigationService
-                        .Absolute(withNavigation: false)
-                        .Push<global::{{initialViewModelFullName}}>()
-                        .NavigateAsync(animated: false);
-                }
-            }
-            """;
-    }
-
-    private static string GenerateDefaultStartupRegistration()
-    {
-        return """
-            // <auto-generated/>
-            #nullable enable
-
-            using Microsoft.Extensions.DependencyInjection;
-            using Nkraft.MvvmEssentials.Services;
-
-            namespace Nkraft.MvvmEssentials;
-
-            internal static class AppStartupRegistrationExtensions
-            {
-                internal static IServiceCollection AddDiscoveredAppStartup(this IServiceCollection services)
-                {
-                    services.AddTransient<IAppStartup, GeneratedAppStartup>();
-                    return services;
-                }
-            }
-            """;
-    }
-
-    private static string GenerateNoOpRegistration()
-    {
-        return """
-            // <auto-generated/>
-            #nullable enable
-
-            using Microsoft.Extensions.DependencyInjection;
-
-            namespace Nkraft.MvvmEssentials;
-
-            internal static class AppStartupRegistrationExtensions
-            {
-                internal static IServiceCollection AddDiscoveredAppStartup(this IServiceCollection services)
-                    => services; // MVE001: no startup defined
-            }
-            """;
+        var initialVmFullName = validInitials[0]!;
+        ctx.AddSource("AppStartup.Default.g.cs",
+            SourceText.From(AppStartupCodeTemplates.DefaultStartup(initialVmFullName), Encoding.UTF8));
+        ctx.AddSource("AppStartup.Registration.g.cs",
+            SourceText.From(AppStartupCodeTemplates.DefaultStartupRegistration(), Encoding.UTF8));
     }
 }

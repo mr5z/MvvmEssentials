@@ -9,3 +9,4 @@ MVE002  | Design   | Error    | Multiple IAppStartup implementations
 MVE003  | Design   | Error    | ViewModel with navigation parameters without partial modifier
 MVE004  | Design   | Error    | Invalid PreferredName on [NavigationParameter]
 MVE005  | Design   | Error    | Duplicate With(...) parameter name
+MVE006  | Design   | Error    | [NavigationParameter] requires PageViewModel
