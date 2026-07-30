@@ -29,7 +29,6 @@ internal sealed record ViewModelTarget(
 [Generator]
 public sealed class NavigationParametersGenerator : IIncrementalGenerator
 {
-    private const string NavigableEntryViewModelName = "Nkraft.MvvmEssentials.ViewModels.NavigableEntryViewModel";
     private const string TargetBaseViewModelName = "Nkraft.MvvmEssentials.ViewModels.PageViewModel";
     private const string NavigationParameterName = "Nkraft.MvvmEssentials.Attributes.NavigationParameterAttribute";
     private const string PopupViewModelNamespace = "Nkraft.MvvmEssentials.ViewModels";
@@ -78,7 +77,9 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
             .ToArray();
 
         var isPartial = declarations.Any(d => d.Modifiers.Any(SyntaxKind.PartialKeyword));
-        var location = declarations.Length > 0 ? LocationInfo.From(declarations[0]) : null;
+        var location = declarations.Length > 0
+            ? LocationInfo.From(declarations[0].Identifier)
+            : null;
 
         var popupInterface = symbol.AllInterfaces.FirstOrDefault(i =>
             i.MetadataName == PopupViewModelMetadataName &&
@@ -234,7 +235,6 @@ public sealed class NavigationParametersGenerator : IIncrementalGenerator
     private static string ToKeyword(Accessibility accessibility) => accessibility switch
     {
         Accessibility.Public => "public",
-        Accessibility.Internal => "internal",
         _ => "internal"
     };
 
@@ -299,9 +299,8 @@ internal sealed record LocationInfo(string FilePath, TextSpan TextSpan, LinePosi
 {
     public Location ToLocation() => Location.Create(FilePath, TextSpan, LineSpan);
 
-    public static LocationInfo? From(SyntaxNode node)
+    public static LocationInfo? From(Location location)
     {
-        var location = node.GetLocation();
         return location.SourceTree is null
             ? null
             : new LocationInfo(
@@ -309,4 +308,6 @@ internal sealed record LocationInfo(string FilePath, TextSpan TextSpan, LinePosi
                 location.SourceSpan,
                 location.GetLineSpan().Span);
     }
+
+    public static LocationInfo? From(SyntaxToken token) => From(token.GetLocation());
 }
