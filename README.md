@@ -11,7 +11,7 @@ Lightweight MVVM utility library for .NET MAUI that simplifies navigation, flyou
 This page covers setup and the concepts shared by every page type. For usage of a specific
 surface, see its guide:
 
-- [NavigationPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/navigation-page.md) — plain pages and the navigation service (push/replace, parameters)
+- [NavigationPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/navigation-page.md) — plain pages and the navigation service (push/replace, strongly-typed parameters)
 - [TabbedPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/tabbed-page.md) — bottom/top tabs with lifecycle propagation
 - [FlyoutPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/flyout-page.md) — hamburger menu with a swappable detail area
 - [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
