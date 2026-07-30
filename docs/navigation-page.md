@@ -82,7 +82,59 @@ class LoginViewModel : PageViewModel
 }
 ```
 
-**3. Contextual navigation**
+**3. Strongly-typed navigation parameters (`[NavigationParameter]`)**
+
+Instead of building `NavigationParameters` by hand, mark ViewModel properties with
+`[NavigationParameter]` and the source generator emits a static `With(...)` factory you
+can pass straight to `NavigateAsync`:
+
+```cs
+public partial class LoginViewModel : PageViewModel
+{
+    [NavigationParameter]
+    public string? ErrorMessage { get; set; }
+
+    [NavigationParameter(IsOptional = true)]
+    public int RetryCount { get; set; }
+}
+
+await _navigationService.NavigateAsync(
+    LoginViewModel.With(errorMessage: "Session expired", retryCount: 2));
+```
+
+- The ViewModel must be declared `partial`, or the `With(...)` factory can't be generated.
+- `IsOptional = true` gives the generated parameter a `default` value and moves it to the
+  end of the parameter list (required parameters are emitted first).
+- `PreferredName` renames the generated `With(...)` parameter for call-site ergonomics
+  only — the navigation-parameter dictionary key is still the property name:
+  ```cs
+  [NavigationParameter(PreferredName = "id")]
+  public int ItemId { get; set; }
+  // -> LoginViewModel.With(id: 5)
+  ```
+- `[NavigationParameter]` properties declared on a base `PageViewModel` are collected too;
+  if a derived class re-declares the same property, it's emitted once (most-derived wins).
+- A `PreferredName` must be a valid C# identifier, and two properties can't resolve to
+  the same parameter name — both will fail to compile.
+
+The same attribute works on popups, generating a `With(...)` you can pass straight to
+`PresentAsync` (see [Popups](popups.md)):
+
+```cs
+var result = await _popupService.PresentAsync(
+    ConfirmViewModel.With(confirmationMessage: "Reset counter?"));
+```
+
+The same `With(...)` result also works with the `Absolute()`/`Relative()` fluent chain:
+
+```cs
+await _navigationService.Absolute(withNavigation: true)
+    .Push(FirstViewModel.With(a: 1))
+    .Push(SecondViewModel.With(b: 2))
+    .NavigateAsync();
+```
+
+**4. Contextual navigation**
 
 ```cs
 // Replaces the page if the active page is not a NavigationPage,
