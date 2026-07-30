@@ -88,6 +88,10 @@ Instead of building `NavigationParameters` by hand, mark ViewModel properties wi
 `[NavigationParameter]` and the source generator emits a static `With(...)` factory you
 can pass straight to `NavigateAsync`:
 
+> **Note:** the ViewModel must derive from `PageViewModel` (or `PopupViewModel<T>`, see
+> below). Otherwise `With(...)` isn't generated, and you'll get a compiler warning
+> (**MVE006**) pointing at the class.
+
 ```cs
 public partial class LoginViewModel : PageViewModel
 {
