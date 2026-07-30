@@ -219,6 +219,7 @@ public class NavigationServiceParameterMappingTests
         // Real registry — maps MappablePage → MappableViewModel
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<MappablePage, MappableViewModel>();
+        registry.MapPage<MappableSecondPage, MappableViewModel>();
         services.AddSingleton(registry);
 
         // Real factory + service with NullLoggers (avoids ILogger<internal T> proxy issue)
@@ -602,5 +603,35 @@ public class NavigationServiceParameterMappingTests
 
         // Then
         Assert.That(GetBoundViewModel().CorrelationId, Is.EqualTo(id));
+    }
+    
+    [Test]
+    public async Task HandlePageUnloaded_WhenPageIsUnloaded_DisposesItsViewModel()
+    {
+        // Given
+        await _sut.NavigateAsync("//MappablePage");
+        var viewModel = GetBoundViewModel();
+        var page = _applicationContext.MainPage!;
+
+        // When
+        ((PageFactory)_serviceProvider.GetRequiredService<IPageFactory>()).HandlePageUnloaded(page);
+
+        // Then
+        Assert.That(viewModel.DisposeCount, Is.EqualTo(1));
+    }
+    
+    [Test]
+    public async Task NavigateAsync_CalledTwice_BindsADistinctViewModelInstanceEachTime()
+    {
+        // Given
+        await _sut.NavigateAsync("//MappablePage");
+        var first = GetBoundViewModel();
+
+        // When
+        await _sut.NavigateAsync("//MappablePage");
+        var second = GetBoundViewModel();
+
+        // Then — each page gets its own DI scope, so the scoped ViewModel is not shared
+        Assert.That(second, Is.Not.SameAs(first));
     }
 }

@@ -22,6 +22,9 @@ internal class FakeSecondViewModel : PageViewModel { }
 
 internal class TrackablePageViewModel : PageViewModel
 {
+    public static readonly List<TrackablePageViewModel> Instances = [];
+    public TrackablePageViewModel() => Instances.Add(this);
+    
     public int InitializedCount { get; private set; }
     public int InitializedAsyncCount { get; private set; }
     public int AppearingCount { get; private set; }
@@ -156,9 +159,12 @@ internal class PropertiedViewModel : NavigableEntryViewModel
 // ---------------------------------------------------------------------------
 
 internal class MappablePage : Page { }
+internal class MappableSecondPage : Page { }
 
 internal class MappableViewModel : PageViewModel
 {
+    public int DisposeCount { get; private set; }
+    
     [NavigationParameter]
     public string? Name { get; set; }
     
@@ -186,6 +192,8 @@ internal class MappableViewModel : PageViewModel
         OnParametersSetCount++;
         LastParameters = parameters;
     }
+    
+    protected override void OnDispose() => DisposeCount++;
 }
 
 // ---------------------------------------------------------------------------

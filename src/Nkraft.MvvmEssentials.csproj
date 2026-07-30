@@ -43,6 +43,10 @@
           Visible="false" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);MVE001</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Include="..\LICENSE" Link="LICENSE">
       <Pack>True</Pack>
