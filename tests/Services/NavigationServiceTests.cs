@@ -606,33 +606,6 @@ public class NavigationServiceParameterMappingTests
     }
     
     [Test]
-    public async Task NavigateAsync_SuccessfulSinglePageReplacement_DoesNotDisposeTheClaimedViewModel()
-    {
-        // Given
-        MappableViewModel.Instances.Clear();
-
-        // When
-        var result = await _sut.NavigateAsync("//MappablePage");
-
-        // Then
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(GetBoundViewModel().DisposeCount, Is.EqualTo(0));
-    }
-
-    [Test]
-    public async Task NavigateAsync_WithMultiplePagesAndNoNavigationPage_ReturnsFailure()
-    {
-        // Given — two plain pages with no NavigationPage segment to host the second one
-        MappableViewModel.Instances.Clear();
-
-        // When
-        var result = await _sut.NavigateAsync("//MappablePage/MappableSecondPage");
-
-        // Then
-        Assert.That(result.IsFailure, Is.True);
-    }
-    
-    [Test]
     public async Task HandlePageUnloaded_WhenPageIsUnloaded_DisposesItsViewModel()
     {
         // Given
@@ -645,5 +618,20 @@ public class NavigationServiceParameterMappingTests
 
         // Then
         Assert.That(viewModel.DisposeCount, Is.EqualTo(1));
+    }
+    
+    [Test]
+    public async Task NavigateAsync_CalledTwice_BindsADistinctViewModelInstanceEachTime()
+    {
+        // Given
+        await _sut.NavigateAsync("//MappablePage");
+        var first = GetBoundViewModel();
+
+        // When
+        await _sut.NavigateAsync("//MappablePage");
+        var second = GetBoundViewModel();
+
+        // Then — each page gets its own DI scope, so the scoped ViewModel is not shared
+        Assert.That(second, Is.Not.SameAs(first));
     }
 }

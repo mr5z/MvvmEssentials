@@ -71,8 +71,10 @@ internal class PageFactory(
 
 			return page;
 		}
-		catch
+		catch (Exception ex)
 		{
+			const string error = "Unable to create instance of page '{PageName}'.";
+			_logger.LogError(ex, error, pageInfo.PageType.Name);
 			scope.Dispose();
 			throw;
 		}

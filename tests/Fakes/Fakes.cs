@@ -163,10 +163,6 @@ internal class MappableSecondPage : Page { }
 
 internal class MappableViewModel : PageViewModel
 {
-    public static readonly List<MappableViewModel> Instances = [];
-
-    public MappableViewModel() => Instances.Add(this);
-    
     public int DisposeCount { get; private set; }
     
     [NavigationParameter]
