@@ -53,4 +53,15 @@ internal static class Diagnostics
         category: "Nkraft.MvvmEssentials",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+    
+    // public static readonly DiagnosticDescriptor NavigationParameterOnNonPageViewModel = new(
+    //     id: "MVE006",
+    //     title: "[NavigationParameter] requires PageViewModel",
+    //     messageFormat: "'{0}' has [NavigationParameter] properties but does not derive from PageViewModel. "
+    //                    + "No With(...) factory will be generated. Derive from PageViewModel and register with "
+    //                    + "MapPage (not RegisterPage) to get With(...), or remove [NavigationParameter] if you "
+    //                    + "only need OnParametersSet.",
+    //     category: "Nkraft.MvvmEssentials",
+    //     defaultSeverity: DiagnosticSeverity.Warning,
+    //     isEnabledByDefault: true);
 }

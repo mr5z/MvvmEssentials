@@ -25,7 +25,7 @@ internal sealed class PageWithQuery(string? pageName, object? parameters)
 	{
 		return string.Join("&", parameters
 			.Where(e => e.Value is not null)
-			.Select(e => $"{e.Key}={WebUtility.UrlEncode(e.Value?.ToString())}"));
+			.Select(e => $"{e.Key}={WebUtility.UrlEncode(e.Value!.ToString())}"));
 	}
 
 	private static string Format(object value)
