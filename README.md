@@ -142,9 +142,8 @@ registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatabl
     .MapPage<OrdersPage, OrdersViewModel>()      // navigatable
     .MapPage<SettingsPage, SettingsViewModel>(); // navigatable
 ```
-> **Note:** The indentation above is cosmetic. `IPageRegistry` returns `this` from every call, so the
-> chain is flat regardless of how it is formatted. Indent to reflect the conceptual parent–child
-> relationship between a host page and its XAML-bound ViewModels.
+> **Note:** The indentation above is cosmetic — each call in the chain returns the same registry,
+> so it stays flat no matter how it's formatted.
 
 ---
 
