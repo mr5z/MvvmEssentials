@@ -65,6 +65,12 @@ if (result.TryGetValue(out var confirmResult))
 }
 ```
 
+> **Tip:** instead of building `NavigationParameters` by hand, mark `ConfirmViewModel`
+> properties with `[NavigationParameter]` and call the generated
+> `ConfirmViewModel.With(confirmationMessage: "Reset counter?")` — see
+> [Strongly-typed navigation parameters](navigation-page.md#navigationextension-examples)
+> for details.
+
 ## Lifecycle
 
 `PopupViewModel` inherits all lifecycle methods from `PageViewModel`
