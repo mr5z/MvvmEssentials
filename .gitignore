@@ -881,3 +881,8 @@ $RECYCLE.BIN/
 FodyWeavers.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,rider,csharp,aspnetcore,macos,windows,android
+
+# Code coverage
+coveragereport/
+coverage.cobertura.xml
+TestResults/

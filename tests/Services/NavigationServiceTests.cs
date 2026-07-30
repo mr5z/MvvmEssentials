@@ -219,6 +219,7 @@ public class NavigationServiceParameterMappingTests
         // Real registry — maps MappablePage → MappableViewModel
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<MappablePage, MappableViewModel>();
+        registry.MapPage<MappableSecondPage, MappableViewModel>();
         services.AddSingleton(registry);
 
         // Real factory + service with NullLoggers (avoids ILogger<internal T> proxy issue)
@@ -602,5 +603,47 @@ public class NavigationServiceParameterMappingTests
 
         // Then
         Assert.That(GetBoundViewModel().CorrelationId, Is.EqualTo(id));
+    }
+    
+    [Test]
+    public async Task NavigateAsync_SuccessfulSinglePageReplacement_DoesNotDisposeTheClaimedViewModel()
+    {
+        // Given
+        MappableViewModel.Instances.Clear();
+
+        // When
+        var result = await _sut.NavigateAsync("//MappablePage");
+
+        // Then
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(GetBoundViewModel().DisposeCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task NavigateAsync_WithMultiplePagesAndNoNavigationPage_ReturnsFailure()
+    {
+        // Given — two plain pages with no NavigationPage segment to host the second one
+        MappableViewModel.Instances.Clear();
+
+        // When
+        var result = await _sut.NavigateAsync("//MappablePage/MappableSecondPage");
+
+        // Then
+        Assert.That(result.IsFailure, Is.True);
+    }
+    
+    [Test]
+    public async Task HandlePageUnloaded_WhenPageIsUnloaded_DisposesItsViewModel()
+    {
+        // Given
+        await _sut.NavigateAsync("//MappablePage");
+        var viewModel = GetBoundViewModel();
+        var page = _applicationContext.MainPage!;
+
+        // When
+        ((PageFactory)_serviceProvider.GetRequiredService<IPageFactory>()).HandlePageUnloaded(page);
+
+        // Then
+        Assert.That(viewModel.DisposeCount, Is.EqualTo(1));
     }
 }

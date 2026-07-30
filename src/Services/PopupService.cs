@@ -109,7 +109,7 @@ internal sealed class PopupService : IPopupService
 			{
 				const string error = "Unable to resolve popup '{PopupName}' from registry.";
 				_logger.LogWarning(error, popupName);
-				Result.Fail(ErrorCode.General, popupName, popupType);
+				return Result.Fail(ErrorCode.General, popupName, popupType);
 			}
 
 			if (_activePopups.TryGetValue(popupType!, out var popupRef) == false)

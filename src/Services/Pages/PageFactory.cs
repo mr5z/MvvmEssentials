@@ -1,9 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Helpers;
 using Nkraft.MvvmEssentials.Services.Helpers;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
 
@@ -28,7 +28,7 @@ internal class PageFactory(
 	private readonly IPageRegistry _pageRegistry = pageRegistry;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
 	private readonly IDispatcher _dispatcher = dispatcher;
-	private readonly Dictionary<Page, IServiceScope> _pageScopes = [];
+	private readonly ConditionalWeakTable<Page, IServiceScope> _pageScopes = [];
 
 	public event EventHandler<Page>? PageUnloaded;
 
@@ -41,33 +41,41 @@ internal class PageFactory(
 				"Make sure the page is registered in the DI container and you are using the correct service.");
 		
 		var scope = _serviceProvider.CreateScope();
-		_pageScopes[page] = scope;
-
-		var viewModelType = _pageRegistry.ResolveViewModelType(pageInfo.PageType);
-		if (viewModelType is not null)
+		
+		try
 		{
-			var viewModel = scope.ServiceProvider.GetRequiredService(viewModelType);
-			page.BindingContext = viewModel;
-			
-			var mergedParameters = MergeParameters(pageInfo.Parameters, parameters);
-			if (viewModel is NavigableEntryViewModel baseViewModel)
+			var viewModelType = _pageRegistry.ResolveViewModelType(pageInfo.PageType);
+			if (viewModelType is not null)
 			{
-				foreach (var parameter in mergedParameters)
+				var viewModel = scope.ServiceProvider.GetRequiredService(viewModelType);
+				page.BindingContext = viewModel;
+				
+				var mergedParameters = MergeParameters(pageInfo.Parameters, parameters);
+				if (viewModel is NavigableEntryViewModel baseViewModel)
 				{
-					baseViewModel.SetNavigationParameter(parameter.Key, parameter.Value);
+					foreach (var parameter in mergedParameters)
+					{
+						baseViewModel.SetNavigationParameter(parameter.Key, parameter.Value);
+					}
 				}
+
+				if (viewModel is IParametersSet parametersSet)
+				{
+					parametersSet.OnParametersSet(mergedParameters);
+				}
+
 			}
 
-			if (viewModel is IParametersSet parameterSetAware)
-			{
-				parameterSetAware.OnParametersSet(mergedParameters);
-			}
+			RegisterPageEvents(page);
+			_pageScopes.Add(page, scope);
 
+			return page;
 		}
-
-		RegisterPageEvents(page);
-
-		return page;
+		catch
+		{
+			scope.Dispose();
+			throw;
+		}
 	}
 
 	PageInfo[] IPageFactory.GetPageTypesFromPath<TBasePage>(string path)
@@ -86,7 +94,7 @@ internal class PageFactory(
 		})];
 	}
 	
-	private static INavigationParameters MergeParameters(
+	private static NavigationParameters MergeParameters(
 		Dictionary<string, object>? segmentParameters,
 		INavigationParameters? parameters)
 	{
@@ -200,6 +208,11 @@ internal class PageFactory(
 			return;
 		}
 		
+		HandlePageUnloaded(page);
+	}
+	
+	internal void HandlePageUnloaded(Page page)
+	{
 		if (page.BindingContext is IPageLoad loadAware)
 		{
 			loadAware.OnPageUnloaded();
@@ -208,8 +221,9 @@ internal class PageFactory(
 		UnregisterPageEvents(page);
 		PageUnloaded?.Invoke(this, page);
 
-		if (_pageScopes.Remove(page, out var scope))
+		if (_pageScopes.TryGetValue(page, out var scope))
 		{
+			_pageScopes.Remove(page);
 			scope.Dispose();
 		}
 	}
