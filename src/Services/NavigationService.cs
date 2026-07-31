@@ -132,7 +132,7 @@ internal sealed class NavigationService(
         }
         finally
         {
-            if (request.TryReleaseUnreachablePages(root: _applicationContext.MainPage, out var ex))
+            if (request.ReleaseUnreachablePages(root: _applicationContext.MainPage) is {} ex)
             {
                 const string error = "One or more page scopes failed to dispose during navigation (Path: {Path}).";
                 _logger.LogWarning(ex, error, path);

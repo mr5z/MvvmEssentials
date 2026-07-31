@@ -40,7 +40,7 @@ internal sealed class NavigationRequest(
     /// Disposes the scope of every page this request created that isn't reachable from
     /// <paramref name="root"/> — those never entered the tree, so Unloaded will never fire.
     /// </summary>
-    public bool TryReleaseUnreachablePages(Page? root, out AggregateException? exceptions)
+    public AggregateException? ReleaseUnreachablePages(Page? root)
     {
         List<Exception> failures = [];
         
@@ -61,14 +61,7 @@ internal sealed class NavigationRequest(
 
         _created.Clear();
 
-        if (failures.Count > 0)
-        {
-            exceptions = new AggregateException(failures);
-            return true;
-        }
-
-        exceptions = null;
-        return false;
+        return failures.Count > 0 ? new AggregateException(failures) : null;
     }
 
     private static bool IsReachableFrom(Page page, Page? root)
