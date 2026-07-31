@@ -208,3 +208,20 @@ internal class SingleTabHostViewModel : TabHostViewModel
 
     protected override IReadOnlyCollection<ITabComponent> Tabs => [_tab];
 }
+
+internal sealed class DisposalTracker
+{
+    public List<LeakProbeViewModel> Created { get; } = [];
+}
+
+internal class LeakProbePage : Page { }
+internal class LeakProbeSecondPage : Page { }
+
+internal class LeakProbeViewModel : PageViewModel
+{
+    public int DisposeCount { get; private set; }
+
+    public LeakProbeViewModel(DisposalTracker tracker) => tracker.Created.Add(this);
+
+    protected override void OnDispose() => DisposeCount++;
+}

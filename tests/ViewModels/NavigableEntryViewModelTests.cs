@@ -90,7 +90,7 @@ public class NavigableEntryViewModelTests
     }
 
     // -----------------------------------------------------------------------
-    // IParameterSetAware.OnParametersSet
+    // IParametersSet.OnParametersSet
     // -----------------------------------------------------------------------
 
     [Test]

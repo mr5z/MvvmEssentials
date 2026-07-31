@@ -84,9 +84,10 @@ internal sealed class NavigationService(
             return Result.Fail(ErrorCode.InvalidState, error);
         }
 
+        var request = new NavigationRequest(pageInfoList, parameters ?? new NavigationParameters(), _pageFactory);
+
         try
         {
-            var request = new NavigationRequest(pageInfoList, parameters ?? new NavigationParameters(), _pageFactory);
             var replaceCurrentPage = path.StartsWith('/');
 
             if (replaceCurrentPage)
@@ -128,6 +129,14 @@ internal sealed class NavigationService(
             const string error = "An error occurred while trying to perform page navigation (Path: {Path}).";
             _logger.LogError(ex, error, path);
             return Result.Fail(ErrorCode.Unknown, error, path);
+        }
+        finally
+        {
+            if (request.ReleaseUnreachablePages(root: _applicationContext.MainPage) is {} ex)
+            {
+                const string error = "One or more page scopes failed to dispose during navigation (Path: {Path}).";
+                _logger.LogWarning(ex, error, path);
+            }
         }
 
         return Result.Ok();
@@ -208,10 +217,10 @@ internal sealed class NavigationService(
         {
             await navigationPage.PopToRootAsync(animated);
             var rootPage = navigationPage.CurrentPage;
-            if (rootPage.BindingContext is IRootPageNavigated rootPageAware)
+            if (rootPage.BindingContext is IRootPageNavigated vm)
             {
-                rootPageAware.OnNavigatedToRoot(parameters ?? new NavigationParameters());
-                await rootPageAware.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
+                vm.OnNavigatedToRoot(parameters ?? new NavigationParameters());
+                await vm.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
             }
         }
         catch (Exception ex)
