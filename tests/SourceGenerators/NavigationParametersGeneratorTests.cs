@@ -423,4 +423,5 @@ public class NavigationParametersGeneratorTests
         Assert.That(diagnostics.Select(d => d.Id).Single(), Is.EqualTo("MVE003"));
         Assert.That(generated, Is.Empty);
     }
+    
 }

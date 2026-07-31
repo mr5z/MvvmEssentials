@@ -16,6 +16,8 @@ internal interface IPageFactory
 	PageInfo[] GetPageTypesFromPath<TBasePage>(string path) where TBasePage : Page;
 
 	Page CreatePage(PageInfo pageInfo, INavigationParameters? parameters = null);
+
+	void ReleasePage(Page page);
 }
 
 internal class PageFactory(
@@ -59,9 +61,9 @@ internal class PageFactory(
 					}
 				}
 
-				if (viewModel is IParametersSet parametersSet)
+				if (viewModel is IParametersSet vm)
 				{
-					parametersSet.OnParametersSet(mergedParameters);
+					vm.OnParametersSet(mergedParameters);
 				}
 
 			}
@@ -94,6 +96,12 @@ internal class PageFactory(
 				? throw new InvalidOperationException($"Page '{pageName}' not found.")
 				: new PageInfo(pageType, queryDictionary);
 		})];
+	}
+	
+	void IPageFactory.ReleasePage(Page page)
+	{
+		UnregisterPageEvents(page);
+		DisposeScope(page);
 	}
 	
 	private static NavigationParameters MergeParameters(
@@ -143,16 +151,16 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IPageAppearing appearingAware)
+			if (viewModel is IPageAppearing vm)
 			{
-				appearingAware.OnPageAppearing();
-				appearingAware.OnPageAppearingAsync().FireAndForget(exception =>
+				vm.OnPageAppearing();
+				vm.OnPageAppearingAsync().FireAndForget(exception =>
 				{
 					ExceptionDispatcher.Handle(
 						exception,
 						_logger, 
 						_dispatcher, 
-						nameof(appearingAware.OnPageAppearingAsync)
+						nameof(vm.OnPageAppearingAsync)
 					);
 				});
 			}
@@ -163,16 +171,16 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IPageAppearing appearingAware)
+			if (viewModel is IPageAppearing vm)
 			{
-				appearingAware.OnPageDisappearing();
-				appearingAware.OnPageDisappearingAsync().FireAndForget(exception =>
+				vm.OnPageDisappearing();
+				vm.OnPageDisappearingAsync().FireAndForget(exception =>
 				{
 					ExceptionDispatcher.Handle(
 						exception,
 						_logger, 
 						_dispatcher, 
-						nameof(appearingAware.OnPageDisappearingAsync)
+						nameof(vm.OnPageDisappearingAsync)
 					);
 				});
 			}
@@ -183,9 +191,9 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IPageNavigated navigatedAware)
+			if (viewModel is IPageNavigated vm)
 			{
-				navigatedAware.OnPageNavigatedTo();
+				vm.OnPageNavigatedTo();
 			}
 		}
 	}
@@ -194,9 +202,9 @@ internal class PageFactory(
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
-			if (viewModel is IPageNavigated navigatedAware)
+			if (viewModel is IPageNavigated vm)
 			{
-				navigatedAware.OnPageNavigatedFrom();
+				vm.OnPageNavigatedFrom();
 			}
 		}
 	}
@@ -213,16 +221,21 @@ internal class PageFactory(
 		HandlePageUnloaded(page);
 	}
 	
+	// This has been internally exposed to simulate page unload event from MAUI
 	internal void HandlePageUnloaded(Page page)
 	{
-		if (page.BindingContext is IPageLoad loadAware)
+		if (page.BindingContext is IPageLoad vm)
 		{
-			loadAware.OnPageUnloaded();
+			vm.OnPageUnloaded();
 		}
 		
 		UnregisterPageEvents(page);
 		PageUnloaded?.Invoke(this, page);
-
+		DisposeScope(page);
+	}
+	
+	private void DisposeScope(Page page)
+	{
 		if (_pageScopes.TryGetValue(page, out var scope))
 		{
 			_pageScopes.Remove(page);

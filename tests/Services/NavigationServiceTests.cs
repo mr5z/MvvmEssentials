@@ -634,4 +634,5 @@ public class NavigationServiceParameterMappingTests
         // Then — each page gets its own DI scope, so the scoped ViewModel is not shared
         Assert.That(second, Is.Not.SameAs(first));
     }
+    
 }
