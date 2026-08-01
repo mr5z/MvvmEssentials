@@ -1,8 +1,9 @@
-name: .NET
+name: CI & Quality Report
 
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -26,5 +27,84 @@ jobs:
     - name: Build
       run: dotnet build MvvmEssentials.sln --no-restore --configuration Release
 
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Clone CrossUtility
+      run: git clone https://github.com/mr5z/CrossUtility ../CrossUtility
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore MvvmEssentials.sln
+
     - name: Test
       run: dotnet test MvvmEssentials.sln --no-restore --configuration Release --logger "console;verbosity=detailed"
+
+  quality-report:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    environment: ci-badges
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Clone CrossUtility
+      run: git clone https://github.com/mr5z/CrossUtility ../CrossUtility
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore MvvmEssentials.sln
+
+    - name: Test with coverage
+      run: >
+        dotnet test MvvmEssentials.sln --configuration Release
+        --collect:"XPlat Code Coverage" --results-directory ./coverage-raw
+
+    - name: Extract metrics
+      id: metrics
+      run: |
+        COBERTURA=$(find ./coverage-raw -name 'coverage.cobertura.xml' | head -1)
+        chmod +x extract-metrics.sh
+        ./extract-metrics.sh "$COBERTURA" | tee metrics.out
+        cat metrics.out >> "$GITHUB_OUTPUT"
+
+    - name: Update coverage badge
+      uses: schneegans/dynamic-badges-action@v1.7.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: eab7588783a7e5c6e50f926b64f9ab1a
+        filename: coverage.json
+        label: coverage
+        message: ${{ steps.metrics.outputs.coverage }}%
+        color: brightgreen
+
+    - name: Update complexity badge
+      uses: schneegans/dynamic-badges-action@v1.7.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: eab7588783a7e5c6e50f926b64f9ab1a
+        filename: cc.json
+        label: complexity
+        message: ${{ steps.metrics.outputs.cc }}
+        color: yellow
+
+    - name: Update CRAP score badge
+      uses: schneegans/dynamic-badges-action@v1.7.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: eab7588783a7e5c6e50f926b64f9ab1a
+        filename: crap.json
+        label: crap score
+        message: ${{ steps.metrics.outputs.crap }}
+        color: orange
