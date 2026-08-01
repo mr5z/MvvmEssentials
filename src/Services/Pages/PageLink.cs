@@ -104,16 +104,17 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 		};
 	}
 
+	private static readonly HashSet<Type> PathSafeTypes =
+	[
+		typeof(string), typeof(bool),   typeof(char),   typeof(Guid),
+		typeof(int),    typeof(long),   typeof(short),  typeof(byte),
+		typeof(uint),   typeof(ulong),  typeof(ushort), typeof(sbyte),
+		typeof(float),  typeof(double), typeof(decimal)
+	];
+
 	private static bool IsPathSafe(Type t)
 	{
 		t = Nullable.GetUnderlyingType(t) ?? t;
-
-		if (t.IsEnum)
-			return true;
-
-		return t == typeof(string) || t == typeof(bool)   || t == typeof(char)   || t == typeof(Guid)
-		    || t == typeof(int)    || t == typeof(long)   || t == typeof(short)  || t == typeof(byte)
-		    || t == typeof(uint)   || t == typeof(ulong)  || t == typeof(ushort) || t == typeof(sbyte)
-		    || t == typeof(float)  || t == typeof(double) || t == typeof(decimal);
+		return t.IsEnum || PathSafeTypes.Contains(t);
 	}
 }

@@ -40,7 +40,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         // I.e., if we don't, initial BindingContext will not match the injected VM from Flyout's VM and that's a recipe
         // for a disaztah
         detailHost?.DetailPage ??= detail;
-        
+
         if (detailHost?.DetailPage is not { } detailPage)
         {
             const string message = "The initial detail page was not found; navigation cannot proceed.";
@@ -56,30 +56,36 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         if (isNavigatingToInitial)
         {
             flyoutPage.Detail = detailPage;
-            return Result.Ok(NavigationContext.Complete());
+        }
+        else
+        {
+            var targetPage = request.Materialize(request.Pages[0]);
+            var navPage = await ReplaceDetailRootAsync(flyoutPage, targetPage);
+
+            // Push remaining pages if any
+            foreach (var nextPage in request.Pages.Skip(1))
+            {
+                await navPage.PushAsync(request.Materialize(nextPage), animated: false);
+            }
         }
 
-        var targetPage = request.Materialize(request.Pages[0]);
+        return Result.Ok(NavigationContext.Complete());
+    }
+
+    private static async Task<NavigationPage> ReplaceDetailRootAsync(FlyoutPage flyoutPage, Page targetPage)
+    {
         // Workaround for MAUI bug: https://github.com/dotnet/maui/issues/22116
         if (flyoutPage.Detail is NavigationPage navPage)
         {
             await navPage.PopToRootAsync(animated: false);
             navPage.Navigation.InsertPageBefore(targetPage, navPage.RootPage);
             await navPage.PopAsync(animated: false);
-        }
-        else
-        {
-            // Detail is not a NavigationPage - wrap in one (only happens once)
-            navPage = new NavigationPage(targetPage);
-            flyoutPage.Detail = navPage;
+            return navPage;
         }
 
-        // Push remaining pages if any
-        foreach (var nextPage in request.Pages.Skip(1))
-        {
-            await navPage.PushAsync(request.Materialize(nextPage), animated: false);
-        }
-
-        return Result.Ok(NavigationContext.Complete());
+        // Detail is not a NavigationPage - wrap in one (only happens once)
+        var newNavPage = new NavigationPage(targetPage);
+        flyoutPage.Detail = newNavPage;
+        return newNavPage;
     }
 }

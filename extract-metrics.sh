@@ -9,8 +9,24 @@ if [[ ! -f "$COBERTURA" ]]; then
     exit 1
 fi
 
-# Overall line coverage % (root <coverage> aggregate)
-COVERAGE=$(grep -oP '(?<=<coverage line-rate=")[^"]+' "$COBERTURA" | head -1 | awk '{printf "%.1f", $1 * 100}')
+# Line coverage %, scoped to $PACKAGE and excluding obj/generated files
+# (mirrors reportgenerator's -assemblyfilters + -filefilters:"-**/obj/**").
+# Root <coverage line-rate="..."> is the aggregate across ALL packages and
+# must NOT be used here — it does not match a filtered report.
+COVERAGE=$(awk -v pkg="$PACKAGE" '
+    $0 ~ "<package name=\"" pkg "\"" { f=1 }
+    f && /<class / { skip = ($0 ~ /filename="[^"]*\/obj\//) ? 1 : 0 }
+    f && !skip && /<line number="[0-9]+" hits="[0-9]+"/ {
+        valid++
+        if (match($0, /hits="[0-9]+"/)) {
+            hitstr = substr($0, RSTART, RLENGTH)
+            gsub(/hits="|"/, "", hitstr)
+            if (hitstr != "0") covered++
+        }
+    }
+    /<\/package>/ { f=0 }
+    END { if (valid > 0) printf "%.1f", (covered/valid) * 100 }
+' "$COBERTURA")
 
 # Single method with the highest CRAP score, scoped to $PACKAGE only.
 # BEST_CC and BEST_CRAP always come from the SAME method — never mixed.
@@ -31,7 +47,11 @@ while read -r line; do
     fi
 done < <(awk -v pkg="$PACKAGE" '
     $0 ~ "<package name=\"" pkg "\"" { f=1 }
-    f && /<method / { print }
+    f && /<class / {
+        # Mirror reportgenerator: -filefilters:"-**/obj/**"
+        skip = ($0 ~ /filename="[^"]*\/obj\//) ? 1 : 0
+    }
+    f && /<method / && !skip { print }
     /<\/package>/ { f=0 }
 ' "$COBERTURA")
 
