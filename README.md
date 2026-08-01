@@ -2,9 +2,12 @@
 
 Lightweight MVVM utility library for .NET MAUI that simplifies navigation, flyout menus, tabs, popups, and multi-step wizards with opinionated conventions and minimal boilerplate. An alternative to .NET MAUI Shell.
 
+[![CI & Quality Report](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
-[![.NET](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mr5z/eab7588783a7e5c6e50f926b64f9ab1a/raw/coverage.json)]()
+[![Complexity](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mr5z/eab7588783a7e5c6e50f926b64f9ab1a/raw/cc.json)]()
+[![CRAP Score](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mr5z/eab7588783a7e5c6e50f926b64f9ab1a/raw/crap.json)]()
 
 ## Page types
 
