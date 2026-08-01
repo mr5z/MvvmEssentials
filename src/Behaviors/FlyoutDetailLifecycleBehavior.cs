@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using Nkraft.CrossUtility.Extensions;
-using Nkraft.MvvmEssentials.Services.Helpers;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
@@ -76,21 +76,20 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
             }
         }
     }
-
+    
+    // Both methods manually fire native Appearing/Disappearing for FlyoutPage.Detail swaps
+    // MAUI raises this automatically for normal push navigation (see PageFactory), but not here.
     private static void PropagateAppearing(Page page)
     {
         var targetPage = GetTargetPage(page);
-        if (targetPage is null)
+        if (targetPage?.BindingContext is not IPageAppearing vm)
             return;
         
-        if (targetPage.BindingContext is IPageAppearing appearing)
+        vm.OnPageAppearing();
+        vm.OnPageAppearingAsync().FireAndForget(ex =>
         {
-            appearing.OnPageAppearing();
-            appearing.OnPageAppearingAsync().FireAndForget(ex =>
-            {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageAppearingAsync));
-            });
-        }
+            ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageAppearingAsync));
+        });
         
         targetPage.SendAppearing();
     }
@@ -98,17 +97,14 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     private static void PropagateDisappearing(Page page)
     {
         var targetPage = GetTargetPage(page);
-        if (targetPage is null)
+        if (targetPage?.BindingContext is not IPageAppearing vm)
             return;
         
-        if (targetPage.BindingContext is IPageAppearing disappearing)
+        vm.OnPageDisappearing();
+        vm.OnPageDisappearingAsync().FireAndForget(ex =>
         {
-            disappearing.OnPageDisappearing();
-            disappearing.OnPageDisappearingAsync().FireAndForget(ex =>
-            {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageDisappearingAsync));
-            });
-        }
+            ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageDisappearingAsync));
+        });
         
         targetPage.SendDisappearing();
     }
@@ -117,9 +113,9 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     {
         var targetPage = GetTargetPage(page);
 
-        if (targetPage?.BindingContext is IPageNavigated navigated)
+        if (targetPage?.BindingContext is IPageNavigated vm)
         {
-            navigated.OnPageNavigatedTo();
+            vm.OnPageNavigatedTo();
         }
     }
     

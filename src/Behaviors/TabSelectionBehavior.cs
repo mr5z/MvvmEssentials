@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Helpers;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
@@ -81,10 +81,10 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		if (e.PropertyName != nameof(ITabHost.SelectedTabIndex))
 			return;
 
-		if (_tabbedPage?.BindingContext is not ITabHost tab)
+		if (_tabbedPage?.BindingContext is not ITabHost vm)
 			return;
 
-		var tabIndex = tab.SelectedTabIndex;
+		var tabIndex = vm.SelectedTabIndex;
 		var destinationPage = _tabbedPage.Children.ElementAtOrDefault(tabIndex);
 		if (destinationPage is not null)
 		{
