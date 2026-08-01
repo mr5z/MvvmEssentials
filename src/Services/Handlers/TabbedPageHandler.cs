@@ -10,8 +10,6 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
 {
     private readonly ILogger _logger = logger;
 
-    bool IPageNavigationHandler.CanHandle(Page? page) => page is TabbedPage;
-
     async Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, NavigationRequest request, bool animated)
     {
         var tabbedPage = (TabbedPage)page;

@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Helpers;
-using Nkraft.MvvmEssentials.Services.Helpers;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
 

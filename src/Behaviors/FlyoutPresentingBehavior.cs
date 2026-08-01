@@ -1,8 +1,7 @@
 using System.ComponentModel;
-using AsyncAwaitBestPractices;
 using Nkraft.CrossUtility.Extensions;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.FlyoutPages;
-using Nkraft.MvvmEssentials.Services.Helpers;
 using Nkraft.MvvmEssentials.ViewModels;
 
 namespace Nkraft.MvvmEssentials.Behaviors;
@@ -35,12 +34,12 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
     
     private static void SetupFlyoutHost(FlyoutPage flyoutPage)
     {
-        if (flyoutPage.BindingContext is not IFlyoutHost flyoutHost)
+        if (flyoutPage.BindingContext is not IFlyoutHost vm)
             return;
             
-        if (flyoutHost.MenuViewModel is FlyoutMenuViewModel menu)
+        if (vm.MenuViewModel is FlyoutMenuViewModel menu)
         {
-            menu.SetFlyoutHost(flyoutHost);
+            menu.SetFlyoutHost(vm);
         }
     }
 
@@ -49,12 +48,12 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         if (sender is not FlyoutPage flyoutPage)
             return;
 
-        if (flyoutPage.BindingContext is not IFlyoutHost flyoutHost)
+        if (flyoutPage.BindingContext is not IFlyoutHost vm)
             return;
 
-        flyoutHost.IsPresented = flyoutPage.IsPresented;
+        vm.IsPresented = flyoutPage.IsPresented;
 
-        IFlyoutComponent[] components = [ flyoutHost.MenuViewModel, flyoutHost.DetailViewModel ];
+        IFlyoutComponent[] components = [ vm.MenuViewModel, vm.DetailViewModel ];
 
         if (flyoutPage.IsPresented)
         {
@@ -90,10 +89,10 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
             SetupFlyoutHost(flyoutPage);
         }
 
-        if (bindable.BindingContext is INotifyPropertyChanged notifiable)
+        if (bindable.BindingContext is INotifyPropertyChanged vm)
         {
-            notifiable.PropertyChanged -= ViewModel_PropertyChanged;
-            notifiable.PropertyChanged += ViewModel_PropertyChanged;
+            vm.PropertyChanged -= ViewModel_PropertyChanged;
+            vm.PropertyChanged += ViewModel_PropertyChanged;
         }
     }
 
@@ -102,9 +101,9 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         if (e.PropertyName != nameof(IFlyoutHost.IsPresented))
             return;
 
-        if (_flyoutPage?.BindingContext is IFlyoutHost flyoutHost)
+        if (_flyoutPage?.BindingContext is IFlyoutHost vm)
         {
-            _flyoutPage.IsPresented = flyoutHost.IsPresented;
+            _flyoutPage.IsPresented = vm.IsPresented;
         }
     }
 }

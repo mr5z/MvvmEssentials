@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Logging;
 
-namespace Nkraft.MvvmEssentials.Services.Helpers;
+namespace Nkraft.MvvmEssentials.Services.Dispatchers;
 
 internal static class ExceptionDispatcher
 {

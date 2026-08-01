@@ -251,27 +251,26 @@ internal sealed class NavigationService(
 
     private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, NavigationRequest request, bool animated)
     {
-        var handlers = new IPageNavigationHandler[]
+        while (true)
         {
-            new NavigationPageHandler(_logger),
-            new TabbedPageHandler(_logger),
-            new FlyoutPageHandler(_logger),
-            new UnsupportedPageHandler(_logger)
-        };
-
-        foreach (var handler in handlers)
-        {
-            if (handler.CanHandle(currentPage) == false)
-                continue;
+            IPageNavigationHandler handler = currentPage switch
+            {
+                NavigationPage => new NavigationPageHandler(_logger),
+                TabbedPage => new TabbedPageHandler(_logger),
+                FlyoutPage => new FlyoutPageHandler(_logger),
+                _ => new UnsupportedPageHandler(_logger)
+            };
 
             var navigationContext = await handler.HandleAsync(currentPage!, request, animated);
+
             if (navigationContext.TryGetValue(out var context) && context.Action == NavigationAction.ContinueInto)
-                return await HandleContextualNavigationAsync(context.NextPage, request, animated);
-            
+            {
+                currentPage = context.NextPage;
+                continue;
+            }
+
             return navigationContext;
         }
-
-        return Result.Fail(ErrorCode.NotSupported, "No handler found for current page.");
     }
 
     private static async Task PushPagesAsync(NavigationPage navigationPage, IEnumerable<Page> newPages, bool animated)

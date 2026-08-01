@@ -12,8 +12,6 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
 {
     private readonly ILogger _logger = logger;
 
-    bool IPageNavigationHandler.CanHandle(Page? page) => page is FlyoutPage;
-
     async Task<Result<NavigationContext>> IPageNavigationHandler.HandleAsync(Page page, NavigationRequest request, bool animated)
     {
         var flyoutPage = (FlyoutPage)page;
@@ -45,7 +43,7 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         
         if (detailHost?.DetailPage is not { } detailPage)
         {
-            const string message = "The initial detail page was not found. The navigation cannot proceed.";
+            const string message = "The initial detail page was not found; navigation cannot proceed.";
             _logger.LogWarning(message);
             return Result.Fail<NavigationContext>(ErrorCode.InvalidState, message);
         }
