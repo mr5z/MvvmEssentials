@@ -61,7 +61,7 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 	private void AppendSegmentImplied(string? pageName, object? parameters)
 	{
 		if (string.IsNullOrEmpty(pageName))
-			// 	const string error = "Page name cannot be null or empty";
+			// 	const string message = "Page name cannot be null or empty";
 			// 	_logger.LogWarning(error);
 			return;
 		
@@ -69,7 +69,7 @@ internal class PageLink(INavigationService navigationService) : IPageLink
 		if (invalidNames.Length > 0)
 		{
 			// TODO find a way to access the logger without converting this a member function
-			// const string error = "Invalid parameter types found '{Properties}'. It must be either string or number only.";
+			// const string message = "Invalid parameter types found '{Properties}'. It must be either string or number only.";
 			// _logger.LogWarning(error, string.Join(", ", invalidProps.Select(p => p.Name)));
 			throw new InvalidOperationException(
 				$"Cannot append segment '{pageName}': parameter(s) '{string.Join(", ", invalidNames)}' " +

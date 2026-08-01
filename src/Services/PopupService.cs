@@ -63,16 +63,16 @@ internal sealed class PopupService : IPopupService
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occurred when trying to decode popup name '{PopupName}'.";
-			_logger.LogError(ex, error, popupName);
-			return Result.Fail(ErrorCode.General, error);
+			const string message = "An error occurred when trying to decode popup name '{PopupName}'.";
+			_logger.LogError(ex, message, popupName);
+			return Result.Fail(ErrorCode.General, message);
 		}
 
 		if (pageInfoList.Length > 1)
 		{
-			const string error = "More than one popup found with name '{PopupName}'.";
-			_logger.LogWarning(error, popupName);
-			return Result.Fail(ErrorCode.InvalidParameter, error, popupName);
+			const string message = "More than one popup found with name '{PopupName}'.";
+			_logger.LogWarning(message, popupName);
+			return Result.Fail(ErrorCode.InvalidParameter, message, popupName);
 		}
 
 		try
@@ -86,9 +86,9 @@ internal sealed class PopupService : IPopupService
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occurred while trying to show '{PopupName}'.";
-			_logger.LogError(ex, error, popupName);
-			return Result.Fail(ErrorCode.General, error, popupName);
+			const string message = "An error occurred while trying to show '{PopupName}'.";
+			_logger.LogError(ex, message, popupName);
+			return Result.Fail(ErrorCode.General, message, popupName);
 		}
 	}
 
@@ -107,23 +107,23 @@ internal sealed class PopupService : IPopupService
 			var popupType = _pageRegistry.ResolvePageType(popupName);
 			if (popupType is null)
 			{
-				const string error = "Unable to resolve popup '{PopupName}' from registry.";
-				_logger.LogWarning(error, popupName);
-				return Result.Fail(ErrorCode.General, error, popupName);
+				const string message = "Unable to resolve popup '{PopupName}' from registry.";
+				_logger.LogWarning(message, popupName);
+				return Result.Fail(ErrorCode.General, message, popupName);
 			}
 
 			if (_activePopups.TryGetValue(popupType!, out var popupRef) == false)
 			{
-				const string error = "No active popup found with name '{PopupName}'.";
-				_logger.LogWarning(error, popupName);
-				return Result.Fail(ErrorCode.InvalidState, error, popupName);
+				const string message = "No active popup found with name '{PopupName}'.";
+				_logger.LogWarning(message, popupName);
+				return Result.Fail(ErrorCode.InvalidState, message, popupName);
 			}
 
 			if (popupRef.TryGetTarget(out var popupPage) == false)
 			{
-				const string error = "Referenced popup '{PopupName}' could not be recovered.";
-				_logger.LogWarning(error, popupName);
-				return Result.Fail(ErrorCode.InvalidState, error, popupName);
+				const string message = "Referenced popup '{PopupName}' could not be recovered.";
+				_logger.LogWarning(message, popupName);
+				return Result.Fail(ErrorCode.InvalidState, message, popupName);
 			}
 			
 			await _popupNavigation.RemovePageAsync(popupPage, animated);
@@ -132,9 +132,9 @@ internal sealed class PopupService : IPopupService
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occurred while trying to dismiss popup '{PopupName}'.";
-			_logger.LogError(ex, error, popupName);
-			return Result.Fail(ErrorCode.General, error, popupName);
+			const string message = "An error occurred while trying to dismiss popup '{PopupName}'.";
+			_logger.LogError(ex, message, popupName);
+			return Result.Fail(ErrorCode.General, message, popupName);
 		}
 	}
 
@@ -149,9 +149,9 @@ internal sealed class PopupService : IPopupService
 		}
 		catch (Exception ex)
 		{
-			const string error = "An error occurred while trying to dismiss all popups.";
-			_logger.LogError(ex, error);
-			return Result.Fail(ErrorCode.General, error);
+			const string message = "An error occurred while trying to dismiss all popups.";
+			_logger.LogError(ex, message);
+			return Result.Fail(ErrorCode.General, message);
 		}
 	}
 }

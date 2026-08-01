@@ -72,16 +72,16 @@ internal sealed class NavigationService(
         }
         catch (Exception ex)
         {
-            const string error = "An error occurred while trying to fetch page information.";
-            _logger.LogError(ex, error);
-            return Result.Fail(ErrorCode.InvalidState, error);
+            const string message = "An error occurred while trying to fetch page information.";
+            _logger.LogError(ex, message);
+            return Result.Fail(ErrorCode.InvalidState, message);
         }
 
         if (pageInfoList.Length == 0)
         {
-            const string error = "No valid pages found in the navigation path.";
-            _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.InvalidState, error);
+            const string message = "No valid pages found in the navigation path.";
+            _logger.LogWarning(message);
+            return Result.Fail(ErrorCode.InvalidState, message);
         }
 
         var request = new NavigationRequest(pageInfoList, parameters ?? new NavigationParameters(), _pageFactory);
@@ -96,9 +96,9 @@ internal sealed class NavigationService(
                 var pages = request.MaterializeAll();
                 if (pages.Count == 0)
                 {
-                    const string error = "No valid pages to navigate to.";
-                    _logger.LogWarning(error);
-                    return Result.Fail(ErrorCode.InvalidState, error);
+                    const string message = "No valid pages to navigate to.";
+                    _logger.LogWarning(message);
+                    return Result.Fail(ErrorCode.InvalidState, message);
                 }
 
                 var firstPage = pages[0];
@@ -117,25 +117,25 @@ internal sealed class NavigationService(
                 var currentPage = _applicationContext.MainPage;
                 if (currentPage is null)
                 {
-                    const string error = "Current page is null.";
-                    _logger.LogWarning(error);
-                    return Result.Fail(ErrorCode.InvalidState, error);
+                    const string message = "Current page is null.";
+                    _logger.LogWarning(message);
+                    return Result.Fail(ErrorCode.InvalidState, message);
                 }
                 return await HandleContextualNavigationAsync(currentPage, request, animated);
             }
         }
         catch (Exception ex)
         {
-            const string error = "An error occurred while trying to perform page navigation (Path: {Path}).";
-            _logger.LogError(ex, error, path);
-            return Result.Fail(ErrorCode.Unknown, error, path);
+            const string message = "An error occurred while trying to perform page navigation (Path: {Path}).";
+            _logger.LogError(ex, message, path);
+            return Result.Fail(ErrorCode.Unknown, message, path);
         }
         finally
         {
             if (request.ReleaseUnreachablePages(root: _applicationContext.MainPage) is {} ex)
             {
-                const string error = "One or more page scopes failed to dispose during navigation (Path: {Path}).";
-                _logger.LogWarning(ex, error, path);
+                const string message = "One or more page scopes failed to dispose during navigation (Path: {Path}).";
+                _logger.LogWarning(ex, message, path);
             }
         }
 
@@ -146,35 +146,28 @@ internal sealed class NavigationService(
     {
         if (TryGetCurrentPage(out var currentPage) == false)
         {
-            const string error = "Main page is not set for current window.";
-            _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.InvalidState, error);
+            const string message = "Main page is not set for current window.";
+            _logger.LogWarning(message);
+            return Result.Fail(ErrorCode.InvalidState, message);
         }
 
-        var navigationPage = currentPage switch
-        {
-            NavigationPage navPage => navPage,
-            TabbedPage tabbedPage => tabbedPage.CurrentPage as NavigationPage,
-            FlyoutPage flyoutPage => flyoutPage.Detail as NavigationPage,
-            _ => null
-        };
-
+        var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
         if (navigationPage is not null)
         {
             var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
             if (isRootPage)
             {
-                const string error = "No page to navigate back to.";
-                _logger.LogWarning(error);
-                return Result.Fail(ErrorCode.InvalidState, error);
+                const string message = "Already at the root of the navigation stack; nothing to navigate back to.";
+                _logger.LogInformation(message);
+                return Result.Fail(ErrorCode.NotHandled, message);
             }
 
             var previousPage = await navigationPage.PopAsync(animated);
             if (previousPage is null)
             {
-                const string error = "Popped page returns null.";
-                _logger.LogWarning(error);
-                return Result.Fail(ErrorCode.InvalidState, error);
+                const string message = "Popped page returns null.";
+                _logger.LogWarning(message);
+                return Result.Fail(ErrorCode.InvalidState, message);
             }
 
             return Result.Ok();
@@ -183,34 +176,39 @@ internal sealed class NavigationService(
         var navigatedBack = currentPage.SendBackButtonPressed();
         if (navigatedBack)
             return Result.Ok();
-
-        const string errorMessage = "Back navigation got cancelled.";
-        _logger.LogWarning(errorMessage);
-        return Result.Fail(ErrorCode.Cancelled, errorMessage);
+        
+        // Nobody handled it and there's no stack to pop, so it's not really "canceled"
+        // it's just not our problem anymore. Android might exit the app here, iOS
+        // probably just does nothing. Either way, not up to us.
+        const string messageInfo = "Back navigation was not handled within the app; platform default behavior may apply.";
+        _logger.LogInformation(messageInfo);
+        return Result.Fail(ErrorCode.NotHandled, messageInfo);
     }
 
     async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
     {
         if (TryGetCurrentPage(out var currentPage) == false)
         {
-            const string error = "Main page is not set for current window.";
-            _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.InvalidState, error);
+            const string message = "Main page is not set for current window.";
+            _logger.LogWarning(message);
+            return Result.Fail(ErrorCode.InvalidState, message);
         }
 
         var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
         if (navigationPage is null)
         {
-            const string error = "Root navigation is only supported within NavigationPage.";
-            _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.NotSupported, error);
+            const string message = "Root navigation is only supported within NavigationPage.";
+            _logger.LogWarning(message);
+            return Result.Fail(ErrorCode.NotSupported, message);
         }
 
         if (navigationPage.Navigation.NavigationStack.Count <= 1)
         {
-            const string error = "No page to navigate back to.";
-            _logger.LogWarning(error);
-            return Result.Fail(ErrorCode.InvalidState, error);
+            const string message = "No page to navigate back to.";
+            // I can't really decide whether the log should be informational or a warning
+            // and now we have inconsistency since the other is informational
+            _logger.LogWarning(message);
+            return Result.Fail(ErrorCode.NotHandled, message);
         }
 
         try
@@ -225,9 +223,9 @@ internal sealed class NavigationService(
         }
         catch (Exception ex)
         {
-            const string error = "An error occurred while trying to navigate to root.";
-            _logger.LogError(ex, error);
-            return Result.Fail(ErrorCode.General, error);
+            const string message = "An error occurred while trying to navigate to root.";
+            _logger.LogError(ex, message);
+            return Result.Fail(ErrorCode.General, message);
         }
 
         return Result.Ok();
@@ -246,9 +244,9 @@ internal sealed class NavigationService(
             return Result.Ok(firstPage);
         }
 
-        const string error = "No NavigationPage found in the page hierarchy and multiple pages were requested.";
-        _logger.LogWarning(error);
-        return Result.Fail<Page>(ErrorCode.NotSupported, error);
+        const string message = "No NavigationPage found in the page hierarchy and multiple pages were requested.";
+        _logger.LogWarning(message);
+        return Result.Fail<Page>(ErrorCode.NotSupported, message);
     }
 
     private async Task<IResult> HandleContextualNavigationAsync(Page? currentPage, NavigationRequest request, bool animated)

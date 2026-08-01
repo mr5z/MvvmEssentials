@@ -25,16 +25,16 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
         var currentTab = tabbedPage.CurrentPage;
         if (currentTab is null)
         {
-            const string error = "No current tab found in the TabbedPage.";
-            _logger.LogWarning(error);
-            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
+            const string message = "No current tab found in the TabbedPage.";
+            _logger.LogWarning(message);
+            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, message);
         }
 
         if (currentTab is not NavigationPage tabNavigationPage)
         {
-            const string error = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
-            _logger.LogWarning(error);
-            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
+            const string message = "Relative navigation within a TabbedPage is only supported when the current tab is wrapped in a NavigationPage.";
+            _logger.LogWarning(message);
+            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, message);
         }
 
         foreach (var pageInfo in request.Pages)
@@ -55,9 +55,9 @@ internal class TabbedPageHandler(ILogger logger) : IPageNavigationHandler
 
         if (targetTab is null)
         {
-            const string error = "Attempted to switch to tab '{TargetPage}', but it is not registered in the TabbedPage.";
-            _logger.LogWarning(error, targetPageType.Name);
-            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, error);
+            const string message = "Attempted to switch to tab '{TargetPage}', but it is not registered in the TabbedPage.";
+            _logger.LogWarning(message, targetPageType.Name);
+            return Result.Fail<NavigationContext>(ErrorCode.NotSupported, message);
         }
 
         tabbedPage.CurrentPage = targetTab;

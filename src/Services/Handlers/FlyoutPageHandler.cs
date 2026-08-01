@@ -21,9 +21,9 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
 
         if (detail is null)
         {
-            const string error = "FlyoutPage has no Detail page set.";
-            _logger.LogWarning(error);
-            return Result.Fail<NavigationContext>(ErrorCode.InvalidState, error);
+            const string message = "FlyoutPage has no Detail page set.";
+            _logger.LogWarning(message);
+            return Result.Fail<NavigationContext>(ErrorCode.InvalidState, message);
         }
 
         var isFlyoutDetailRootRequest = request.Parameters.ContainsKey(NavigationHints.IsFlyoutDetailRoot);
@@ -45,9 +45,9 @@ internal class FlyoutPageHandler(ILogger logger) : IPageNavigationHandler
         
         if (detailHost?.DetailPage is not { } detailPage)
         {
-            const string error = "The initial detail page was not found. The navigation cannot proceed.";
-            _logger.LogWarning(error);
-            return Result.Fail<NavigationContext>(ErrorCode.InvalidState, error);
+            const string message = "The initial detail page was not found. The navigation cannot proceed.";
+            _logger.LogWarning(message);
+            return Result.Fail<NavigationContext>(ErrorCode.InvalidState, message);
         }
 
         // Check if navigating back to initial Detail

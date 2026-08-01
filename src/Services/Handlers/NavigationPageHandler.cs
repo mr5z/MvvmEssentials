@@ -17,9 +17,9 @@ internal class NavigationPageHandler(ILogger logger) : IPageNavigationHandler
 
         if (request.Pages.Count == 0)
         {
-            const string error = "No pages to navigate.";
-            _logger.LogWarning(error);
-            return Result.Fail<NavigationContext>(ErrorCode.General, error);
+            const string message = "No pages to navigate.";
+            _logger.LogWarning(message);
+            return Result.Fail<NavigationContext>(ErrorCode.General, message);
         }
 
         foreach (var pageInfo in request.Pages)
