@@ -5,6 +5,7 @@ Lightweight MVVM utility library for .NET MAUI that simplifies navigation, flyou
 [![CI & Quality Report](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mr5z/MvvmEssentials/actions/workflows/dotnet.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Nkraft.MvvmEssentials.svg)](https://www.nuget.org/packages/Nkraft.MvvmEssentials/)
+
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mr5z/eab7588783a7e5c6e50f926b64f9ab1a/raw/coverage.json)]()
 [![Complexity](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mr5z/eab7588783a7e5c6e50f926b64f9ab1a/raw/cc.json)]()
 [![CRAP Score](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mr5z/eab7588783a7e5c6e50f926b64f9ab1a/raw/crap.json)]()
