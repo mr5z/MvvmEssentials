@@ -78,7 +78,5 @@ internal sealed class NavigationRequest(
 
 internal interface IPageNavigationHandler
 {
-    bool CanHandle(Page? page);
-
     Task<Result<NavigationContext>> HandleAsync(Page page, NavigationRequest request, bool animated);
 }

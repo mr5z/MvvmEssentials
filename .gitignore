@@ -886,3 +886,5 @@ FodyWeavers.xml
 coveragereport/
 coverage.cobertura.xml
 TestResults/
+coverage-report/
+htmlreport/
