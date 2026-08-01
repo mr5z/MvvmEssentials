@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Logging;
 
@@ -20,26 +21,31 @@ internal static class ExceptionDispatcher
     
     public static void Handle<TTargetType>(Exception ex, string methodName)
     {
-        var serviceProvider = Application.Current?.Handler?.MauiContext?.Services;
-        var logger = serviceProvider?.GetService<ILoggerFactory>()?.CreateLogger<TTargetType>();
-        var dispatcher = serviceProvider?.GetService<IDispatcher>();
-
-        if (logger is not null && dispatcher is not null)
+        if (TryResolveDependencies<TTargetType>(out var logger, out var dispatcher))
         {
             Handle(ex, logger, dispatcher, methodName);
+            return;
         }
-        else
-        {
-            // Dependencies couldn't be resolved (e.g. called before MauiContext is
-            // ready, or services missing). Don't swallow - surface as best we can so
-            // the exception isn't lost the way this handler exists to prevent.
-            Debug.WriteLine(
-                $"[{typeof(TTargetType).Name}] {methodName} failed and the " +
-                $"lifecycle exception handler was unavailable: {ex}");
+
+        // Dependencies couldn't be resolved (e.g. called before MauiContext is
+        // ready, or services missing). Don't swallow - surface as best we can so
+        // the exception isn't lost the way this handler exists to prevent.
+        Debug.WriteLine(
+            $"[{typeof(TTargetType).Name}] {methodName} failed and the " +
+            $"lifecycle exception handler was unavailable: {ex}");
 
 #if DEBUG
-            ExceptionDispatchInfo.Capture(ex).Throw();
+        ExceptionDispatchInfo.Capture(ex).Throw();
 #endif
-        }
+    }
+    
+    private static bool TryResolveDependencies<TTargetType>(
+        [NotNullWhen(true)] out ILogger? logger, 
+        [NotNullWhen(true)] out IDispatcher? dispatcher)
+    {
+        var serviceProvider = Application.Current?.Handler?.MauiContext?.Services;
+        logger = serviceProvider?.GetService<ILoggerFactory>()?.CreateLogger<TTargetType>();
+        dispatcher = serviceProvider?.GetService<IDispatcher>();
+        return logger is not null && dispatcher is not null;
     }
 }

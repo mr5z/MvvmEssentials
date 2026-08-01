@@ -37,7 +37,8 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         _flyoutPage = null;
     }
 
-    private void FlyoutPage_Appearing(object? sender, EventArgs e)
+    // Exposing this internally as MAUI's SendAppearing()/SendDisappearing() doesn't trigger the events
+    internal void FlyoutPage_Appearing(object? sender, EventArgs e)
     {
         if (_flyoutPage?.Detail is { } detailPage)
         {
@@ -45,7 +46,7 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         }
     }
 
-    private void FlyoutPage_Disappearing(object? sender, EventArgs e)
+    internal void FlyoutPage_Disappearing(object? sender, EventArgs e)
     {
         if (_flyoutPage?.Detail is { } detailPage)
         {
@@ -57,24 +58,30 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
     {
         if (sender is not FlyoutPage flyoutPage)
             return;
-        
+
         switch (e.PropertyName)
         {
-            case nameof(FlyoutPage.Detail) when (flyoutPage.Detail is { } newDetail):
-                TriggerDetailNavigatedTo(newDetail);
+            case nameof(FlyoutPage.Detail):
+                HandleDetailChanged(flyoutPage);
                 break;
-            
             case nameof(FlyoutPage.IsPresented):
-            {
-                if (_wasPresented && flyoutPage is { IsPresented: false, Detail: { } detailPage })
-                {
-                    PropagateAppearing(detailPage);
-                }
-            
-                _wasPresented = flyoutPage.IsPresented;
+                HandleIsPresentedChanged(flyoutPage);
                 break;
-            }
         }
+    }
+    
+    private static void HandleDetailChanged(FlyoutPage flyoutPage)
+    {
+        if (flyoutPage.Detail is { } newDetail)
+            TriggerDetailNavigatedTo(newDetail);
+    }
+
+    private void HandleIsPresentedChanged(FlyoutPage flyoutPage)
+    {
+        if (_wasPresented && flyoutPage is { IsPresented: false, Detail: { } detailPage })
+            PropagateAppearing(detailPage);
+
+        _wasPresented = flyoutPage.IsPresented;
     }
     
     // Both methods manually fire native Appearing/Disappearing for FlyoutPage.Detail swaps
