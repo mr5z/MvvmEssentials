@@ -75,8 +75,8 @@ internal class PageFactory(
 		}
 		catch (Exception ex)
 		{
-			const string error = "Unable to create instance of page '{PageName}'.";
-			_logger.LogError(ex, error, pageInfo.PageType.Name);
+			const string message = "Unable to create instance of page '{PageName}'.";
+			_logger.LogError(ex, message, pageInfo.PageType.Name);
 			scope.Dispose();
 			throw;
 		}
@@ -213,8 +213,8 @@ internal class PageFactory(
 	{
 		if (sender is not Page page)
 		{
-			const string error = "Received a page unloaded event but the sender '{ActualType}' is not a Page";
-			_logger.LogWarning(error, sender?.GetType().Name);
+			const string message = "Received a page unloaded event but the sender '{ActualType}' is not a Page";
+			_logger.LogWarning(message, sender?.GetType().Name);
 			return;
 		}
 		

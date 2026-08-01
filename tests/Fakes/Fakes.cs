@@ -2,6 +2,7 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
 using Nkraft.MvvmEssentials.ViewModels;
 
@@ -22,9 +23,6 @@ internal class FakeSecondViewModel : PageViewModel { }
 
 internal class TrackablePageViewModel : PageViewModel
 {
-    public static readonly List<TrackablePageViewModel> Instances = [];
-    public TrackablePageViewModel() => Instances.Add(this);
-    
     public int InitializedCount { get; private set; }
     public int InitializedAsyncCount { get; private set; }
     public int AppearingCount { get; private set; }
@@ -224,4 +222,39 @@ internal class LeakProbeViewModel : PageViewModel
     public LeakProbeViewModel(DisposalTracker tracker) => tracker.Created.Add(this);
 
     protected override void OnDispose() => DisposeCount++;
+}
+
+internal class TestDispatcherProvider : IDispatcherProvider
+{
+    public IDispatcher GetForCurrentThread() => new TestDispatcher();
+}
+
+internal class TestDispatcher : IDispatcher
+{
+    public bool IsDispatchRequired => false;
+    public bool Dispatch(Action action) { action(); return true; }
+    public bool DispatchDelayed(TimeSpan delay, Action action) { action(); return true; }
+    public IDispatcherTimer CreateTimer() => throw new NotImplementedException();
+}
+
+internal class TrackableRootPageNavigatedViewModel : IRootPageNavigated
+{
+    public int OnNavigatedToRootCount { get; private set; }
+    public int OnNavigatedToRootAsyncCount { get; private set; }
+    public INavigationParameters? LastParameters { get; private set; }
+    public bool ThrowOnAsync { get; set; }
+
+    void IRootPageNavigated.OnNavigatedToRoot(INavigationParameters parameters)
+    {
+        OnNavigatedToRootCount++;
+        LastParameters = parameters;
+    }
+
+    Task IRootPageNavigated.OnNavigatedToRootAsync(INavigationParameters parameters)
+    {
+        OnNavigatedToRootAsyncCount++;
+        if (ThrowOnAsync)
+            throw new InvalidOperationException("Simulated failure.");
+        return Task.CompletedTask;
+    }
 }
