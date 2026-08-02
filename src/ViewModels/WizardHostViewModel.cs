@@ -109,7 +109,7 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
             if (wasLast != IsLastStep)
                 OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsLastStep)));
         }
-    } = -1; // To trigger SetStep(0) from OnInitialized()
+    } = -1; // To trigger INPC by SetStep(0) from OnInitialized()
 
     protected bool CanGoBack => CurrentIndex > 0;
     

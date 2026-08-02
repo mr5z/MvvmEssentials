@@ -1,4 +1,5 @@
-﻿using Nkraft.CrossUtility.Patterns;
+﻿using System.ComponentModel;
+using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
@@ -50,7 +51,18 @@ public abstract class TabHostViewModel : PageViewModel, ITabHost
 
 	protected ITabComponent CurrentTab => Tabs.ElementAt(SelectedTabIndex);
 
-	protected int SelectedTabIndex { get; set; }
+	protected int SelectedTabIndex
+	{
+		get;
+		set
+		{
+			if (field == value)
+				return;
+
+			field = value;
+			OnPropertyChanged(new PropertyChangedEventArgs(nameof(SelectedTabIndex)));
+		}
+	}
 	
 	IReadOnlyCollection<ITabComponent> ITabHost.Tabs => Tabs;
 	
