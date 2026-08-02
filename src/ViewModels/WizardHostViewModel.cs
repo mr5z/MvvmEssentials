@@ -83,7 +83,9 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         get;
         private set
         {
-            if (field == value) return;
+            if (field == value) 
+                return;
+            
             field = value;
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentStep)));
         }
@@ -94,20 +96,20 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         get;
         private set
         {
-            if (field == value) 
+            if (field == value)
                 return;
-            
+
             var wasFirst = CanGoBack == false;
             var wasLast = IsLastStep;
             field = value;
-            
+
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentIndex)));
             if (wasFirst != (CanGoBack == false))
                 OnPropertyChanged(new PropertyChangedEventArgs(nameof(CanGoBack)));
             if (wasLast != IsLastStep)
                 OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsLastStep)));
         }
-    }
+    } = -1; // To trigger SetStep(0) from OnInitialized()
 
     protected bool CanGoBack => CurrentIndex > 0;
     
@@ -116,6 +118,4 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
     protected TState State { get; set; } = new();
     
     protected abstract IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
-    
-    
 }
