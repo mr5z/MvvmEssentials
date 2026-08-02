@@ -73,6 +73,10 @@ public partial class MenuViewModel(INavigationService navigationService) : Flyou
 }
 ```
 
+> **Note:** `FlyoutMenuViewModel` derives from `BaseViewModel`, which implements
+> `INotifyPropertyChanged`. Bindable properties you add to your menu yourself need change
+> notification raised for the UI to update — wire it up the same way you do elsewhere in your app.
+
 **5. Replace the detail page programmatically**
 
 From within `FlyoutMenuViewModel`, call `ReplaceDetailAsync<TViewModel>` to swap the flyout's detail area by ViewModel type. The flyout is automatically dismissed after navigation.
@@ -107,6 +111,10 @@ private async Task NavigateToSettings()
 // From MenuViewModel or MainHostViewModel
 IsPresented = !IsPresented;
 ```
+
+The host raises `PropertyChanged` for `IsPresented` itself, and `FlyoutPresentingBehavior` syncs the
+native `FlyoutPage` in response. On `FlyoutMenuViewModel`, `IsPresented` is a pass-through to the
+host, so setting it from the menu works the same way.
 
 ## Lifecycle
 
