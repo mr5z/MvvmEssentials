@@ -91,6 +91,10 @@ public partial class HomeViewModel(ISemanticScreenReader screenReader) : TabView
 }
 ```
 
+> **Note:** `TabViewModel` derives from `BaseViewModel`, which implements `INotifyPropertyChanged`.
+> Bindable properties you add yourself (like `Count` and `CountButtonText` above) need change
+> notification raised for the UI to update — wire it up the same way you do elsewhere in your app.
+
 **5. Switch the current tab programmatically**
 
 From within `TabHostViewModel`, call `SwitchTabAsync<TTabViewModel>` to switch to a tab by ViewModel type:
@@ -115,6 +119,9 @@ public class MainViewModel(
     }
 }
 ```
+
+Setting `SelectedTabIndex` directly also switches the visible tab — the host raises `PropertyChanged`
+for it, and `TabSelectionBehavior` syncs the native `TabbedPage` in response.
 
 ## Lifecycle
 
