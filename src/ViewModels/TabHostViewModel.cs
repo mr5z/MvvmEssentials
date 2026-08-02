@@ -41,7 +41,7 @@ public abstract class TabHostViewModel : PageViewModel, ITabHost
 		var navParams = parameters ?? new NavigationParameters();
     
 		navParams[NavigationHints.IsTabbedPageSwitch] = true;
-		var pageName = PageHelper.ToPageName<TTabViewModel>("Page");
+		var pageName = PageHelper.ToPageName<TTabViewModel>(PagePattern.Page);
 
 		return await navigationService.NavigateAsync(pageName, navParams, animated);
 	}

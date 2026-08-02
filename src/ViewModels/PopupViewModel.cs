@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Popups;
@@ -65,5 +66,5 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 		_completion?.TrySetCanceled();
 	}
 
-	internal sealed override string PageName => TypeName.Replace("ViewModel", "Popup");
+	internal sealed override string PageName => PageHelper.ToPageName(GetType(), PagePattern.Popup);
 }

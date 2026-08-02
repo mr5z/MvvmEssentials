@@ -31,7 +31,7 @@ public static class NavigationExtension
 			where TViewModel : PageViewModel
 			where TParameter : class
 		{
-			var pageName = PageHelper.ToPageName<TViewModel>("Page");
+			var pageName = PageHelper.ToPageName<TViewModel>(PagePattern.Page);
 			var dictionary = ObjectHelper.ToDictionary(parameters);
 			var navParam = new NavigationParameters();
 			foreach (var (key, value) in dictionary)
@@ -49,7 +49,7 @@ public static class NavigationExtension
 		public async Task<IResult> NavigateAsync<TViewModel>(INavigationParameters? parameters = null, bool animated = true)
 			where TViewModel : PageViewModel
 		{
-			var pageName = PageHelper.ToPageName<TViewModel>("Page");
+			var pageName = PageHelper.ToPageName<TViewModel>(PagePattern.Page);
 			return await navigationService.NavigateAsync(pageName, parameters, animated);
 		}
 
@@ -130,7 +130,7 @@ public static class NavigationExtension
 		public IPageLink Push<TParameter>(Type viewModelType, TParameter? parameters = null)
 			where TParameter : class
 		{
-			var pageName = PageHelper.ToPageName(viewModelType, "Page");
+			var pageName = PageHelper.ToPageName(viewModelType, PagePattern.Page);
 			return pageLink.AppendSegment(pageName, parameters);
 		}
 		
@@ -145,7 +145,7 @@ public static class NavigationExtension
 			where TViewModel : PageViewModel
 			where TParameter : class
 		{
-			var pageName = PageHelper.ToPageName<TViewModel>("Page");
+			var pageName = PageHelper.ToPageName<TViewModel>(PagePattern.Page);
 			return pageLink.AppendSegment(pageName, parameters);
 		}
 
