@@ -245,16 +245,10 @@ public class WizardHostViewModelTests
         Assert.That(sut.PublicIsLastStep, Is.False);
     }
 
-    // -----------------------------------------------------------------------
-    // No Fody / generator required — plain CLR event subscription is sufficient.
-    // Core regression guard for dropping Fody from the library itself.
-    // -----------------------------------------------------------------------
-
     [Test]
     public async Task PropertyChanged_FiresForPlainSubscriberWithoutAnyWeavingOrGenerator()
     {
-        // Given — no [ObservableProperty], no [AddINotifyPropertyChangedInterface] anywhere
-        // in this test or in WizardHostViewModel; just a plain INotifyPropertyChanged subscriber.
+        // Given
         var sut = CreateSut(stepCount: 2);
         var currentIndexRaisedCount = 0;
         ((INotifyPropertyChanged)sut).PropertyChanged += (_, e) =>
