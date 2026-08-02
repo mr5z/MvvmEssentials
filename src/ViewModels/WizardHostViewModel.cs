@@ -91,7 +91,7 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         }
     }
 
-    protected int CurrentIndex
+    public int CurrentIndex
     {
         get;
         private set
@@ -111,9 +111,9 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         }
     } = -1; // To trigger INPC by SetStep(0) from OnInitialized()
 
-    protected bool CanGoBack => CurrentIndex > 0;
+    public bool CanGoBack => CurrentIndex > 0;
     
-    protected bool IsLastStep => CurrentIndex == Steps.Count - 1;
+    public bool IsLastStep => CurrentIndex == Steps.Count - 1;
 
     protected TState State { get; set; } = new();
     
