@@ -1,5 +1,4 @@
-using Nkraft.MvvmEssentials.Services.Navigation;
-using Nkraft.MvvmEssentials.Services.Pages;
+using System.ComponentModel;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
@@ -59,5 +58,43 @@ public class TabHostViewModelTests
     public void CurrentTab_ByDefault_ReturnsFirstTab()
     {
         Assert.That(((ITabHost)_sut).CurrentTab, Is.SameAs(_tab));
+    }
+    
+    [Test]
+    public void SelectedTabIndex_WhenSetToNewValue_RaisesPropertyChanged()
+    {
+        // Given
+        var raised = new List<string>();
+        ((INotifyPropertyChanged)_sut).PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        // When
+        ((ITabHost)_sut).SelectedTabIndex = 1;
+
+        // Then
+        Assert.That(raised, Does.Contain(nameof(ITabHost.SelectedTabIndex)));
+    }
+
+    [Test]
+    public void SelectedTabIndex_SetToSameValue_DoesNotRaisePropertyChanged()
+    {
+        // Given — default is 0; setting to 0 again should be a no-op
+        var raised = new List<string>();
+        ((INotifyPropertyChanged)_sut).PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        // When
+        ((ITabHost)_sut).SelectedTabIndex = 0;
+
+        // Then
+        Assert.That(raised, Is.Empty);
+    }
+    
+    [Test]
+    public void SelectedTabIndex_SetOutsideValidRange_ThrowsIndexOutOfRangeException()
+    {
+        // Given
+        ((ITabHost)_sut).SelectedTabIndex = -1;
+        
+        // Then
+        Assert.Throws<IndexOutOfRangeException>(() => ((IPageAppearing)_sut).OnPageAppearing());
     }
 }
