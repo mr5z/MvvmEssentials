@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Wizards;
 
@@ -77,15 +78,44 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
         _stepCache.Clear();
     }
 
-    public ContentView? CurrentStep { get; private set; }
-    
-    protected TState State { get; set; } = new();
-    
-    protected abstract IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
+    public ContentView? CurrentStep
+    {
+        get;
+        private set
+        {
+            if (field == value) 
+                return;
+            
+            field = value;
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentStep)));
+        }
+    }
 
-    protected int CurrentIndex { get; private set; }
+    protected int CurrentIndex
+    {
+        get;
+        private set
+        {
+            if (field == value)
+                return;
+
+            var wasFirst = CanGoBack == false;
+            var wasLast = IsLastStep;
+            field = value;
+
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentIndex)));
+            if (wasFirst != (CanGoBack == false))
+                OnPropertyChanged(new PropertyChangedEventArgs(nameof(CanGoBack)));
+            if (wasLast != IsLastStep)
+                OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsLastStep)));
+        }
+    } = -1; // To trigger SetStep(0) from OnInitialized()
 
     protected bool CanGoBack => CurrentIndex > 0;
     
     protected bool IsLastStep => CurrentIndex == Steps.Count - 1;
+
+    protected TState State { get; set; } = new();
+    
+    protected abstract IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
 }
