@@ -8,7 +8,6 @@ public class PageViewModel : NavigableEntryViewModel,
 	IPageLoad,
 	IDisposable
 {
-
 	private bool _isInitialized = false;
 	protected virtual void OnPageAppearing()
 	{
