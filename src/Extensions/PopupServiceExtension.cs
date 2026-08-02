@@ -22,14 +22,14 @@ public static class PopupServiceExtension
 			where TViewModel : IPopupViewModel<TResult>
 			=> await IPopupService.PresentAsync<TResult>(
 				popupService,
-				PageHelper.ToPageName<TViewModel>("Popup"),
+				PageHelper.ToPageName<TViewModel>(PagePattern.Popup),
 				parameters ?? new NavigationParameters(),
 				animated);
 
 		public async Task<IResult> DismissAsync<TViewModel>(bool animated = true)
 			where TViewModel : IPopupViewModel
 		{
-			var popupName = PageHelper.ToPageName<TViewModel>("Popup");
+			var popupName = PageHelper.ToPageName<TViewModel>(PagePattern.Popup);
 			return await popupService.DismissAsync(popupName, animated);
 		}
 		

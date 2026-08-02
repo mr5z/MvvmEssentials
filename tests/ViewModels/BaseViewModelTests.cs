@@ -12,10 +12,8 @@ public class BaseViewModelTests
         public void TriggerPropertyChanged(string propertyName)
             => OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
 
-        public string ExposedTypeName => TypeName;
-        public string ExposedPageName => PageName;
         public string ExposedViewModelName => ViewModelName;
-        public string ExposedNormalizedName => NormalizedName;
+        public string ExposedPageName => PageName;
     }
 
     private ExposedViewModel _sut = null!;
@@ -73,13 +71,6 @@ public class BaseViewModelTests
     {
         // ExposedViewModel → "ExposedPage"
         Assert.That(_sut.ExposedPageName, Is.EqualTo("ExposedPage"));
-    }
-
-    [Test]
-    public void NormalizedName_StripsViewModelSuffix()
-    {
-        // ExposedViewModel → "Exposed"
-        Assert.That(_sut.ExposedNormalizedName, Is.EqualTo("Exposed"));
     }
 
     [Test]

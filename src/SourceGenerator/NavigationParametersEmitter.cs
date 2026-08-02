@@ -87,7 +87,6 @@ internal static class NavigationParametersEmitter
         }
 
         var destinationName = t.ClassName.Replace("ViewModel", t.Suffix);
-
         sb.AppendLine($"        return new {returnType}(\"{destinationName}\", __p);");
         sb.AppendLine("    }");
         sb.AppendLine("}");

@@ -1,21 +1,22 @@
 namespace Nkraft.MvvmEssentials.Helpers;
 
+internal class PagePattern
+{
+    public string Pattern { get; }
+    private PagePattern(string pattern) => Pattern = pattern;
+    public static readonly PagePattern Page = new("Page");
+    public static readonly PagePattern Popup = new("Popup");
+    public static readonly PagePattern ViewModel = new("ViewModel");
+}
+
 internal static class PageHelper
 {
-    internal static string ToPageName(Type viewModelType, string pagePattern)
-    {
-        const string knownViewModelPattern = "ViewModel";
-        return viewModelType.Name.Replace(knownViewModelPattern, pagePattern);
-    }
+    internal static string ToPageName(Type viewModelType, PagePattern pagePattern)
+        => viewModelType.Name.Replace(PagePattern.ViewModel.Pattern, pagePattern.Pattern);
     
-    internal static string ToPageName<TViewModel>(string pagePattern)
-    {
-        return ToPageName(typeof(TViewModel), pagePattern);
-    }
+    internal static string ToPageName<TViewModel>(PagePattern pagePattern)
+        => ToPageName(typeof(TViewModel), pagePattern);
     
     internal static string ToViewModelName(Type pageType)
-    {
-        const string knownPagePattern = "Page";
-        return pageType.Name.Replace(knownPagePattern, "ViewModel");
-    }
+        => pageType.Name.Replace(PagePattern.Page.Pattern, PagePattern.ViewModel.Pattern);
 }

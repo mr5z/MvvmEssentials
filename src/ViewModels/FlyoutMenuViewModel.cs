@@ -31,7 +31,7 @@ public abstract class FlyoutMenuViewModel : BaseViewModel, IFlyoutComponent, IDi
         
         navParams[NavigationHints.IsFlyoutDetailRoot] = true;
 
-        var pageName = PageHelper.ToPageName<TViewModel>("Page");
+        var pageName = PageHelper.ToPageName<TViewModel>(PagePattern.Page);
         var result = await navigationService.NavigateAsync(pageName, navParams, animated);
 
         IsPresented = false;
