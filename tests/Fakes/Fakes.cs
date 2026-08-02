@@ -258,3 +258,6 @@ internal class TrackableRootPageNavigatedViewModel : IRootPageNavigated
         return Task.CompletedTask;
     }
 }
+
+internal sealed class TestFlyoutViewModel(TrackableFlyoutMenuViewModel menu, TrackableFlyoutMenuViewModel detail)
+    : FlyoutViewModel<TrackableFlyoutMenuViewModel, TrackableFlyoutMenuViewModel>(menu, detail);

@@ -5,8 +5,6 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 public abstract class TabViewModel : BaseViewModel, ITabComponent, IDisposable
 {
 	private bool _isInitialized;
-	private bool _isInitializedAsync;
-
 	protected virtual void OnTabSelected()
 	{
 		if (_isInitialized == false)
@@ -16,6 +14,7 @@ public abstract class TabViewModel : BaseViewModel, ITabComponent, IDisposable
 		}
 	}
 
+	private bool _isInitializedAsync;
 	protected virtual async Task OnTabSelectedAsync()
 	{
 		if (_isInitializedAsync == false)
