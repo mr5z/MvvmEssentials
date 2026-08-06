@@ -108,3 +108,19 @@ jobs:
         label: max crap score
         message: ${{ steps.metrics.outputs.crap }}
         color: orange
+
+    - name: Get listed NuGet downloads
+      id: downloads
+      run: |
+        chmod +x nuget_listed_downloads.sh
+        ./nuget_listed_downloads.sh Nkraft.MvvmEssentials --ci >> "$GITHUB_OUTPUT"
+
+    - name: Update downloads badge
+      uses: schneegans/dynamic-badges-action@v1.7.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: eab7588783a7e5c6e50f926b64f9ab1a
+        filename: downloads.json
+        label: downloads
+        message: ${{ steps.downloads.outputs.downloads }}
+        color: blue
