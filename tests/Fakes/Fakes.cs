@@ -261,3 +261,101 @@ internal class TrackableRootPageNavigatedViewModel : IRootPageNavigated
 
 internal sealed class TestFlyoutViewModel(TrackableFlyoutMenuViewModel menu, TrackableFlyoutMenuViewModel detail)
     : FlyoutViewModel<TrackableFlyoutMenuViewModel, TrackableFlyoutMenuViewModel>(menu, detail);
+    
+internal class MissingBaseCallTabHostViewModel(TrackableTabViewModel tab) : TabHostViewModel
+{
+    private readonly TrackableTabViewModel _tab = tab;
+    protected override IReadOnlyCollection<ITabComponent> Tabs => [_tab];
+
+    protected override Task OnInitializedAsync() => Task.CompletedTask; // bug: no base call
+}
+
+// ---------------------------------------------------------------------------
+// TabViewModel that fully replaces OnTabSelected/OnTabSelectedAsync without
+// calling base — mirrors the real-world DashboardViewModel bug.
+// ---------------------------------------------------------------------------
+
+internal class OverridesWithoutBaseCallTabViewModel : TabViewModel
+{
+    public int InitializedCount { get; private set; }
+    public int InitializedAsyncCount { get; private set; }
+    public bool OnTabSelectedCalled { get; private set; }
+    public bool OnTabSelectedAsyncCalled { get; private set; }
+    public int OnTabSelectedAsyncCallCount { get; private set; }
+    public List<string> CallOrder { get; } = [];
+
+    protected override void OnInitialized()
+    {
+        InitializedCount++;
+        CallOrder.Add(nameof(OnInitialized));
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        InitializedAsyncCount++;
+        CallOrder.Add(nameof(OnInitializedAsync));
+        return Task.CompletedTask;
+    }
+
+    // Deliberately no base.OnTabSelected() call.
+    protected override void OnTabSelected()
+    {
+        OnTabSelectedCalled = true;
+        CallOrder.Add(nameof(OnTabSelected));
+    }
+
+    // Deliberately no base.OnTabSelectedAsync() call.
+    protected override Task OnTabSelectedAsync()
+    {
+        OnTabSelectedAsyncCalled = true;
+        OnTabSelectedAsyncCallCount++;
+        CallOrder.Add(nameof(OnTabSelectedAsync));
+        return Task.CompletedTask;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PageViewModel that fully replaces OnPageAppearing/OnPageAppearingAsync without
+// calling base — mirrors a real-world subclass that forgets the base call.
+// ---------------------------------------------------------------------------
+
+internal class OverridesWithoutBaseCallPageViewModel : PageViewModel
+{
+    public int InitializedCount { get; private set; }
+    public int InitializedAsyncCount { get; private set; }
+    public bool OnPageAppearingCalled { get; private set; }
+    public int OnPageAppearingCallCount { get; private set; }
+    public bool OnPageAppearingAsyncCalled { get; private set; }
+    public int OnPageAppearingAsyncCallCount { get; private set; }
+    public List<string> CallOrder { get; } = [];
+
+    protected override void OnInitialized()
+    {
+        InitializedCount++;
+        CallOrder.Add(nameof(OnInitialized));
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        InitializedAsyncCount++;
+        CallOrder.Add(nameof(OnInitializedAsync));
+        return Task.CompletedTask;
+    }
+
+    // Deliberately no base.OnPageAppearing() call.
+    protected override void OnPageAppearing()
+    {
+        OnPageAppearingCalled = true;
+        OnPageAppearingCallCount++;
+        CallOrder.Add(nameof(OnPageAppearing));
+    }
+
+    // Deliberately no base.OnPageAppearingAsync() call.
+    protected override Task OnPageAppearingAsync()
+    {
+        OnPageAppearingAsyncCalled = true;
+        OnPageAppearingAsyncCallCount++;
+        CallOrder.Add(nameof(OnPageAppearingAsync));
+        return Task.CompletedTask;
+    }
+}
