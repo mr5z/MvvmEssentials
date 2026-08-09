@@ -203,4 +203,84 @@ public class PageViewModelTests
         Assert.That(_sut.InitializedCount, Is.EqualTo(1));
         Assert.That(second.InitializedCount, Is.EqualTo(1));
     }
+    
+    // -----------------------------------------------------------------------
+    // Guard is unbypassable — even a full override with no base call still
+    // triggers OnInitialized/OnInitializedAsync exactly once, and the override
+    // itself still fires (regression test for the HandlePageAppearing bug where
+    // OnPageAppearing()/OnPageAppearingAsync() were never invoked at all).
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void OnPageAppearing_WhenOverrideOmitsBaseCall_StillTriggersOnInitialized()
+    {
+        // Given
+        var sut = new OverridesWithoutBaseCallPageViewModel();
+
+        // When
+        ((IPageAppearing)sut).OnPageAppearing();
+
+        // Then
+        Assert.That(sut.InitializedCount, Is.EqualTo(1));
+        Assert.That(sut.OnPageAppearingCalled, Is.True); // the override itself still ran
+    }
+
+    [Test]
+    public async Task OnPageAppearingAsync_WhenOverrideOmitsBaseCall_StillTriggersOnInitializedAsync()
+    {
+        // Given
+        var sut = new OverridesWithoutBaseCallPageViewModel();
+
+        // When
+        await ((IPageAppearing)sut).OnPageAppearingAsync();
+
+        // Then
+        Assert.That(sut.InitializedAsyncCount, Is.EqualTo(1));
+        Assert.That(sut.OnPageAppearingAsyncCalled, Is.True); // the override itself still ran
+    }
+
+    [Test]
+    public async Task OnPageAppearingAsync_WhenOverrideOmitsBaseCall_OnInitializedAsyncRunsBeforeOverrideLogic()
+    {
+        // Given — ordering matters: refresh-style logic in the override should
+        // run after initialization, not instead of it.
+        var sut = new OverridesWithoutBaseCallPageViewModel();
+
+        // When
+        await ((IPageAppearing)sut).OnPageAppearingAsync();
+
+        // Then
+        Assert.That(sut.CallOrder, Is.EqualTo(new[] { "OnInitializedAsync", "OnPageAppearingAsync" }));
+    }
+
+    [Test]
+    public void OnPageAppearing_WhenOverrideOmitsBaseCall_CalledMultipleTimes_OnInitializedRunsOnceButOverrideFiresEachTime()
+    {
+        // Given
+        var sut = new OverridesWithoutBaseCallPageViewModel();
+
+        // When
+        ((IPageAppearing)sut).OnPageAppearing();
+        ((IPageAppearing)sut).OnPageAppearing();
+        ((IPageAppearing)sut).OnPageAppearing();
+
+        // Then
+        Assert.That(sut.InitializedCount, Is.EqualTo(1));
+        Assert.That(sut.OnPageAppearingCallCount, Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task OnPageAppearingAsync_WhenOverrideOmitsBaseCall_CalledTwice_OnInitializedAsyncRunsOnce()
+    {
+        // Given
+        var sut = new OverridesWithoutBaseCallPageViewModel();
+
+        // When
+        await ((IPageAppearing)sut).OnPageAppearingAsync();
+        await ((IPageAppearing)sut).OnPageAppearingAsync();
+
+        // Then
+        Assert.That(sut.InitializedAsyncCount, Is.EqualTo(1));
+        Assert.That(sut.OnPageAppearingAsyncCallCount, Is.EqualTo(2));
+    }
 }

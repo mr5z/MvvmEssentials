@@ -9,24 +9,32 @@ public class PageViewModel : NavigableEntryViewModel,
 	IDisposable
 {
 	private bool _isInitialized = false;
-	protected virtual void OnPageAppearing()
+	private void HandlePageAppearing()
 	{
 		if (_isInitialized == false)
 		{
 			_isInitialized = true;
 			OnInitialized();
 		}
+		
+		OnPageAppearing();
 	}
 
 	private bool _isInitializedAsync = false;
-	protected virtual async Task OnPageAppearingAsync() 
+	private async Task HandlePageAppearingAsync() 
 	{
 		if (_isInitializedAsync == false)
 		{
 			_isInitializedAsync = true;
 			await OnInitializedAsync();
 		}
+		
+		await OnPageAppearingAsync();
 	}
+	
+	protected virtual void OnPageAppearing() { }
+
+	protected virtual Task OnPageAppearingAsync() => Task.CompletedTask;
 
 	protected virtual void OnPageDisappearing() { }
 
@@ -48,11 +56,11 @@ public class PageViewModel : NavigableEntryViewModel,
 
 	protected virtual void OnDispose() { }
 	
-	void IPageAppearing.OnPageAppearing() => OnPageAppearing();
+	void IPageAppearing.OnPageAppearing() => HandlePageAppearing();
+	
+	Task IPageAppearing.OnPageAppearingAsync() => HandlePageAppearingAsync();
 	
 	void IPageAppearing.OnPageDisappearing() => OnPageDisappearing();
-	
-	Task IPageAppearing.OnPageAppearingAsync() => OnPageAppearingAsync();
 	
 	Task IPageAppearing.OnPageDisappearingAsync() => Task.CompletedTask;
 	
