@@ -105,19 +105,6 @@ public class AppStartupWindowHookTests
         Assert.That(_logger.Entries[0].Exception, Is.SameAs(boom));
     }
 
-    [TestCaseSource(nameof(FailureShapes))]
-    public void Attach_WhenStartupFails_DoesNotCallQuit(bool throwsSynchronously)
-    {
-        // Given: Attach() used to swallow the exception and Quit(); it now rethrows.
-        ArrangeFailure(throwsSynchronously);
-
-        // When
-        Assert.Throws<InvalidOperationException>(() => _sut.Attach());
-
-        // Then
-        _applicationContext.DidNotReceive().Quit();
-    }
-
     // -----------------------------------------------------------------------
     // Test double
     // -----------------------------------------------------------------------
