@@ -62,11 +62,15 @@ public class PageViewModel : NavigableEntryViewModel,
 	
 	void IPageAppearing.OnPageDisappearing() => OnPageDisappearing();
 	
-	Task IPageAppearing.OnPageDisappearingAsync() => Task.CompletedTask;
+	Task IPageAppearing.OnPageDisappearingAsync() => OnPageDisappearingAsync();
 	
 	void IPageNavigated.OnPageNavigatedTo() => OnNavigatedTo();
 	
+	Task IPageNavigated.OnPageNavigatedToAsync() => OnNavigatedToAsync();
+	
 	void IPageNavigated.OnPageNavigatedFrom() => OnNavigatedFrom();
+	
+	Task IPageNavigated.OnPageNavigatedFromAsync() => OnNavigatedFromAsync();
 	
 	void IPageLoad.OnPageUnloaded() => OnPageUnloaded();
 	

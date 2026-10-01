@@ -123,6 +123,10 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage?.BindingContext is IPageNavigated vm)
         {
             vm.OnPageNavigatedTo();
+            vm.OnPageNavigatedToAsync().FireAndForget(ex =>
+            {
+                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageNavigated.OnPageNavigatedToAsync));
+            });
         }
     }
     

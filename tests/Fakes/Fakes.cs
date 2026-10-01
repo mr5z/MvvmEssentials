@@ -29,6 +29,9 @@ internal class TrackablePageViewModel : PageViewModel
     public int DisappearingCount { get; private set; }
     public int NavigatedToCount { get; private set; }
     public int NavigatedFromCount { get; private set; }
+    public int DisappearingAsyncCount { get; private set; }
+    public int NavigatedToAsyncCount { get; private set; }
+    public int NavigatedFromAsyncCount { get; private set; }
     public int PageUnloadedCount { get; private set; }
     public int DisposeCount { get; private set; }
     public int NavigatedToRootCount { get; private set; }
@@ -53,6 +56,24 @@ internal class TrackablePageViewModel : PageViewModel
     protected override void OnNavigatedTo() => NavigatedToCount++;
     protected override void OnNavigatedFrom() => NavigatedFromCount++;
     protected override void OnPageUnloaded() => PageUnloadedCount++;
+
+    protected override Task OnPageDisappearingAsync()
+    {
+        DisappearingAsyncCount++;
+        return Task.CompletedTask;
+    }
+
+    protected override Task OnNavigatedToAsync()
+    {
+        NavigatedToAsyncCount++;
+        return Task.CompletedTask;
+    }
+
+    protected override Task OnNavigatedFromAsync()
+    {
+        NavigatedFromAsyncCount++;
+        return Task.CompletedTask;
+    }
     protected override void OnDispose() => DisposeCount++;
 
     protected override void OnParametersSet(INavigationParameters parameters)

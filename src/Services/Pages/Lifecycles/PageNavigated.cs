@@ -2,14 +2,18 @@
 
 internal interface IPageNavigated
 {
-	void OnPageNavigatedTo();
+    void OnPageNavigatedTo();
 
-	void OnPageNavigatedFrom();
+    Task OnPageNavigatedToAsync();
+
+    void OnPageNavigatedFrom();
+
+    Task OnPageNavigatedFromAsync();
 }
 
 internal interface IRootPageNavigated
 {
-	void OnNavigatedToRoot(INavigationParameters parameters);
+    void OnNavigatedToRoot(INavigationParameters parameters);
 	
-	Task OnNavigatedToRootAsync(INavigationParameters parameters);
+    Task OnNavigatedToRootAsync(INavigationParameters parameters);
 }

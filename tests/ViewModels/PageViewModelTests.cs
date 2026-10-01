@@ -18,6 +18,9 @@ public class PageViewModelTests
     private Task TriggerAppearingAsync() => ((IPageAppearing)_sut).OnPageAppearingAsync();
     private void TriggerNavigatedTo() => ((IPageNavigated)_sut).OnPageNavigatedTo();
     private void TriggerNavigatedFrom() => ((IPageNavigated)_sut).OnPageNavigatedFrom();
+    private Task TriggerDisappearingAsync() => ((IPageAppearing)_sut).OnPageDisappearingAsync();
+    private Task TriggerNavigatedToAsync() => ((IPageNavigated)_sut).OnPageNavigatedToAsync();
+    private Task TriggerNavigatedFromAsync() => ((IPageNavigated)_sut).OnPageNavigatedFromAsync();
     private void TriggerPageUnloaded() => ((IPageLoad)_sut).OnPageUnloaded();
     private void TriggerDispose() => ((IDisposable)_sut).Dispose();
 
@@ -107,6 +110,59 @@ public class PageViewModelTests
 
         // Then
         Assert.That(_sut.DisappearingCount, Is.EqualTo(2));
+    }
+
+    // -----------------------------------------------------------------------
+    // Async hooks reach the override (regression: the IPageAppearing /
+    // IPageNavigated implementations returned Task.CompletedTask or didn't
+    // exist, so OnPageDisappearingAsync / OnNavigatedToAsync /
+    // OnNavigatedFromAsync overrides never ran). Sync and async are separate
+    // paths; each must fire only its own override.
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task OnPageDisappearingAsync_WhenTriggered_FiresOverride()
+    {
+        // When
+        await TriggerDisappearingAsync();
+        await TriggerDisappearingAsync();
+
+        // Then
+        Assert.That(_sut.DisappearingAsyncCount, Is.EqualTo(2));
+        Assert.That(_sut.DisappearingCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task OnNavigatedToAsync_WhenTriggered_FiresOverride()
+    {
+        // When
+        await TriggerNavigatedToAsync();
+
+        // Then
+        Assert.That(_sut.NavigatedToAsyncCount, Is.EqualTo(1));
+        Assert.That(_sut.NavigatedToCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task OnNavigatedFromAsync_WhenTriggered_FiresOverride()
+    {
+        // When
+        await TriggerNavigatedFromAsync();
+
+        // Then
+        Assert.That(_sut.NavigatedFromAsyncCount, Is.EqualTo(1));
+        Assert.That(_sut.NavigatedFromCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void OnPageDisappearing_Sync_DoesNotFireAsyncOverride()
+    {
+        // When
+        TriggerDisappearing();
+
+        // Then
+        Assert.That(_sut.DisappearingCount, Is.EqualTo(1));
+        Assert.That(_sut.DisappearingAsyncCount, Is.EqualTo(0));
     }
 
     // -----------------------------------------------------------------------
