@@ -4,7 +4,6 @@ public interface IApplicationContext
 {
     Page? MainPage { get; set; }
     IReadOnlyList<Window> Windows { get; }
-    void Quit();
 }
 
 internal sealed class ApplicationContext : IApplicationContext
@@ -20,6 +19,4 @@ internal sealed class ApplicationContext : IApplicationContext
     }
 
     public IReadOnlyList<Window> Windows => Current.Windows;
-
-    public void Quit() => Current.Quit();
 }

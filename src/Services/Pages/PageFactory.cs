@@ -187,24 +187,42 @@ internal class PageFactory(
 		}
 	}
 
-	private static void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
+	private void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is IPageNavigated vm)
 			{
 				vm.OnPageNavigatedTo();
+				vm.OnPageNavigatedToAsync().FireAndForget(exception =>
+				{
+					ExceptionDispatcher.Handle(
+						exception,
+						_logger, 
+						_dispatcher, 
+						nameof(vm.OnPageNavigatedToAsync)
+					);
+				});
 			}
 		}
 	}
 
-	private static void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
+	private void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
 	{
 		if (TryGetViewModel(sender, out var viewModel))
 		{
 			if (viewModel is IPageNavigated vm)
 			{
 				vm.OnPageNavigatedFrom();
+				vm.OnPageNavigatedFromAsync().FireAndForget(exception =>
+				{
+					ExceptionDispatcher.Handle(
+						exception,
+						_logger, 
+						_dispatcher, 
+						nameof(vm.OnPageNavigatedFromAsync)
+					);
+				});
 			}
 		}
 	}

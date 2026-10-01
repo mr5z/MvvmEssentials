@@ -30,7 +30,7 @@ public sealed class AppStartupWindowHook(
         catch (Exception ex)
         {
             _logger.LogError(ex, "An unhandled exception occurred during app startup.");
-            _applicationContext.Quit();
+            throw;
         }
     }
 
