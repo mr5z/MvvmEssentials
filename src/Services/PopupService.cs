@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Mopups.Interfaces;
+using Mopups.Contracts;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
