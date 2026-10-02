@@ -8,7 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Mopups\Mopups\Mopups.Maui\Mopups.csproj" />
       <ProjectReference Include="..\src\Nkraft.MvvmEssentials.csproj" />
       <ProjectReference Include="..\src\SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj" />
     </ItemGroup>

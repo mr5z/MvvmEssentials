@@ -12,9 +12,9 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.4.1</AssemblyVersion>
-    <FileVersion>1.4.1</FileVersion>
-    <Version>1.4.1</Version>
+    <AssemblyVersion>1.4.1.1</AssemblyVersion>
+    <FileVersion>1.4.1.1</FileVersion>
+    <Version>1.4.1.1</Version>
     <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
@@ -31,6 +31,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.12" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.110" />
+    <PackageReference Include="Nkraft.Mopups" Version="1.0.0" />
   </ItemGroup>
   
   <ItemGroup>
@@ -76,8 +77,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CrossUtility\src\Nkraft.CrossUtility.csproj" />
-    <ProjectReference Include="..\..\Mopups\Mopups\Mopups.Maui\Mopups.csproj" />
     <ProjectReference Include="SourceGenerator\Nkraft.MvvmEssentials.SourceGenerator.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
