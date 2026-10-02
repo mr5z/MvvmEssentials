@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -33,6 +34,7 @@
   </ItemGroup>
   
   <ItemGroup>
+    <None Remove="SourceGenerator\**" />
     <None Include="Nkraft.MvvmEssentials.targets"
           Pack="true"
           PackagePath="buildTransitive/Nkraft.MvvmEssentials.targets" />
@@ -40,11 +42,10 @@
           Pack="true"
           PackagePath="analyzers/dotnet/cs"
           Visible="false" />
-    <None Remove="SourceGenerator\**" />
   </ItemGroup>
 
   <PropertyGroup>
-    <NoWarn>$(NoWarn);MVE001</NoWarn>
+    <NoWarn>$(NoWarn);MVE001;CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
