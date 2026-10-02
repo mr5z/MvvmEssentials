@@ -1,4 +1,4 @@
-﻿using Mopups.Interfaces;
+﻿using Mopups.Contracts;
 using Mopups.Services;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Pages;
