@@ -19,7 +19,7 @@ surface, see its guide:
 - [TabbedPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/tabbed-page.md) — bottom/top tabs with lifecycle propagation
 - [FlyoutPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/flyout-page.md) — hamburger menu with a swappable detail area
 - [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
-- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by Mopups)
+- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork of Mopups)
 
 # Setup
 
@@ -61,6 +61,8 @@ public static class MauiProgram
 > your `IAppStartup` implementation if one exists, or generates a default one from the page marked
 > `isInitial: true`.
 
+> **Note:** `ConfigureMvvmEssentials` also configures popups for you. Do not call `ConfigureMopups()` yourself.
+
 ## 2. Wire up the window in `App.xaml.cs`
 
 ```cs
@@ -85,6 +87,18 @@ public partial class App : Application
 That's it. The hook fires the initial navigation automatically.
 
 ## 3. Delete any `Shell` related files. They are not used here.
+
+---
+
+# Upgrading from versions that used `Mopups`
+
+Popups now depend on [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork
+of [Mopups](https://github.com/LuckyDucko/Mopups) with bug fixes. It keeps the `Mopups.*` namespaces,
+so when upgrading:
+
+- **Remove** any direct `Mopups` package reference from your app. Referencing both packages causes
+  duplicate-type errors (CS0433).
+- **Remove** your own `.ConfigureMopups()` call. `ConfigureMvvmEssentials` already does this.
 
 ---
 
