@@ -182,11 +182,12 @@ jobs:
         run: dotnet workload install maui-ios maui-android
 
       - name: Pack
-        run: dotnet pack src/Nkraft.MvvmEssentials.csproj --configuration Release --output ./nupkg
+        run: dotnet pack src/Nkraft.MvvmEssentials.csproj --configuration Release --output ./nupkg -p:GeneratePackageOnBuild=false
 
       - name: Verify package contents
         run: |
-          PKG=$(ls ./nupkg/*.nupkg)
+          PKG="./nupkg/Nkraft.MvvmEssentials.${GITHUB_REF_NAME#v}.nupkg"
+          [ -f "$PKG" ] || { echo "::error::$PKG not found"; ls ./nupkg; exit 1; }
           CONTENTS=$(unzip -l "$PKG")
           echo "$CONTENTS"
           for path in \
@@ -208,7 +209,7 @@ jobs:
 
       - name: Push to nuget.org
         run: >
-          dotnet nuget push ./nupkg/*.nupkg
+          dotnet nuget push "./nupkg/Nkraft.MvvmEssentials.${GITHUB_REF_NAME#v}.nupkg"
           --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate
