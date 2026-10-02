@@ -19,7 +19,7 @@ surface, see its guide:
 - [TabbedPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/tabbed-page.md) — bottom/top tabs with lifecycle propagation
 - [FlyoutPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/flyout-page.md) — hamburger menu with a swappable detail area
 - [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
-- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by Mopups)
+- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by Nkraft.Mopups)
 
 # Setup
 
