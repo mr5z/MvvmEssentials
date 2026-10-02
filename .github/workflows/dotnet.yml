@@ -13,11 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone dependencies
-        run: |
-          git clone --depth 1 https://github.com/mr5z/CrossUtility ../CrossUtility
-          git clone --depth 1 https://github.com/mr5z/Mopups ../Mopups
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -37,11 +32,6 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
-
-      - name: Clone dependencies
-        run: |
-          git clone --depth 1 https://github.com/mr5z/CrossUtility ../CrossUtility
-          git clone --depth 1 https://github.com/mr5z/Mopups ../Mopups
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -64,11 +54,6 @@ jobs:
     environment: ci-badges
     steps:
       - uses: actions/checkout@v4
-
-      - name: Clone dependencies
-        run: |
-          git clone --depth 1 https://github.com/mr5z/CrossUtility ../CrossUtility
-          git clone --depth 1 https://github.com/mr5z/Mopups ../Mopups
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -163,11 +148,6 @@ jobs:
             exit 1
           fi
 
-      - name: Clone dependencies
-        run: |
-          git clone --depth 1 https://github.com/mr5z/CrossUtility ../CrossUtility
-          git clone --depth 1 https://github.com/mr5z/Mopups ../Mopups
-
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -199,7 +179,11 @@ jobs:
           do
             echo "$CONTENTS" | grep -q "$path" || { echo "::error::Package is missing $path"; exit 1; }
           done
-          unzip -p "$PKG" '*.nuspec'
+          NUSPEC=$(unzip -p "$PKG" '*.nuspec')
+          echo "$NUSPEC"
+          for dep in Nkraft.Mopups Nkraft.CrossUtility; do
+            echo "$NUSPEC" | grep -q "id=\"$dep\"" || { echo "::error::nuspec missing dependency $dep"; exit 1; }
+          done
 
       - name: NuGet login (OIDC)
         id: nuget-login
