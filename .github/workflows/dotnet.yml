@@ -72,6 +72,7 @@ jobs:
           -p:GeneratePackageOnBuild=false
           --collect:"XPlat Code Coverage" --results-directory ./coverage-raw
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[Mopups]*,[CrossUtility]*"
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute="GeneratedCodeAttribute"
 
       - name: Extract metrics
         id: metrics
