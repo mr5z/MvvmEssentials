@@ -1,16 +1,16 @@
 # Popups
 
-Modal dialogs with result handling. This feature is made possible by the awesome
-[Mopups](https://github.com/LuckyDucko/Mopups) library. See the [main README](../README.md) for
-setup and the `MapPage` vs `RegisterPage` distinction.
+Modal dialogs with result handling, built on [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/),
+a maintained fork of the [Mopups](https://github.com/LuckyDucko/Mopups) library. See the
+[main README](../README.md) for setup and the `MapPage` vs `RegisterPage` distinction.
 
 ## Setup
 
-```cs
-builder
-    .UseMauiApp<App>()
-    .ConfigureMopups(); // Required for Mopups
+No extra setup is needed. `ConfigureMvvmEssentials` configures Mopups for you, so do not call
+`ConfigureMopups()` yourself. Upgrading from an older version? See
+[Upgrading from versions that used `Mopups`](../README.md#upgrading-from-versions-that-used-mopups).
 
+```cs
 // Register popup pages alongside regular pages
 registry.MapPage<ConfirmPopup, ConfirmViewModel>();
 ```
