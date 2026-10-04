@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using Mopups.Contracts;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.Mopups.Contracts;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
-using PopupPage = Mopups.Pages.PopupPage;
+using PopupPage = Nkraft.Mopups.Pages.PopupPage;
 
 namespace Nkraft.MvvmEssentials.Services;
 
@@ -112,7 +112,7 @@ internal sealed class PopupService : IPopupService
 				return Result.Fail(ErrorCode.General, message, popupName);
 			}
 
-			if (_activePopups.TryGetValue(popupType!, out var popupRef) == false)
+			if (_activePopups.TryGetValue(popupType, out var popupRef) == false)
 			{
 				const string message = "No active popup found with name '{PopupName}'.";
 				_logger.LogWarning(message, popupName);
