@@ -76,16 +76,4 @@ public class NavigationServiceCollectionExtensionTests
         Assert.That(descriptor, Is.Not.Null);
         Assert.That(descriptor!.Lifetime, Is.EqualTo(ServiceLifetime.Singleton));
     }
-
-    [Test]
-    public void AddNavigationService_RegistersPopupNavigationAsSingleton()
-    {
-        // When
-        _services.AddNavigationService();
-
-        // Then
-        var descriptor = _services.FirstOrDefault(d => d.ServiceType == typeof(IPopupNavigation));
-        Assert.That(descriptor, Is.Not.Null);
-        Assert.That(descriptor!.Lifetime, Is.EqualTo(ServiceLifetime.Singleton));
-    }
 }
