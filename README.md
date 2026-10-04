@@ -93,12 +93,13 @@ That's it. The hook fires the initial navigation automatically.
 # Upgrading from versions that used `Mopups`
 
 Popups now depend on [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork
-of [Mopups](https://github.com/LuckyDucko/Mopups) with bug fixes. It keeps the `Mopups.*` namespaces,
+of [Mopups](https://github.com/LuckyDucko/Mopups) with bug fixes. The namespaces has been migrated to `Nkraft.Mopups.*`,
 so when upgrading:
 
 - **Remove** any direct `Mopups` package reference from your app. Referencing both packages causes
   duplicate-type errors (CS0433).
 - **Remove** your own `.ConfigureMopups()` call. `ConfigureMvvmEssentials` already does this.
+- **Update** all classes that referenced `Mopups` to `Nkraft.Mopups`.
 
 ---
 
