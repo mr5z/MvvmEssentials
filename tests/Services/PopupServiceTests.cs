@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Mopups.Contracts;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.Mopups.Contracts;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Pages;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
-using PopupPage = Mopups.Pages.PopupPage;
+using PopupPage = Nkraft.Mopups.Pages.PopupPage;
 
 namespace Nkraft.MvvmEssentials.UnitTest.Services;
 
