@@ -43,7 +43,7 @@ public class NavigationServiceTests
     {
         // Given
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Throws(new InvalidOperationException("Page not found."));
 
         // When
@@ -58,7 +58,7 @@ public class NavigationServiceTests
     {
         // Given
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([]);
 
         // When
@@ -78,7 +78,7 @@ public class NavigationServiceTests
         // Given
         var page = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(Page))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -102,7 +102,7 @@ public class NavigationServiceTests
         // Given
         var page = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(Page))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -123,7 +123,7 @@ public class NavigationServiceTests
         // Given
         var page = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(Page))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())

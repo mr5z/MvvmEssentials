@@ -13,7 +13,7 @@ internal interface IPageFactory
 {
 	event EventHandler<Page>? PageUnloaded;
 
-	PageInfo[] GetPageTypesFromPath<TBasePage>(string path) where TBasePage : Page;
+	PageInfo[] GetPageTypesFromPath(string path);
 
 	Page CreatePage(PageInfo pageInfo, INavigationParameters? parameters = null);
 
@@ -82,7 +82,7 @@ internal class PageFactory(
 		}
 	}
 
-	PageInfo[] IPageFactory.GetPageTypesFromPath<TBasePage>(string path)
+	PageInfo[] IPageFactory.GetPageTypesFromPath(string path)
 	{
 		var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 		return [.. segments.Select(segment =>

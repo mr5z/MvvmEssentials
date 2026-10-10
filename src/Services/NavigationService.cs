@@ -68,7 +68,7 @@ internal sealed class NavigationService(
 
         try
         {
-            pageInfoList = _pageFactory.GetPageTypesFromPath<Page>(path);
+            pageInfoList = _pageFactory.GetPageTypesFromPath(path);
         }
         catch (Exception ex)
         {

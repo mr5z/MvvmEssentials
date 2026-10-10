@@ -43,7 +43,7 @@ public class PopupServiceTests
     {
         // Given
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Throws(new InvalidOperationException("boom"));
 
         // When
@@ -59,7 +59,7 @@ public class PopupServiceTests
     {
         // Given
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage)), new PageInfo(typeof(PopupPage))]);
 
         // When
@@ -80,7 +80,7 @@ public class PopupServiceTests
         // Given
         var popupPage = new PopupPage();
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -99,7 +99,7 @@ public class PopupServiceTests
         // Given
         var popupPage = new PopupPage();
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -118,7 +118,7 @@ public class PopupServiceTests
         // Given
         var popupPage = new PopupPage();
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -133,6 +133,47 @@ public class PopupServiceTests
         // Then
         Assert.That(result.IsFailure, Is.True);
         Assert.That(result.ErrorCode, Is.EqualTo(ErrorCode.General));
+    }
+    
+    [Test]
+    public async Task PresentAsync_WhenPushAsyncThrows_ReleasesCreatedPage()
+    {
+        // Given — the page never enters the tree, so Unloaded won't dispose its scope
+        var popupPage = new PopupPage();
+        _pageFactory
+            .GetPageTypesFromPath(Arg.Any<string>())
+            .Returns([new PageInfo(typeof(PopupPage))]);
+        _pageFactory
+            .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
+            .Returns(popupPage);
+        _popupNavigation
+            .PushAsync(Arg.Any<PopupPage>(), Arg.Any<bool>())
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        // When
+        await _sut.PresentAsync("ConfirmPopup");
+
+        // Then
+        _pageFactory.Received(1).ReleasePage(popupPage);
+    }
+
+    [Test]
+    public async Task PresentAsync_OnSuccess_DoesNotReleasePresentedPage()
+    {
+        // Given
+        var popupPage = new PopupPage();
+        _pageFactory
+            .GetPageTypesFromPath(Arg.Any<string>())
+            .Returns([new PageInfo(typeof(PopupPage))]);
+        _pageFactory
+            .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
+            .Returns(popupPage);
+
+        // When
+        await _sut.PresentAsync("ConfirmPopup");
+
+        // Then
+        _pageFactory.DidNotReceive().ReleasePage(popupPage);
     }
 
     // -----------------------------------------------------------------------
@@ -211,7 +252,7 @@ public class PopupServiceTests
         // Given — present a popup first so it's tracked as active
         var popupPage = new PopupPage();
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -233,7 +274,7 @@ public class PopupServiceTests
         // Given — present a popup first so it's tracked as active
         var popupPage = new PopupPage();
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -301,7 +342,7 @@ public class PopupServiceTests
         // Given — present a popup so it's tracked as active
         var popupPage = new PopupPage();
         _pageFactory
-            .GetPageTypesFromPath<PopupPage>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(PopupPage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())

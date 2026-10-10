@@ -2,7 +2,7 @@
 
 namespace Nkraft.MvvmEssentials.Pages;
 
-public class PopupPage : Mopups.Pages.PopupPage
+public class PopupPage : Nkraft.Mopups.Pages.PopupPage
 {
 	protected override bool OnBackgroundClicked()
 	{

@@ -10,7 +10,6 @@ namespace Nkraft.MvvmEssentials.UnitTest.Services;
 public class AppStartupWindowHookTests
 {
     private IAppStartup _startup = null!;
-    private IApplicationContext _applicationContext = null!;
     private RecordingLogger<AppStartupWindowHook> _logger = null!;
     private AppStartupWindowHook _sut = null!;
 
@@ -18,13 +17,12 @@ public class AppStartupWindowHookTests
     public void SetUp()
     {
         _startup = Substitute.For<IAppStartup>();
-        _applicationContext = Substitute.For<IApplicationContext>();
 
         // Hand-rolled logger instead of a substitute: avoids Castle DynamicProxy
         // issues with ILogger<T>, and lets us assert what was logged.
         _logger = new RecordingLogger<AppStartupWindowHook>();
 
-        _sut = new AppStartupWindowHook(_logger, _startup, _applicationContext);
+        _sut = new AppStartupWindowHook(_logger, _startup);
     }
 
     // -----------------------------------------------------------------------
