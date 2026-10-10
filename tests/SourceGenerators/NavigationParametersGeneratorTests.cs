@@ -229,6 +229,28 @@ public class NavigationParametersGeneratorTests
     }
 
     // -----------------------------------------------------------------------
+    // Modals
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void Generator_WhenModalViewModel_EmitsModalDestinationAndPageSuffix()
+    {
+        var generated = RunExpectingSuccess("""
+            public partial class MyViewModel : ModalViewModel<string>
+            {
+                public MyViewModel(Nkraft.MvvmEssentials.Services.IModalService s) : base(s) { }
+
+                [NavigationParameter]
+                public int Id { get; set; }
+            }
+            """);
+
+        Assert.That(generated, Does.Contain("ModalDestination<string>"));
+        Assert.That(generated, Does.Contain("\"MyPage\""));
+        Assert.That(generated, Does.Not.Contain("PageDestination With("));
+    }
+
+    // -----------------------------------------------------------------------
     // Hierarchy
     // -----------------------------------------------------------------------
 

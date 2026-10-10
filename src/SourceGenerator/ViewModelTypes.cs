@@ -11,7 +11,7 @@ internal sealed record ViewModelTarget(
     string ClassName,
     string TypeKeyword,
     string Suffix,
-    string? ResultType,
+    string DestinationType,
     string Accessibility,
     bool IsPartial,
     LocationInfo? Location,

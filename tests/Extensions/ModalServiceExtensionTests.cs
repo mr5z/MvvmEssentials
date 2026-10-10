@@ -36,8 +36,72 @@ public class ModalServiceExtensionTests
     }
 
     // -----------------------------------------------------------------------
+    // PresentAsync<TResult>(ModalDestination<TResult>)
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task PresentAsync_WithDestination_ForwardsNameParametersAndAnimated()
+    {
+        // Given — completion must resolve, otherwise the extension awaits forever
+        var parameters = new NavigationParameters();
+        var destination = new ModalDestination<TestModalResult>("EditPage", parameters);
+        PresentCompletesWith(tcs => tcs.SetResult(new TestModalResult(true)));
+
+        // When
+        await _modalService.PresentAsync(destination, animated: false);
+
+        // Then
+        await _modalService.Received(1).PresentAsync("EditPage", parameters, false);
+    }
+
+    [Test]
+    public async Task PresentAsync_WithDestination_WhenCompletionResolves_ReturnsSuccessWithValue()
+    {
+        // Given
+        var destination = new ModalDestination<TestModalResult>("EditPage", new NavigationParameters());
+        var expected = new TestModalResult(true);
+        PresentCompletesWith(tcs => tcs.SetResult(expected));
+
+        // When
+        var result = await _modalService.PresentAsync(destination);
+
+        // Then
+        Assert.That(result.TryGetValue(out var value), Is.True);
+        Assert.That(value, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task PresentAsync_WithDestination_WhenNavigationFails_ReturnsFailure()
+    {
+        // Given
+        var destination = new ModalDestination<TestModalResult>("EditPage", new NavigationParameters());
+        _modalService
+            .PresentAsync(Arg.Any<string>(), Arg.Any<INavigationParameters>(), Arg.Any<bool>())
+            .Returns(Result.Fail(ErrorCode.General, "boom"));
+
+        // When
+        var result = await _modalService.PresentAsync(destination);
+
+        // Then
+        Assert.That(result.IsFailure, Is.True);
+    }
+
+    // -----------------------------------------------------------------------
     // PresentAsync<TViewModel, TResult>()
     // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task PresentAsync_WithResult_UsesPageNamingConvention()
+    {
+        // Given
+        PresentCompletesWith(tcs => tcs.SetResult(new TestModalResult(true)));
+
+        // When
+        await _modalService.PresentAsync<TestModalViewModel, TestModalResult>();
+
+        // Then
+        await _modalService.Received(1).PresentAsync("TestModalPage", Arg.Any<INavigationParameters>(), Arg.Any<bool>());
+    }
 
     [Test]
     public async Task PresentAsync_WithResult_WhenNavigationFails_ReturnsFailure()

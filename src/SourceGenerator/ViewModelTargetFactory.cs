@@ -38,9 +38,18 @@ internal static class ViewModelTargetFactory
             ? LocationInfo.From(declarations[0].Identifier)
             : null;
 
-        var popupInterface = symbol.AllInterfaces.FirstOrDefault(i =>
-            i.MetadataName == WellKnownNames.PopupViewModelMetadataName &&
-            i.ContainingNamespace.ToDisplayString() == WellKnownNames.PopupViewModelNamespace);
+        var popupInterface = FindResultInterface(symbol, WellKnownNames.PopupViewModelMetadataName);
+        var modalInterface = popupInterface is null
+            ? FindResultInterface(symbol, WellKnownNames.ModalViewModelMetadataName)
+            : null;
+
+        var (suffix, destinationType) = (popupInterface, modalInterface) switch
+        {
+            ({ } popup, _) => ("Popup", $"{WellKnownNames.DestinationNamespace}.PopupDestination<{popup.TypeArguments[0].ToDisplayString(TypeFormat)}>"),
+            // modals are regular pages presented modally, so they keep the "Page" suffix (PagePattern.Page)
+            (_, { } modal) => ("Page", $"{WellKnownNames.DestinationNamespace}.ModalDestination<{modal.TypeArguments[0].ToDisplayString(TypeFormat)}>"),
+            _ => ("Page", $"{WellKnownNames.DestinationNamespace}.PageDestination"),
+        };
 
         var ns = symbol.ContainingNamespace.IsGlobalNamespace
             ? string.Empty
@@ -50,13 +59,18 @@ internal static class ViewModelTargetFactory
             Namespace: ns,
             ClassName: symbol.Name,
             TypeKeyword: symbol.IsRecord ? "record" : "class",
-            Suffix: popupInterface is not null ? "Popup" : "Page",
-            ResultType: popupInterface?.TypeArguments[0].ToDisplayString(TypeFormat),
+            Suffix: suffix,
+            DestinationType: destinationType,
             Accessibility: ToKeyword(symbol.DeclaredAccessibility),
             IsPartial: isPartial,
             Location: location,
             Parameters: new EquatableArray<ViewModelParameter>(props));
     }
+
+    private static INamedTypeSymbol? FindResultInterface(INamedTypeSymbol symbol, string metadataName) =>
+        symbol.AllInterfaces.FirstOrDefault(i =>
+            i.MetadataName == metadataName &&
+            i.ContainingNamespace.ToDisplayString() == WellKnownNames.PopupViewModelNamespace);
 
     private static ViewModelParameter[] CollectParameters(INamedTypeSymbol symbol)
     {
