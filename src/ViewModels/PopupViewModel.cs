@@ -17,9 +17,9 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 
 	private TaskCompletionSource<TResult>? _completion;
 
-	protected override void OnParametersSet(INavigationParameters parameters)
+	private protected override void HandleParametersSet(INavigationParameters parameters)
 	{
-		base.OnParametersSet(parameters);
+		base.HandleParametersSet(parameters);
 
 		if (parameters.TryGetValue<TaskCompletionSource<TResult>>(NavigationHints.PopupCompletionParam, out var completion))
 		{

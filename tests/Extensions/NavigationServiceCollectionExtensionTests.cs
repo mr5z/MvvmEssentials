@@ -1,4 +1,3 @@
-using Nkraft.Mopups.Contracts;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Pages;
 using NUnit.Framework;

@@ -9,11 +9,19 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
     private readonly IContentViewFactory _viewFactory = viewFactory;
     private readonly Dictionary<int, ContentView> _stepCache = [];
 
-    protected override void OnInitialized()
+    private protected override void HandleInitialized()
     {
-        base.OnInitialized();
-        
+        base.HandleInitialized();
+
         SetStep(0);
+    }
+
+    private protected override void HandleDispose()
+    {
+        base.HandleDispose();
+        
+        _viewFactory.Dispose();
+        _stepCache.Clear();
     }
 
     private void SetStep(int index)
@@ -69,13 +77,6 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
             return outgoing.OnStepExited(state);
         }
         return state;
-    }
-
-    protected override void OnDispose()
-    {
-        base.OnDispose();
-        _viewFactory.Dispose();
-        _stepCache.Clear();
     }
 
     public ContentView? CurrentStep
