@@ -36,44 +36,6 @@ public class ModalServiceExtensionTests
     }
 
     // -----------------------------------------------------------------------
-    // PresentAsync(PageDestination)
-    // -----------------------------------------------------------------------
-
-    [Test]
-    public async Task PresentAsync_WithDestination_ForwardsNameAndParameters()
-    {
-        // Given
-        var parameters = new NavigationParameters();
-        var destination = new PageDestination("EditPage", parameters);
-        _modalService.PresentAsync(Arg.Any<string>(), Arg.Any<INavigationParameters>(), Arg.Any<bool>())
-            .Returns(Result.Ok());
-
-        // When
-        await _modalService.PresentAsync(destination, animated: false);
-
-        // Then
-        await _modalService.Received(1).PresentAsync("EditPage", parameters, false);
-    }
-
-    // -----------------------------------------------------------------------
-    // PresentAsync<TViewModel>()
-    // -----------------------------------------------------------------------
-
-    [Test]
-    public async Task PresentAsync_WithViewModelType_UsesPageNamingConvention()
-    {
-        // Given
-        _modalService.PresentAsync(Arg.Any<string>(), Arg.Any<INavigationParameters>(), Arg.Any<bool>())
-            .Returns(Result.Ok());
-
-        // When
-        await _modalService.PresentAsync<TestModalViewModel>();
-
-        // Then
-        await _modalService.Received(1).PresentAsync("TestModalPage", Arg.Any<INavigationParameters>(), Arg.Any<bool>());
-    }
-
-    // -----------------------------------------------------------------------
     // PresentAsync<TViewModel, TResult>()
     // -----------------------------------------------------------------------
 

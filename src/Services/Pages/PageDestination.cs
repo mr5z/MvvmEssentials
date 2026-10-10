@@ -11,3 +11,9 @@ public sealed class PopupDestination<TResult>(string popupName, INavigationParam
     public string PopupName { get; } = popupName;
     public INavigationParameters Parameters { get; } = parameters;
 }
+
+public sealed class ModalDestination<TResult>(string modalName, INavigationParameters parameters)
+{
+    public string ModalName { get; } = modalName;
+    public INavigationParameters Parameters { get; } = parameters;
+}
