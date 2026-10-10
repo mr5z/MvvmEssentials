@@ -12,18 +12,10 @@ public static class ModalServiceExtension
 {
 	extension(IModalService modalService)
 	{
-		/// <summary>
-		/// Presents the destination produced by a generated <c>With(...)</c> factory modally, without awaiting a result.
-		/// </summary>
-		public Task<IResult> PresentAsync(PageDestination destination, bool animated = true)
-			=> modalService.PresentAsync(destination.PageName, destination.Parameters, animated);
-
-		/// <summary>
-		/// Presents the page associated with <typeparamref name="TViewModel"/> modally, without awaiting a result.
-		/// </summary>
-		public Task<IResult> PresentAsync<TViewModel>(INavigationParameters? parameters = null, bool animated = true)
-			where TViewModel : PageViewModel
-			=> modalService.PresentAsync(PageHelper.ToPageName<TViewModel>(PagePattern.Page), parameters, animated);
+		public async Task<Result<TResult>> PresentAsync<TResult>(
+			ModalDestination<TResult> destination, bool animated = true)
+			=> await IModalService.PresentAsync<TResult>(
+				modalService, destination.ModalName, destination.Parameters, animated);
 
 		/// <summary>
 		/// Presents the page associated with <typeparamref name="TViewModel"/> modally and awaits its result.
