@@ -14,12 +14,10 @@ public interface IAppStartup
 
 public sealed class AppStartupWindowHook(
     ILogger<AppStartupWindowHook> logger,
-    IAppStartup startup,
-    IApplicationContext applicationContext)
+    IAppStartup startup)
 {
     private readonly ILogger<AppStartupWindowHook> _logger = logger;
     private readonly IAppStartup _startup = startup;
-    private readonly IApplicationContext _applicationContext = applicationContext;
 
     public void Attach()
     {

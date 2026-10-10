@@ -2,9 +2,9 @@
 
 namespace Nkraft.MvvmEssentials.Pages;
 
-public class PopupPage : Mopups.Pages.PopupPage
+public class PopupPage : Nkraft.Mopups.Pages.PopupPage
 {
-	protected override bool OnBackgroundClicked()
+	protected sealed override bool OnBackgroundClicked()
 	{
 		if (BindingContext is IPopupDismissible { ShouldDismissOnBackgroundTapped: true } dismissible)
 			// The word use should be "tap", not "click" here, since it's mobile.
@@ -15,7 +15,7 @@ public class PopupPage : Mopups.Pages.PopupPage
 		return true;
 	}
 
-	protected override bool OnBackButtonPressed()
+	protected sealed override bool OnBackButtonPressed()
 	{
 		if (BindingContext is IPopupDismissible { ShouldDismissOnBackButtonPressed: true } dismissible)
 		{

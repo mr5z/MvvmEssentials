@@ -1,9 +1,7 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
-using Nkraft.MvvmEssentials.Services.TabbedPages;
 using Nkraft.MvvmEssentials.ViewModels;
 
 namespace Nkraft.MvvmEssentials.UnitTest.Fakes;
@@ -152,6 +150,19 @@ internal partial class TestPopupViewModel(IPopupService popupService)
     public Task<IResult> PublicDismissWithResult(TestPopupResult result) => Dismiss(result);
     public bool PublicShouldDismissOnBackButtonPressed => ShouldDismissOnBackButtonPressed;
     public bool PublicShouldDismissOnBackgroundTapped => ShouldDismissOnBackgroundTapped;
+}
+
+internal record TestModalResult(bool Confirmed);
+
+internal partial class TestModalViewModel(IModalService modalService)
+    : ModalViewModel<TestModalResult>(modalService)
+{
+    public int DisposeCount { get; private set; }
+
+    public Task<IResult> PublicDismissWithResult(TestModalResult result) => Dismiss(result);
+
+    // Deliberately no base call — cancellation must not depend on it.
+    protected override void OnDispose() => DisposeCount++;
 }
 
 // ---------------------------------------------------------------------------

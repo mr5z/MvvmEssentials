@@ -13,6 +13,7 @@ internal static class NavigationServiceCollectionExtension
 
 		// TODO move to different extension
 		services.AddSingleton<IPopupService, PopupService>();
+		services.AddSingleton<IModalService, ModalService>();
 		services.AddSingleton<IApplicationContext, ApplicationContext>();
 		
 		services.AddSingleton<AppStartupWindowHook>();

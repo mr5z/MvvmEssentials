@@ -9,24 +9,24 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 
 public abstract class TabHostViewModel : PageViewModel, ITabHost
 {
-	protected override void OnInitialized()
+	private protected override void HandleInitialized()
 	{
-		base.OnInitialized();
+		base.HandleInitialized();
 
 		// TODO OnTabSelected() gets called twice if SelectedTabIndex != 0
 		CurrentTab.OnTabSelected();
 	}
 
-	protected override async Task OnInitializedAsync()
+	private protected override async Task HandleInitializedAsync()
 	{
-		await base.OnInitializedAsync();
-		
+		await base.HandleInitializedAsync();
+
 		await CurrentTab.OnTabSelectedAsync();
 	}
 
-	protected override void OnParametersSet(INavigationParameters parameters)
+	private protected override void HandleParametersSet(INavigationParameters parameters)
 	{
-		base.OnParametersSet(parameters);
+		base.HandleParametersSet(parameters);
 
 		if (parameters.TryGetValue<int>(nameof(SelectedTabIndex), out var selectedTabIndex))
 		{

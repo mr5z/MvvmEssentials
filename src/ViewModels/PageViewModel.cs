@@ -8,24 +8,32 @@ public class PageViewModel : NavigableEntryViewModel,
 	IPageLoad,
 	IDisposable
 {
+	private protected virtual void HandleInitialized() { }
+
+	private protected virtual Task HandleInitializedAsync() => Task.CompletedTask;
+
+	private protected virtual void HandleDispose() { }
+	
 	private bool _isInitialized = false;
 	private void HandlePageAppearing()
 	{
 		if (_isInitialized == false)
 		{
 			_isInitialized = true;
+			HandleInitialized();
 			OnInitialized();
 		}
 		
 		OnPageAppearing();
 	}
-
+	
 	private bool _isInitializedAsync = false;
 	private async Task HandlePageAppearingAsync() 
 	{
 		if (_isInitializedAsync == false)
 		{
 			_isInitializedAsync = true;
+			await HandleInitializedAsync();
 			await OnInitializedAsync();
 		}
 		
@@ -75,6 +83,11 @@ public class PageViewModel : NavigableEntryViewModel,
 	void IPageLoad.OnPageUnloaded() => OnPageUnloaded();
 	
 #pragma warning disable CA1816
-	void IDisposable.Dispose() => OnDispose();
+	void IDisposable.Dispose()
+	{
+		OnDispose();       // consumer first, while library state is still alive
+		HandleDispose();
+	}
 #pragma warning restore CA1816
+	
 }

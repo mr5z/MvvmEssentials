@@ -97,14 +97,14 @@ public class TabHostViewModelTests
     }
     
     [Test]
-    public async Task OnInitializedAsync_WhenBaseCallOmitted_NeverReachesCurrentTab()
+    public async Task OnInitializedAsync_WhenSubclassSkipsBaseCall_StillSelectsTab()
     {
         var tab = new TrackableTabViewModel();
         var sut = new MissingBaseCallTabHostViewModel(tab);
 
         await ((IPageAppearing)sut).OnPageAppearingAsync();
 
-        Assert.That(tab.SelectedAsyncCount, Is.EqualTo(0));
+        Assert.That(tab.SelectedAsyncCount, Is.EqualTo(1));
     }
 
     // -----------------------------------------------------------------------

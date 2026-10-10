@@ -30,7 +30,7 @@ public class NavigationServiceContextualDispatchTests
 
         var pushedPage = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(FakePage))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())

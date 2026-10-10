@@ -9,6 +9,8 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 	IParametersSet,
 	IRootPageNavigated
 {
+	private protected virtual void HandleParametersSet(INavigationParameters parameters) { }
+
 	internal void SetNavigationParameter(string key, object? value)
 	{
 		const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -29,7 +31,11 @@ public abstract class NavigableEntryViewModel : BaseViewModel,
 
 	protected virtual Task OnNavigatedToRootAsync(INavigationParameters parameters) => Task.CompletedTask;
 
-	void IParametersSet.OnParametersSet(INavigationParameters parameters) => OnParametersSet(parameters);
+	void IParametersSet.OnParametersSet(INavigationParameters parameters)
+	{
+		HandleParametersSet(parameters);   // library first
+		OnParametersSet(parameters);       // then consumer
+	}
 	
 	void IRootPageNavigated.OnNavigatedToRoot(INavigationParameters parameters) => OnNavigatedToRoot(parameters);
 	

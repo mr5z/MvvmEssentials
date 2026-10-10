@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
 using NUnit.Framework;
 
@@ -51,8 +52,9 @@ internal sealed class ExposedWizardHostViewModel(IContentViewFactory viewFactory
     : WizardHostViewModel<FakeWizardState>(viewFactory)
 {
     public int CompletedCount { get; private set; }
-
-    public void PublicOnInitialized() => OnInitialized();
+    
+    // Goes through the real lifecycle path (HandleInitialized → OnInitialized), as PageFactory does
+    public void SimulateAppearing() => ((IPageAppearing)this).OnPageAppearing();
     public Task PublicGoNextAsync() => GoNextAsync();
     public Task PublicGoBackAsync() => GoBackAsync();
     public bool PublicCanGoBack => CanGoBack;
@@ -102,7 +104,7 @@ public class WizardHostViewModelTests
         var sut = CreateSut(stepCount: 3);
 
         // When
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
 
         // Then
         Assert.That(_raisedProperties, Does.Contain(nameof(WizardHostViewModel<>.CurrentStep)));
@@ -114,7 +116,7 @@ public class WizardHostViewModelTests
     {
         // Given
         var sut = CreateSut(stepCount: 3);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         _raisedProperties.Clear();
 
         // When
@@ -130,7 +132,7 @@ public class WizardHostViewModelTests
     {
         // Given — GoBackAsync no-ops entirely when CanGoBack is false
         var sut = CreateSut(stepCount: 2);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         _raisedProperties.Clear();
 
         // When
@@ -149,7 +151,7 @@ public class WizardHostViewModelTests
     {
         // Given
         var sut = CreateSut(stepCount: 3);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         _raisedProperties.Clear();
 
         // When
@@ -165,7 +167,7 @@ public class WizardHostViewModelTests
     {
         // Given — CanGoBack is already true at step 1; moving to step 2 shouldn't flip it
         var sut = CreateSut(stepCount: 3);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         await sut.PublicGoNextAsync(); // step 0 -> 1
         _raisedProperties.Clear();
 
@@ -181,7 +183,7 @@ public class WizardHostViewModelTests
     {
         // Given
         var sut = CreateSut(stepCount: 3);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         await sut.PublicGoNextAsync(); // step 0 -> 1
         _raisedProperties.Clear();
 
@@ -202,7 +204,7 @@ public class WizardHostViewModelTests
     {
         // Given
         var sut = CreateSut(stepCount: 2);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         _raisedProperties.Clear();
 
         // When
@@ -218,7 +220,7 @@ public class WizardHostViewModelTests
     {
         // Given
         var sut = CreateSut(stepCount: 3);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         _raisedProperties.Clear();
 
         // When
@@ -233,7 +235,7 @@ public class WizardHostViewModelTests
     {
         // Given
         var sut = CreateSut(stepCount: 2);
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         await sut.PublicGoNextAsync(); // -> step 1 (last)
         _raisedProperties.Clear();
 
@@ -258,7 +260,7 @@ public class WizardHostViewModelTests
         };
 
         // When
-        sut.PublicOnInitialized();
+        sut.SimulateAppearing();
         await sut.PublicGoNextAsync();
 
         // Then

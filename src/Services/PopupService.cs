@@ -59,7 +59,7 @@ internal sealed class PopupService : IPopupService
 
 		try
 		{
-			pageInfoList = _pageFactory.GetPageTypesFromPath<PopupPage>(popupName);
+			pageInfoList = _pageFactory.GetPageTypesFromPath(popupName);
 		}
 		catch (Exception ex)
 		{
@@ -75,12 +75,15 @@ internal sealed class PopupService : IPopupService
 			return Result.Fail(ErrorCode.InvalidParameter, message, popupName);
 		}
 
+		using var lease = new PageLease(_pageFactory, _logger);
+
 		try
 		{
 			var pageInfo = pageInfoList.Single();
-			var popupPage = (PopupPage)_pageFactory.CreatePage(pageInfo, parameters);
+			var popupPage = (PopupPage)lease.Create(pageInfo, parameters);
 			var popupType = popupPage.GetType();
 			await _popupNavigation.PushAsync(popupPage, animated);
+			lease.Commit(popupPage);
 			_activePopups[popupType] = new WeakReference<PopupPage>(popupPage);
 			return Result.Ok();
 		}

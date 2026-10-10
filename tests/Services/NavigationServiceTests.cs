@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
@@ -43,7 +42,7 @@ public class NavigationServiceTests
     {
         // Given
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Throws(new InvalidOperationException("Page not found."));
 
         // When
@@ -58,7 +57,7 @@ public class NavigationServiceTests
     {
         // Given
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([]);
 
         // When
@@ -78,7 +77,7 @@ public class NavigationServiceTests
         // Given
         var page = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(Page))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -102,7 +101,7 @@ public class NavigationServiceTests
         // Given
         var page = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(Page))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
@@ -123,7 +122,7 @@ public class NavigationServiceTests
         // Given
         var page = new Page();
         _pageFactory
-            .GetPageTypesFromPath<Page>(Arg.Any<string>())
+            .GetPageTypesFromPath(Arg.Any<string>())
             .Returns([new PageInfo(typeof(Page))]);
         _pageFactory
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
