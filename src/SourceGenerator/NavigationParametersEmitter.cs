@@ -65,9 +65,7 @@ internal static class NavigationParametersEmitter
         sb.Append(t.Accessibility).Append(" partial ").Append(t.TypeKeyword).Append(' ').AppendLine(t.ClassName);
         sb.AppendLine("{");
 
-        var returnType = t.ResultType is null
-            ? "global::Nkraft.MvvmEssentials.Services.Pages.PageDestination"
-            : $"global::Nkraft.MvvmEssentials.Services.Pages.PopupDestination<{t.ResultType}>";
+        var returnType = t.DestinationType;
 
         sb.Append("    [global::System.CodeDom.Compiler.GeneratedCode(\"").Append(WellKnownNames.GeneratorName).AppendLine("\", \"1.0\")]");
         sb.Append("    public static ").Append(returnType).Append(" With(");
