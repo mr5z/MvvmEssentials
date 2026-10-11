@@ -163,6 +163,17 @@ internal partial class TestModalViewModel(IModalService modalService)
 
     // Deliberately no base call — cancellation must not depend on it.
     protected override void OnDispose() => DisposeCount++;
+
+    // CanDismissAsync control: answers AllowDismiss immediately, or PendingDecision when set.
+    public bool AllowDismiss { get; set; } = true;
+    public TaskCompletionSource<bool>? PendingDecision { get; set; }
+    public int CanDismissCallCount { get; private set; }
+
+    protected override Task<bool> CanDismissAsync()
+    {
+        CanDismissCallCount++;
+        return PendingDecision?.Task ?? Task.FromResult(AllowDismiss);
+    }
 }
 
 // ---------------------------------------------------------------------------
