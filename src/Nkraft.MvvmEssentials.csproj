@@ -21,7 +21,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>Added source-generated strongly-type page navigation parameters</PackageReleaseNotes>
+    <PackageReleaseNotes>Added support for modal pages.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 
