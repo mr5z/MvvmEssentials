@@ -160,4 +160,91 @@ public class ModalViewModelTests
         // Then
         Assert.That(await _tcs.Task, Is.EqualTo(expected));
     }
+
+    // -----------------------------------------------------------------------
+    // CanDismissAsync guard
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task Dismiss_WhenCanDismissDeclines_KeepsModalOpenAndTaskPending()
+    {
+        // Given
+        _sut.AllowDismiss = false;
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.False);
+        await _modalService.DidNotReceive().DismissAsync(Arg.Any<bool>());
+        Assert.That(_tcs.Task.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task Dismiss_WhenCanDismissAllows_DismissesAndCancelsTask()
+    {
+        // Given
+        _modalService.DismissAsync().Returns(Result.Ok());
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.True);
+        Assert.That(_sut.CanDismissCallCount, Is.EqualTo(1));
+        Assert.That(_tcs.Task.IsCanceled, Is.True);
+    }
+
+    [Test]
+    public async Task DismissWithResult_DoesNotConsultCanDismiss()
+    {
+        // Given: saving must never be blocked by the discard guard
+        _sut.AllowDismiss = false;
+        _modalService.DismissAsync().Returns(Result.Ok());
+        var expected = new TestModalResult(true);
+
+        // When
+        await _sut.PublicDismissWithResult(expected);
+
+        // Then
+        Assert.That(_sut.CanDismissCallCount, Is.Zero);
+        Assert.That(await _tcs.Task, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task Dismiss_WhileDismissalIsInProgress_SharesItsOutcome()
+    {
+        // Given: Back pressed twice while a "Discard changes?" prompt is open
+        var decision = new TaskCompletionSource<bool>();
+        _sut.PendingDecision = decision;
+        _modalService.DismissAsync().Returns(Result.Ok());
+
+        // When
+        var first = _sut.Dismiss();
+        var second = _sut.Dismiss();
+        decision.SetResult(true);
+
+        // Then
+        Assert.That(second, Is.SameAs(first));
+        Assert.That(await first, Is.True);
+        Assert.That(_sut.CanDismissCallCount, Is.EqualTo(1));
+        await _modalService.Received(1).DismissAsync(Arg.Any<bool>());
+    }
+
+    [Test]
+    public async Task Dismiss_AfterPreviousDismissalFinished_AsksAgain()
+    {
+        // Given
+        _sut.AllowDismiss = false;
+        await _sut.Dismiss();
+        _sut.AllowDismiss = true;
+        _modalService.DismissAsync().Returns(Result.Ok());
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.True);
+        Assert.That(_sut.CanDismissCallCount, Is.EqualTo(2));
+    }
 }
