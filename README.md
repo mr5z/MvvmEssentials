@@ -18,9 +18,9 @@ surface, see its guide:
 - [NavigationPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/navigation-page.md) — plain pages and the navigation service (push/replace, strongly-typed parameters)
 - [TabbedPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/tabbed-page.md) — bottom/top tabs with lifecycle propagation
 - [FlyoutPage](https://github.com/mr5z/MvvmEssentials/blob/main/docs/flyout-page.md) — hamburger menu with a swappable detail area
-- [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
-- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork of Mopups)
 - [Modals](https://github.com/mr5z/MvvmEssentials/blob/main/docs/modals.md) — pages that return a result, with the same top bar as regular pages
+- [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork of Mopups)
+- [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
 
 # Setup
 
