@@ -1,6 +1,6 @@
 # Migration guide
 
-## 1.5.1 → 2.0.0: Wizard steps use `MapView`
+## 1.5.1 → 1.6.0: Wizard steps use `MapView`
 
 `CreateView<TView, TViewModel>()` is removed. Steps are now declared by ViewModel only with
 `Defer<TViewModel>()`, and the view is mapped at registration. This lets wizard hosts live in a project that doesn't reference your views.
