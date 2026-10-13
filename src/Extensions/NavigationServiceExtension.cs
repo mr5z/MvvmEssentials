@@ -153,6 +153,7 @@ public static class NavigationExtension
 		/// Navigates to the path aggregated from <see cref="IPageLink"/>.
 		/// </summary>
 		/// <param name="parameters">The last ViewModel in the <see cref="IPageLink"/> will only receive this.</param>
+		/// <param name="animated">Isn't it obvious what this is for?</param>
 		/// <returns>An <see cref="IResult"/> indicating the outcome of the navigation operation.</returns>
 		public async Task<IResult> NavigateAsync(INavigationParameters? parameters = null, bool animated = true)
 		{

@@ -4,7 +4,7 @@ Multi-step flows (onboarding, checkout, setup): several `ContentView` steps shar
 inside a single host page. Steps are built lazily, cached after the first visit, and given enter/exit
 hooks to read from and write back to the shared state.
 
-See the [main README](../README.md) for setup and the `MapPage` vs `RegisterPage` distinction.
+See the [main README](../README.md) for setup and the `MapPage` vs `RegisterPage` vs `MapView` distinction.
 
 ## The three pieces
 
@@ -12,7 +12,7 @@ See the [main README](../README.md) for setup and the `MapPage` vs `RegisterPage
 |---|---|---|
 | Host | `WizardHostViewModel<TState>` | The page VM. Owns the step list, the shared `TState`, movement between steps, and completion. |
 | Step | `WizardStepViewModel<TState>` | The VM behind each `ContentView` step. Writes its choice into the shared state on exit. |
-| View factory | `IContentViewFactory` | Creates each step's `ContentView` + VM in its own DI scope. Injected into the host; registered automatically by `ConfigureMvvmEssentials`. |
+| View factory | `IContentViewFactory` | Creates each step's `ContentView` + VM in its own DI scope, looking the view up from the VM type. Injected into the host; registered automatically by `ConfigureMvvmEssentials`. |
 
 The example throughout is a three-step onboarding flow: **goal → experience → schedule**.
 
@@ -88,11 +88,11 @@ internal sealed partial class OnboardingHostViewModel(
     [RelayCommand] private Task Next() => GoNextAsync();
     [RelayCommand] private Task Back() => GoBackAsync();
 
-    protected override IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps =>
+    protected override IReadOnlyList<WizardStep> Steps =>
     [
-        f => f.CreateView<OnboardingGoalView, OnboardingGoalViewModel>(),
-        f => f.CreateView<OnboardingExperienceView, OnboardingExperienceViewModel>(),
-        f => f.CreateView<OnboardingScheduleView, OnboardingScheduleViewModel>(),
+        StepOf<OnboardingGoalViewModel>(),
+        StepOf<OnboardingExperienceViewModel>(),
+        StepOf<OnboardingScheduleViewModel>(),
     ];
 
     protected override async Task OnCompletedAsync()
@@ -108,23 +108,34 @@ internal sealed partial class OnboardingHostViewModel(
 }
 ```
 
+`StepOf<TViewModel>()` declares a step without creating it. Its view and VM are created the first time
+the wizard enters the step. `TViewModel` must be a `WizardStepViewModel<TState>` for this host's
+state, so listing the wrong VM is a compile error.
+
+The host names only ViewModels, so it can live in a separate project (e.g. `Core`) that does not
+reference the project holding your views (e.g. `App`). The view for each VM is supplied at
+registration, next.
+
 That is the whole host — its state is already bindable, as the next step shows.
 
 ## 4. Register the host and steps
 
-The host is a `PageViewModel`, so map it like any page. Each step VM is resolved from DI by the view
-factory, so it must be registered too — use `RegisterPage`:
+The host is a `PageViewModel`, so map it like any page. Map each step's view to its VM with
+`MapView` — this tells the view factory which `ContentView` to build for the VM, and registers the
+VM in DI with a scoped lifetime:
 
 ```cs
 registry.MapPage<OnboardingHostPage, OnboardingHostViewModel>()  // navigable host page
-    .RegisterPage<OnboardingGoalViewModel>()
-    .RegisterPage<OnboardingExperienceViewModel>()
-    .RegisterPage<OnboardingScheduleViewModel>();
+    .MapView<OnboardingGoalView, OnboardingGoalViewModel>()
+    .MapView<OnboardingExperienceView, OnboardingExperienceViewModel>()
+    .MapView<OnboardingScheduleView, OnboardingScheduleViewModel>();
 ```
 
-> **Note:** Step views are created via `CreateView<TContentView, TViewModel>()` with both types passed
-> explicitly, so the `{Name}Page` / `{Name}ViewModel` naming convention does **not** apply to steps —
-> name your views and step VMs however you like.
+> **Note:** `MapView` has no naming convention — name your views and step VMs however you like.
+> Each VM can be mapped to one view only; mapping it twice throws at startup.
+
+> **Note:** A step whose VM is not mapped throws `InvalidOperationException` when the wizard first
+> enters it, not at startup. Map every step.
 
 ## 5. Build the host page in XAML
 

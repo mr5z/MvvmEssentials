@@ -5,23 +5,38 @@ namespace Nkraft.MvvmEssentials.Services;
 
 public interface IContentViewFactory : IDisposable
 {
-    ContentView CreateView<TContentView, TViewModel>()
-        where TContentView : ContentView
-        where TViewModel : BaseViewModel;
+    /// <summary>
+    /// Creates the view mapped to <typeparamref name="TViewModel"/> via
+    /// <see cref="IPageRegistry.MapView{TView,TViewModel}"/>, bound to a ViewModel resolved in its own DI scope.
+    /// </summary>
+    ContentView CreateView<TViewModel>() where TViewModel : BaseViewModel;
 }
 
-internal sealed class ContentViewFactory(IServiceProvider serviceProvider) : IContentViewFactory
+internal sealed class ContentViewFactory(IServiceProvider serviceProvider, IPageRegistry pageRegistry) : IContentViewFactory
 {
     private readonly Dictionary<ContentView, IServiceScope> _viewScopes = [];
 
-    ContentView IContentViewFactory.CreateView<TContentView, TViewModel>()
+    ContentView IContentViewFactory.CreateView<TViewModel>()
     {
-        var view = Activator.CreateInstance<TContentView>();
+        var viewType = pageRegistry.ResolveViewType(typeof(TViewModel))
+            ?? throw new InvalidOperationException(
+                $"No view is mapped to '{typeof(TViewModel).FullName}'. " +
+                $"Call MapView<TView, {typeof(TViewModel).Name}>() in ConfigureMvvmEssentials.");
+
+        var view = (ContentView)Activator.CreateInstance(viewType)!;
 
         var scope = serviceProvider.CreateScope();
-        _viewScopes[view] = scope;
-        view.BindingContext = scope.ServiceProvider.GetRequiredService<TViewModel>();
+        try
+        {
+            view.BindingContext = scope.ServiceProvider.GetRequiredService<TViewModel>();
+        }
+        catch
+        {
+            scope.Dispose();
+            throw;
+        }
 
+        _viewScopes[view] = scope;
         return view;
     }
 

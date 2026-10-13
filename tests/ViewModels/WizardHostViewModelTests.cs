@@ -34,14 +34,18 @@ internal sealed class FakeWizardStepView : ContentView
     public FakeWizardStepView() => BindingContext = new FakeWizardStepViewModel();
 }
 
-// The host only invokes the Steps delegates directly; it never calls CreateView itself,
-// so this fake only needs to satisfy the interface and track Dispose.
+// Steps go through Defer<T>(), which calls the factory. FakeWizardStepView sets its own
+// BindingContext, so no DI is needed here.
 internal sealed class FakeContentViewFactory : IContentViewFactory
 {
     public int DisposeCount { get; private set; }
+    public int CreateCount { get; private set; }
 
-    ContentView IContentViewFactory.CreateView<TContentView, TViewModel>()
-        => throw new NotSupportedException("Steps are created via delegates in these tests.");
+    ContentView IContentViewFactory.CreateView<TViewModel>()
+    {
+        CreateCount++;
+        return new FakeWizardStepView();
+    }
 
     void IDisposable.Dispose() => DisposeCount++;
 }
@@ -67,9 +71,9 @@ internal sealed class ExposedWizardHostViewModel(IContentViewFactory viewFactory
         return Task.CompletedTask;
     }
 
-    protected override IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
+    protected override IReadOnlyList<WizardStep> Steps { get; }
         = Enumerable.Range(0, stepCount)
-            .Select(_ => new Func<IContentViewFactory, ContentView>(_ => new FakeWizardStepView()))
+            .Select(_ => StepOf<FakeWizardStepViewModel>())
             .ToList();
 }
 
@@ -91,6 +95,39 @@ public class WizardHostViewModelTests
         var sut = new ExposedWizardHostViewModel(_factory, stepCount);
         ((INotifyPropertyChanged)sut).PropertyChanged += (_, e) => _raisedProperties.Add(e.PropertyName!);
         return sut;
+    }
+
+    // -----------------------------------------------------------------------
+    // Defer — steps are created on first visit, then cached
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void OnInitialized_CreatesOnlyTheFirstStep()
+    {
+        // Given
+        var sut = CreateSut(stepCount: 3);
+
+        // When
+        sut.SimulateAppearing();
+
+        // Then
+        Assert.That(_factory.CreateCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task GoBackThenNext_ReusesCachedSteps()
+    {
+        // Given
+        var sut = CreateSut(stepCount: 3);
+        sut.SimulateAppearing();
+        await sut.PublicGoNextAsync();
+
+        // When
+        await sut.PublicGoBackAsync();
+        await sut.PublicGoNextAsync();
+
+        // Then
+        Assert.That(_factory.CreateCount, Is.EqualTo(2));
     }
 
     // -----------------------------------------------------------------------
