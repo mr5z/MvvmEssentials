@@ -10,7 +10,7 @@ internal static class Diagnostics
     public static readonly DiagnosticDescriptor NoStartupDefined = new(
         id: "MVE001",
         title: "No app startup defined",
-        messageFormat: "No IAppStartup implementation found and no page is marked with isInitial: true. Either implement IAppStartup or mark a page with isInitial: true in AddPageRegistry.",
+        messageFormat: "No IAppStartup implementation found in this project or its references, and no page is marked with isInitial: true. Either implement IAppStartup or mark a page with isInitial: true in ConfigureMvvmEssentials.",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -53,7 +53,7 @@ internal static class Diagnostics
         category: "Nkraft.MvvmEssentials",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
-    
+
     public static readonly DiagnosticDescriptor NavigationParameterOnNonPageViewModel = new(
         id: "MVE006",
         title: "[NavigationParameter] requires PageViewModel",
@@ -63,5 +63,14 @@ internal static class Diagnostics
                        + "only need OnParametersSet.",
         category: "Nkraft.MvvmEssentials",
         defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+    
+    public static readonly DiagnosticDescriptor InaccessibleStartup = new(
+        id: "MVE007",
+        title: "IAppStartup implementation is not accessible",
+        messageFormat: "'{0}' implements IAppStartup in a referenced project but is not accessible from this project, "
+                       + "so it cannot be registered. Make it public.",
+        category: "Nkraft.MvvmEssentials",
+        defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 }

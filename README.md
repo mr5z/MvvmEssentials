@@ -58,9 +58,9 @@ public static class MauiProgram
 }
 ```
 
-> **Note:** `AddDiscoveredAppStartup()` is source-generated at compile time. It automatically wires up
-> your `IAppStartup` implementation if one exists, or generates a default one from the page marked
-> `isInitial: true`.
+> **Note:** `AddDiscoveredAppStartup()` is source-generated at compile time, only in the project that
+> calls it. It automatically wires up your `IAppStartup` implementation if one exists, or generates a
+> default one from the page marked `isInitial: true`.
 
 > **Note:** `ConfigureMvvmEssentials` also configures popups for you. Do not call `ConfigureMopups()` yourself.
 
@@ -94,8 +94,8 @@ That's it. The hook fires the initial navigation automatically.
 # Custom Startup Logic (Optional)
 
 If you need to run async logic before deciding where to navigate (e.g. auth checks, feature flags),
-implement `IAppStartup` anywhere in your project. The source generator will find it automatically,
-no registration needed.
+implement `IAppStartup` in your app project or in a project it references (e.g. a separate ViewModel
+library). The source generator will find it automatically, no registration needed.
 
 ```cs
 public class AppStartup(INavigationService navigationService, IAuthService authService) : IAppStartup
@@ -116,7 +116,8 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
 ```
 
 > **Rules:**
-> - Only one `IAppStartup` implementation is allowed. Defining two will produce a **compile error (MVE002)**.
+> - Only one `IAppStartup` implementation is allowed across your app and its referenced projects. Defining two will produce a **compile error (MVE002)**.
+> - If it lives in a referenced project, it must be `public`. Otherwise you get a **compile error (MVE007)**.
 > - If no `IAppStartup` is found and no page is marked `isInitial: true`, a **compiler warning (MVE001)** is emitted.
 > - When `IAppStartup` is defined, the `isInitial: true` flag is ignored.
 

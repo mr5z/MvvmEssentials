@@ -11,4 +11,5 @@ internal static class WellKnownNames
     public const string DestinationNamespace = "global::Nkraft.MvvmEssentials.Services.Pages";
     public const string IAppStartup = "Nkraft.MvvmEssentials.Services.IAppStartup";
     public const string GeneratorName = "Nkraft.MvvmEssentials.SourceGenerator";
+    public const string LibraryAssemblyName = "Nkraft.MvvmEssentials";
 }
