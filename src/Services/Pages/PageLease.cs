@@ -28,7 +28,7 @@ internal sealed class PageLease(IPageFactory pageFactory, ILogger? logger = null
     }
 
     /// <summary>
-    /// Marks <paramref name="root"/> as presented; pages reachable from it are kept on <see cref="Dispose"/>.
+    /// Marks <paramref name="root"/> as presented; pages reachable from it are kept on this type's internal disposal.
     /// </summary>
     public void Commit(Page root) => _root = root;
 

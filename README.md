@@ -91,19 +91,6 @@ That's it. The hook fires the initial navigation automatically.
 
 ---
 
-# Upgrading from versions that used `Mopups`
-
-Popups now depend on [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork
-of [Mopups](https://github.com/LuckyDucko/Mopups) with bug fixes. The namespaces has been migrated to `Nkraft.Mopups.*`,
-so when upgrading:
-
-- **Remove** any direct `Mopups` package reference from your app. Referencing both packages causes
-  duplicate-type errors (CS0433).
-- **Remove** your own `.ConfigureMopups()` call. `ConfigureMvvmEssentials` already does this.
-- **Update** all classes that referenced `Mopups` to `Nkraft.Mopups`.
-
----
-
 # Custom Startup Logic (Optional)
 
 If you need to run async logic before deciding where to navigate (e.g. auth checks, feature flags),
@@ -135,15 +122,19 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
 
 ---
 
-# MapPage vs RegisterPage
+# MapPage vs RegisterPage vs MapView
 
-Both methods register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
-| | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` |
-|---|---|---|
-| Navigable via `NavigateAsync` | ✅ Yes | ❌ No |
-| Creates a page–VM mapping | ✅ Yes | ❌ No |
-| Scoped DI lifetime | ✅ Yes | ✅ Yes |
-| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu, wizard steps) |
+All three register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
+| | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` | `MapView<TView, TViewModel>` |
+|---|---|---|---|
+| Navigable via `NavigateAsync` | ✅ Yes | ❌ No | ❌ No |
+| Creates a mapping | ✅ Page–VM | ❌ No | ✅ ContentView–VM |
+| Scoped DI lifetime | ✅ Yes | ✅ Yes | ✅ Yes |
+| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu) | Views built by VM type (wizard steps) |
+
+Use `MapView` when a ViewModel asks for its view by VM type alone, as wizard steps do with
+`CreateView<TViewModel>()`. This keeps ViewModels free of view types, so they can live in a separate
+project from your views. See [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md).
 
 Use `RegisterPage` for any ViewModel that is wired to its page or view via XAML `BindingContext`
 rather than created by the navigation service. The navigation service has no knowledge of these VMs
@@ -159,11 +150,11 @@ registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatabl
     .MapPage<MainTabbedPage, MainTabbedViewModel>() // bound in XAML as FlyoutPage.Detail
         .RegisterPage<HomeViewModel>()      // bound in XAML as a TabbedPage tab
         .RegisterPage<ProfileViewModel>()   // bound in XAML as a TabbedPage tab
+    .MapPage<OnboardingHostPage, OnboardingHostViewModel>() // navigatable wizard host
+        .MapView<OnboardingGoalView, OnboardingGoalViewModel>() // wizard step
     .MapPage<OrdersPage, OrdersViewModel>()      // navigatable
     .MapPage<SettingsPage, SettingsViewModel>(); // navigatable
 ```
-> **Note:** The indentation above is cosmetic — each call in the chain returns the same registry,
-> so it stays flat no matter how it's formatted.
 
 ---
 
@@ -243,6 +234,13 @@ public class MyViewModel : PageViewModel
     }
 }
 ```
+
+---
+
+# Upgrading
+
+Changes that may need edits in your app, and how to make them, are listed in the
+[migration guide](https://github.com/mr5z/MvvmEssentials/blob/main/docs/migration.md).
 
 ---
 

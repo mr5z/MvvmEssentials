@@ -30,7 +30,7 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
 
         if (_stepCache.TryGetValue(index, out var view) == false)
         {
-            view = Steps[index].Invoke(_viewFactory);
+            view = Steps[index].Create(_viewFactory);
             _stepCache[index] = view;
         }
 
@@ -118,5 +118,26 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
 
     protected TState State { get; set; } = new();
     
-    protected abstract IReadOnlyList<Func<IContentViewFactory, ContentView>> Steps { get; }
+    /// <summary>
+    /// The wizard's steps, in order. Build each entry with <see cref="StepOf{TViewModel}"/>.
+    /// </summary>
+    protected abstract IReadOnlyList<WizardStep> Steps { get; }
+
+    /// <summary>
+    /// Declares a step without creating it. The step's view and ViewModel are created the first time the
+    /// wizard enters it, then cached. The view is the one mapped via
+    /// <see cref="IPageRegistry.MapView{TView,TViewModel}"/>.
+    /// </summary>
+    protected static WizardStep StepOf<TViewModel>() where TViewModel : WizardStepViewModel<TState>
+        => new(factory => factory.CreateView<TViewModel>());
+
+    /// <summary>A wizard step that is created on first visit. Create one with <see cref="WizardHostViewModel{TState}.StepOf{TViewModel}"/>.</summary>
+    protected sealed class WizardStep
+    {
+        private readonly Func<IContentViewFactory, ContentView> _create;
+
+        internal WizardStep(Func<IContentViewFactory, ContentView> create) => _create = create;
+
+        internal ContentView Create(IContentViewFactory factory) => _create(factory);
+    }
 }

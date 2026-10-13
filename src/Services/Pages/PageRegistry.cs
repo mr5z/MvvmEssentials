@@ -27,9 +27,24 @@ public interface IPageRegistry
 	/// <typeparam name="TViewModel">The ViewModel type to register.</typeparam>
 	IPageRegistry RegisterPage<TViewModel>() where TViewModel : BaseViewModel;
 
+	/// <summary>
+	/// Maps a <see cref="ContentView"/> type to a ViewModel type and registers the ViewModel with a
+	/// scoped lifetime. Lets a ViewModel library request a view by ViewModel type alone
+	/// (<see cref="IContentViewFactory.CreateView{TViewModel}"/>) without referencing the view's assembly.
+	/// No naming convention applies.
+	/// </summary>
+	/// <typeparam name="TView">The view type to create.</typeparam>
+	/// <typeparam name="TViewModel">The ViewModel type bound to the view. One view per ViewModel.</typeparam>
+	IPageRegistry MapView<TView, TViewModel>()
+		where TView : ContentView
+		where TViewModel : BaseViewModel;
+
 	Type? ResolveViewModelType(Type pageType);
 	
 	Type? ResolvePageType(string pageName);
+
+	/// <summary>Returns the view type mapped via <see cref="MapView{TView,TViewModel}"/>, or <c>null</c>.</summary>
+	Type? ResolveViewType(Type viewModelType);
 	
 	Type? InitialViewModelType { get; }
 }
@@ -39,6 +54,9 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 	private readonly IServiceCollection _services = services;
 
 	private readonly Dictionary<Type, Type> _mappings = [];
+	
+	// Keyed by ViewModel type: views are requested by ViewModel, the reverse of _mappings.
+	private readonly Dictionary<Type, Type> _viewMappings = [];
 
 	IPageRegistry IPageRegistry.MapPage<TPage, TViewModel>(bool isInitial)
 	{
@@ -70,6 +88,20 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 		return this;
 	}
 
+	IPageRegistry IPageRegistry.MapView<TView, TViewModel>()
+	{
+		if (_viewMappings.TryGetValue(typeof(TViewModel), out var existing))
+		{
+			throw new InvalidOperationException(
+				$"The ViewModel type '{typeof(TViewModel).FullName}' is already mapped to view '{existing.FullName}'.");
+		}
+
+		_viewMappings[typeof(TViewModel)] = typeof(TView);
+		_services.AddScoped<TViewModel>();
+
+		return this;
+	}
+
 	Type? IPageRegistry.ResolveViewModelType(Type pageType)
 	{
 		return _mappings.GetValueOrDefault(pageType);
@@ -80,6 +112,11 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry
 		return pageName == nameof(NavigationPage)
 			? typeof(NavigationPage)
 			: _mappings.Keys.SingleOrDefault(t => t.Name == pageName);
+	}
+
+	Type? IPageRegistry.ResolveViewType(Type viewModelType)
+	{
+		return _viewMappings.GetValueOrDefault(viewModelType);
 	}
 	
 	private Type? _initialViewModelType;
