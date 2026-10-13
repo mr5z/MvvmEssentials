@@ -25,5 +25,3 @@ Popups now use [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a
 - Remove the `Mopups` package reference from your app. Having both causes CS0433.
 - Remove your `.ConfigureMopups()` call. `ConfigureMvvmEssentials` already does this.
 - Change `Mopups.*` namespaces to `Nkraft.Mopups.*`.
-
-Skip 1.4.1 and 1.4.1.1. They are unlisted transitional builds.
