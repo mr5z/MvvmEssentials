@@ -6,14 +6,16 @@ namespace Nkraft.MvvmEssentials.SourceGenerator;
 
 internal static class AppStartupSymbolCollector
 {
-    public static INamedTypeSymbol? GetIfImplementsIAppStartup(GeneratorSyntaxContext ctx)
+    // Returns the full name rather than the symbol: symbols are not equatable, so returning one
+    // defeats incremental caching.
+    public static string? GetIfImplementsIAppStartup(GeneratorSyntaxContext ctx)
     {
         var classDecl = (ClassDeclarationSyntax)ctx.Node;
         if (ctx.SemanticModel.GetDeclaredSymbol(classDecl) is not INamedTypeSymbol symbol)
             return null;
 
         return symbol.AllInterfaces.Any(i => i.ToDisplayString() == WellKnownNames.IAppStartup)
-            ? symbol
+            ? symbol.ToDisplayString()
             : null;
     }
 }
