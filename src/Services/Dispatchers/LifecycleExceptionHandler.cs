@@ -40,7 +40,7 @@ internal sealed class LifecycleExceptionHandler(
 		// and unwinding it leaves the navigation stack half-updated. Posting to the dispatcher lets
 		// the current transition finish, then surfaces the original exception as unhandled.
 		var captured = ExceptionDispatchInfo.Capture(exception);
-		if (_dispatcher.Dispatch(() => captured.Throw()) == false)
+		if (_dispatcher.Dispatch(captured.Throw) == false)
 		{
 			_logger.LogWarning(
 				"Could not dispatch the crash for '{MethodName}'; the exception was logged only.", methodName);
@@ -67,36 +67,39 @@ internal sealed class LifecycleExceptionHandler(
 
 internal static class LifecycleExceptionHandlerExtension
 {
-	/// <summary>Runs a synchronous lifecycle method; any exception goes to the handler instead of the caller.</summary>
-	public static void Invoke(this ILifecycleExceptionHandler handler, Action action, string methodName, object? source)
+	extension(ILifecycleExceptionHandler handler)
 	{
-		try
+		/// <summary>Runs a synchronous lifecycle method; any exception goes to the handler instead of the caller.</summary>
+		public void Invoke(Action action, string methodName, object? source)
 		{
-			action();
-		}
-		catch (Exception ex)
-		{
-			handler.Handle(ex, methodName, source);
-		}
-	}
-
-	/// <summary>
-	/// Starts an async lifecycle method without awaiting it. Covers both a faulted task and a
-	/// non-async override that throws before returning a task.
-	/// </summary>
-	public static void InvokeAsync(this ILifecycleExceptionHandler handler, Func<Task> action, string methodName, object? source)
-	{
-		Task task;
-		try
-		{
-			task = action();
-		}
-		catch (Exception ex)
-		{
-			handler.Handle(ex, methodName, source);
-			return;
+			try
+			{
+				action();
+			}
+			catch (Exception ex)
+			{
+				handler.Handle(ex, methodName, source);
+			}
 		}
 
-		task.FireAndForget(ex => handler.Handle(ex, methodName, source));
+		/// <summary>
+		/// Starts an async lifecycle method without awaiting it. Covers both a faulted task and a
+		/// non-async override that throws before returning a task.
+		/// </summary>
+		public void InvokeAsync(Func<Task> action, string methodName, object? source)
+		{
+			Task task;
+			try
+			{
+				task = action();
+			}
+			catch (Exception ex)
+			{
+				handler.Handle(ex, methodName, source);
+				return;
+			}
+
+			task.FireAndForget(ex => handler.Handle(ex, methodName, source));
+		}
 	}
 }

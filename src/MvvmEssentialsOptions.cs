@@ -50,27 +50,20 @@ public enum LifecycleExceptionBehavior
 /// <summary>
 /// Describes an exception that escaped a ViewModel lifecycle method.
 /// </summary>
-public sealed class LifecycleExceptionContext
+public sealed class LifecycleExceptionContext(Exception exception, string methodName, object? source = null)
 {
-	public LifecycleExceptionContext(Exception exception, string methodName, object? source = null)
-	{
-		Exception = exception;
-		MethodName = methodName;
-		Source = source;
-	}
-
 	/// <summary>The exception that was thrown.</summary>
-	public Exception Exception { get; }
+	public Exception Exception { get; } = exception;
 
 	/// <summary>
 	/// The lifecycle method the library was invoking, e.g. <c>OnPageAppearing</c>.
 	/// <c>OnInitialized</c>/<c>OnInitializedAsync</c> run as part of <c>OnPageAppearing</c>/<c>OnPageAppearingAsync</c>,
 	/// so they are reported under those names; the stack trace shows the exact method.
 	/// </summary>
-	public string MethodName { get; }
+	public string MethodName { get; } = methodName;
 
 	/// <summary>The ViewModel (or tab/flyout component) whose method threw, when known.</summary>
-	public object? Source { get; }
+	public object? Source { get; } = source;
 
 	/// <summary>
 	/// Set to <see langword="true"/> to prevent <see cref="LifecycleExceptionBehavior.Crash"/> for this exception.
