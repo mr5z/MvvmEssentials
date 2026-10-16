@@ -46,10 +46,13 @@ internal static class AppStartupCodeTemplates
 
                 async Task IAppStartup.OnInitializedAsync()
                 {
-                    await _navigationService
+                    var result = await _navigationService
                         .Absolute(withNavigation: false)
                         .Push<global::{{initialViewModelFullName}}>()
                         .NavigateAsync(animated: false);
+
+                    // No page means no window: fail with the real cause, not MAUI's "set MainPage" error.
+                    global::Nkraft.CrossUtility.Patterns.ResultExtensions.ThrowIfFailure(result);
                 }
             }
             """;

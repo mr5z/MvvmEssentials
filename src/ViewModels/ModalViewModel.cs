@@ -78,7 +78,7 @@ public partial class ModalViewModel<TResult>(IModalService modalService)
 		}
 		else
 		{
-			_completion?.TrySetException(new Exception(modalResult.ErrorMessage));
+			_completion?.TrySetException(modalResult.Exception ?? new Exception(modalResult.ErrorMessage));
 		}
 
 		return modalResult;

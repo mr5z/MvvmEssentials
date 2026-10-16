@@ -41,7 +41,8 @@ public static class PopupServiceExtension
 
 			var navResult = await popup.PresentAsync(popupName, parameters, animated);
 			if (navResult.IsFailure)
-				return Result.Fail<TResult>(ErrorCode.InvalidState, "Failed to display popup '{PopupName}'.", popupName);
+				return Result.Fail<TResult>(ErrorCode.InvalidState, 
+					navResult.Exception, "Failed to display popup '{PopupName}'.", popupName);
 
 			try
 			{
@@ -51,15 +52,13 @@ public static class PopupServiceExtension
 			catch (TaskCanceledException)
 			{
 				const string message = "Popup '{PopupName}' has been cancelled.";
-				// Intentionally discarding the result since we're fairly certain this is a canceled operation
-				// and there's no more information to extract from that state
-				_ = await popup.DismissAsync(popupName, animated);
-				return Result.Fail<TResult>(ErrorCode.Cancelled, message, popupName);
+				var dismissResult = await popup.DismissAsync(popupName, animated);
+				return Result.Fail<TResult>(ErrorCode.Cancelled, dismissResult.Exception, message, popupName);
 			}
 			catch (Exception ex)
 			{
-				const string message = "Failed to dismiss popup '{PopupName}'; Additional info: {AdditionalInfo}";
-				return Result.Fail<TResult>(ErrorCode.Unknown, message, popupName, ex.Message);
+				const string message = "Failed to dismiss popup '{PopupName}'.";
+				return Result.Fail<TResult>(ErrorCode.Unknown, ex, message, popupName);
 			}
 		}
 	}

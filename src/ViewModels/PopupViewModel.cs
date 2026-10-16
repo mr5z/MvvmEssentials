@@ -47,7 +47,7 @@ public partial class PopupViewModel<TResult>(IPopupService popupService) : PageV
 		}
 		else
 		{
-			_completion?.TrySetException(new Exception(popupResult.ErrorMessage));
+			_completion?.TrySetException(popupResult.Exception ?? new Exception(popupResult.ErrorMessage));
 		}
 
 		return popupResult;

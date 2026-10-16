@@ -38,7 +38,8 @@ public static class ModalServiceExtension
 
 			var navResult = await modal.PresentAsync(modalName, parameters, animated);
 			if (navResult.IsFailure)
-				return Result.Fail<TResult>(ErrorCode.InvalidState, "Failed to present modal '{ModalName}'.", modalName);
+				return Result.Fail<TResult>(ErrorCode.InvalidState, 
+					navResult.Exception, "Failed to present modal '{ModalName}'.", modalName);
 
 			try
 			{
@@ -54,8 +55,8 @@ public static class ModalServiceExtension
 			}
 			catch (Exception ex)
 			{
-				const string message = "Failed to dismiss modal '{ModalName}'; Additional info: {AdditionalInfo}";
-				return Result.Fail<TResult>(ErrorCode.Unknown, message, modalName, ex.Message);
+				const string message = "Failed to dismiss modal '{ModalName}'.";
+				return Result.Fail<TResult>(ErrorCode.Unknown, ex, message, modalName);
 			}
 		}
 	}

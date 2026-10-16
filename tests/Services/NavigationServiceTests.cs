@@ -52,6 +52,63 @@ public class NavigationServiceTests
         Assert.That(result.IsFailure, Is.True);
     }
 
+    // -----------------------------------------------------------------------
+    // NavigateAsync — the caught exception is carried in the Result
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task NavigateAsync_WhenGetPageTypesThrows_EmbedsExceptionInResult()
+    {
+        // Given
+        var boom = new InvalidOperationException("Page not found.");
+        _pageFactory.GetPageTypesFromPath(Arg.Any<string>()).Throws(boom);
+
+        // When
+        var result = await _sut.NavigateAsync("//UnknownPage");
+
+        // Then
+        Assert.That(result.Exception, Is.SameAs(boom));
+    }
+
+    [Test]
+    public async Task NavigateAsync_WhenCreatePageThrows_EmbedsExceptionInResult()
+    {
+        // Given — e.g. ViewModel constructor / DI resolution / OnParametersSet threw
+        var boom = new InvalidOperationException("viewmodel boom");
+        _pageFactory
+            .GetPageTypesFromPath(Arg.Any<string>())
+            .Returns([new PageInfo(typeof(Page))]);
+        _pageFactory
+            .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
+            .Throws(boom);
+
+        // When
+        var result = await _sut.NavigateAsync("//FakePage");
+
+        // Then: still a Result (no throw), but the cause is not lost
+        Assert.That(result.IsFailure, Is.True);
+        Assert.That(result.ErrorCode, Is.EqualTo(ErrorCode.Unknown));
+        Assert.That(result.Exception, Is.SameAs(boom));
+    }
+
+    [Test]
+    public async Task NavigateAsync_WhenCreatePageThrows_ThrowIfFailureRethrowsOriginal()
+    {
+        // Given
+        var boom = new InvalidOperationException("viewmodel boom");
+        _pageFactory
+            .GetPageTypesFromPath(Arg.Any<string>())
+            .Returns([new PageInfo(typeof(Page))]);
+        _pageFactory
+            .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
+            .Throws(boom);
+        var result = await _sut.NavigateAsync("//FakePage");
+
+        // When / Then — what the generated startup does
+        var thrown = Assert.Throws<InvalidOperationException>(() => result.ThrowIfFailure());
+        Assert.That(thrown, Is.SameAs(boom));
+    }
+
     [Test]
     public async Task NavigateAsync_WhenPageListIsEmpty_ReturnsFailure()
     {
@@ -303,6 +360,7 @@ public class NavigationServiceTests
         // Then
         Assert.That(result.IsFailure, Is.True);
         Assert.That(result.ErrorCode, Is.EqualTo(ErrorCode.General));
+        Assert.That(result.Exception, Is.Not.Null);
     }
     
     

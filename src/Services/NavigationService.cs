@@ -74,7 +74,7 @@ internal sealed class NavigationService(
         {
             const string message = "An error occurred while trying to fetch page information.";
             _logger.LogError(ex, message);
-            return Result.Fail(ErrorCode.InvalidState, message);
+            return Result.Fail(ErrorCode.InvalidState, ex, message);
         }
 
         if (pageInfoList.Length == 0)
@@ -128,7 +128,7 @@ internal sealed class NavigationService(
         {
             const string message = "An error occurred while trying to perform page navigation (Path: {Path}).";
             _logger.LogError(ex, message, path);
-            return Result.Fail(ErrorCode.Unknown, message, path);
+            return Result.Fail(ErrorCode.Unknown, ex, message, path);
         }
         finally
         {
@@ -225,7 +225,7 @@ internal sealed class NavigationService(
         {
             const string message = "An error occurred while trying to navigate to root.";
             _logger.LogError(ex, message);
-            return Result.Fail(ErrorCode.General, message);
+            return Result.Fail(ErrorCode.General, ex, message);
         }
 
         return Result.Ok();
