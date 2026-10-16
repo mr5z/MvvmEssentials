@@ -1,5 +1,45 @@
 # Migration guide
 
+## 1.6.2 → 1.7.0
+
+### Lifecycle exceptions crash by default
+
+Exceptions thrown from ViewModel lifecycle methods (`OnInitialized`, `OnPageAppearing`, `OnNavigatedTo`, ...)
+used to propagate into MAUI's navigation code, or, for async methods, were only logged in the NuGet package.
+They are now always reported through one handler, and by default rethrown on the UI thread after the
+navigation finishes, which normally terminates the app.
+
+- To keep the previous "log and continue" behavior, set
+  `options.LifecycleExceptionBehavior = LifecycleExceptionBehavior.LogOnly` in the new
+  `ConfigureMvvmEssentials(registry => ..., options => ...)` overload.
+- A navigation whose target page throws in `OnNavigatedTo`/`OnPageAppearing` now returns a successful
+  `IResult`; the exception is reported through `OnLifecycleException` instead.
+
+See [Lifecycle Exceptions](../README.md#lifecycle-exceptions).
+
+### `IAppStartup.OnInitializedAsync` returns the navigation result
+
+`Task OnInitializedAsync()` is now `Task<IResult> OnInitializedAsync()`. The library rethrows a failed
+result's original exception, so you no longer need `result.ThrowIfFailure()`.
+
+```cs
+// Before
+async Task IAppStartup.OnInitializedAsync()
+{
+    var result = await _navigationService.Absolute().Push<HomeViewModel>().NavigateAsync();
+    result.ThrowIfFailure();
+}
+
+// After
+async Task<IResult> IAppStartup.OnInitializedAsync()
+{
+    return await _navigationService.Absolute().Push<HomeViewModel>().NavigateAsync();
+}
+```
+
+The compiler flags every implementation. The default startup generated from `isInitial: true` is updated
+automatically. Returning `Result.Ok()` without navigating now throws an `InvalidOperationException` at startup.
+
 ## 1.5.1 → 1.6.0: Wizard steps use `MapView`
 
 `CreateView<TView, TViewModel>()` is removed. Steps are now declared by ViewModel only with

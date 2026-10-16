@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
@@ -92,11 +91,8 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage?.BindingContext is not IPageAppearing vm)
             return;
         
-        vm.OnPageAppearing();
-        vm.OnPageAppearingAsync().FireAndForget(ex =>
-        {
-            ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageAppearingAsync));
-        });
+        ExceptionDispatcher.Invoke<FlyoutDetailLifecycleBehavior>(vm.OnPageAppearing, nameof(IPageAppearing.OnPageAppearing), vm);
+        ExceptionDispatcher.InvokeAsync<FlyoutDetailLifecycleBehavior>(vm.OnPageAppearingAsync, nameof(IPageAppearing.OnPageAppearingAsync), vm);
         
         targetPage.SendAppearing();
     }
@@ -107,11 +103,8 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
         if (targetPage?.BindingContext is not IPageAppearing vm)
             return;
         
-        vm.OnPageDisappearing();
-        vm.OnPageDisappearingAsync().FireAndForget(ex =>
-        {
-            ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageAppearing.OnPageDisappearingAsync));
-        });
+        ExceptionDispatcher.Invoke<FlyoutDetailLifecycleBehavior>(vm.OnPageDisappearing, nameof(IPageAppearing.OnPageDisappearing), vm);
+        ExceptionDispatcher.InvokeAsync<FlyoutDetailLifecycleBehavior>(vm.OnPageDisappearingAsync, nameof(IPageAppearing.OnPageDisappearingAsync), vm);
         
         targetPage.SendDisappearing();
     }
@@ -122,11 +115,8 @@ public class FlyoutDetailLifecycleBehavior : Behavior<FlyoutPage>
 
         if (targetPage?.BindingContext is IPageNavigated vm)
         {
-            vm.OnPageNavigatedTo();
-            vm.OnPageNavigatedToAsync().FireAndForget(ex =>
-            {
-                ExceptionDispatcher.Handle<FlyoutDetailLifecycleBehavior>(ex, nameof(IPageNavigated.OnPageNavigatedToAsync));
-            });
+            ExceptionDispatcher.Invoke<FlyoutDetailLifecycleBehavior>(vm.OnPageNavigatedTo, nameof(IPageNavigated.OnPageNavigatedTo), vm);
+            ExceptionDispatcher.InvokeAsync<FlyoutDetailLifecycleBehavior>(vm.OnPageNavigatedToAsync, nameof(IPageNavigated.OnPageNavigatedToAsync), vm);
         }
     }
     

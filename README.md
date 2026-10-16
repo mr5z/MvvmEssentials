@@ -103,26 +103,22 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
     private readonly INavigationService _navigationService = navigationService;
     private readonly IAuthService _authService = authService;
 
-    async Task IAppStartup.OnInitializedAsync()
+    async Task<IResult> IAppStartup.OnInitializedAsync()
     {
         var isLoggedIn = await _authService.CheckAsync();
 
-        var result = await _navigationService
+        // Return the navigation result: the library rethrows a failure's original exception.
+        return await _navigationService
             .Absolute(withNavigation: false)
             .Push(isLoggedIn ? typeof(HomeViewModel) : typeof(LoginViewModel))
             .NavigateAsync();
-
-        // Navigation never throws; it returns a failed IResult carrying the exception.
-        // At startup there's no page to fall back to, so rethrow the original cause.
-        result.ThrowIfFailure();
     }
 }
 ```
 
-> **Why check the result?** If startup navigation fails (e.g. a ViewModel constructor throws) and the
-> result is ignored, no root page is set, and MAUI throws a generic "set MainPage or override
-> CreateWindow" error that hides the real exception. `ThrowIfFailure()` rethrows `IResult.Exception`
-> with its original stack trace. You can also inspect `result.Exception` and navigate to a fallback page instead.
+> **Why return the result?** If startup navigation fails (e.g. a ViewModel constructor throws), the library
+> rethrows the real exception instead of MAUI's generic "set MainPage" error. To recover instead, navigate to a
+> fallback page and return that result. Lifecycle exceptions are handled separately (see [Lifecycle Exceptions](#lifecycle-exceptions)).
 
 > **Rules:**
 > - Only one `IAppStartup` implementation is allowed across your app and its referenced projects. Defining two will produce a **compile error (MVE002)**.
@@ -244,6 +240,48 @@ public class MyViewModel : PageViewModel
     }
 }
 ```
+
+---
+
+# Lifecycle Exceptions
+
+Lifecycle methods (`OnInitialized`, `OnPageAppearing`, `OnNavigatedTo`, `OnTabSelected`, `OnFlyoutOpened`, ...
+and their async versions) are called by MAUI while it is navigating. An exception from one of them never
+propagates into MAUI or fails the navigation: the page still opens, and the exception is reported instead.
+
+Every such exception goes through one place, configured with the `ConfigureMvvmEssentials` overload:
+
+```cs
+builder.ConfigureMvvmEssentials(
+    registry => registry.MapPage<LandingPage, LandingViewModel>(isInitial: true),
+    options =>
+    {
+        // Crash (default): rethrows the original exception on the UI thread after the navigation
+        // finishes, so it reaches your unhandled-exception handler.
+        // LogOnly: logs it and keeps the app running.
+        options.LifecycleExceptionBehavior = LifecycleExceptionBehavior.Crash;
+
+        // Called first, for every lifecycle exception.
+        options.OnLifecycleException = context =>
+        {
+            // e.g. send to your crash reporter
+            MyCrashReporter.Track(context.Exception, context.MethodName, context.Source?.GetType().Name);
+
+            // Optionally keep running for this one exception, even with Crash.
+            // context.Handled = true;
+        };
+    });
+```
+
+- `context.MethodName` is the method the library was calling. `OnInitialized`/`OnInitializedAsync` run inside
+  `OnPageAppearing`/`OnPageAppearingAsync` and are reported under those names; the stack trace shows the exact method.
+- `context.Source` is the ViewModel (or tab/flyout component) that threw.
+- Don't assume the callback runs on the UI thread.
+- Handle errors you expect (e.g. a failed API call) inside the lifecycle method and show them on the page.
+  This mechanism is for the ones you don't expect.
+- A failed `OnInitialized` is not retried on the next appearance.
+- Not covered: exceptions from `OnParametersSet` or the ViewModel constructor (navigation hasn't started, so the
+  returned `IResult` fails instead), and from `OnNavigatedToRoot` (reported in the `IResult` of `NavigateToRootAsync`).
 
 ---
 

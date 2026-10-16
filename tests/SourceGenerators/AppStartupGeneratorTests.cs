@@ -18,6 +18,7 @@ public class AppStartupGeneratorTests
         using System.Threading.Tasks;
         using Microsoft.Extensions.DependencyInjection;
         using Nkraft.MvvmEssentials;
+        using Nkraft.CrossUtility.Patterns;
         using Nkraft.MvvmEssentials.Services;
 
         """;
@@ -36,7 +37,7 @@ public class AppStartupGeneratorTests
         {
             public class AppStartup : IAppStartup
             {
-                public Task OnInitializedAsync() => Task.CompletedTask;
+                public Task<IResult> OnInitializedAsync() => Task.FromResult<IResult>(Result.Ok());
             }
         }
         """;
@@ -46,7 +47,7 @@ public class AppStartupGeneratorTests
         {
             internal class AppStartup : IAppStartup
             {
-                public Task OnInitializedAsync() => Task.CompletedTask;
+                public Task<IResult> OnInitializedAsync() => Task.FromResult<IResult>(Result.Ok());
             }
         }
         """;
@@ -56,7 +57,7 @@ public class AppStartupGeneratorTests
         {
             public class AppStartup : IAppStartup
             {
-                public Task OnInitializedAsync() => Task.CompletedTask;
+                public Task<IResult> OnInitializedAsync() => Task.FromResult<IResult>(Result.Ok());
             }
         }
         """;
@@ -72,6 +73,7 @@ public class AppStartupGeneratorTests
         // Not necessarily loaded into the AppDomain yet when the fixture starts.
         .Append(MetadataReference.CreateFromFile(typeof(ContentPage).Assembly.Location))
         .Append(MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
+        .Append(MetadataReference.CreateFromFile(typeof(Nkraft.CrossUtility.Patterns.IResult).Assembly.Location))
         .ToArray();
 
     private static CSharpCompilation Compile(string assemblyName, string source, params MetadataReference[] references)
@@ -202,7 +204,7 @@ public class AppStartupGeneratorTests
         Assert.That(diagnostics, Is.Empty);
         Assert.That(generated, Does.Contain("GeneratedAppStartup"));
         Assert.That(generated, Does.Contain("Push<global::Core.LandingViewModel>"));
-        // A failed initial navigation must surface its cause instead of MAUI's "set MainPage" error.
-        Assert.That(generated, Does.Contain("ResultExtensions.ThrowIfFailure(result)"));
+        // The navigation result is returned so AppStartupWindowHook can rethrow a failure's real cause.
+        Assert.That(generated, Does.Contain("Task<global::Nkraft.CrossUtility.Patterns.IResult> IAppStartup.OnInitializedAsync()"));
     }
 }

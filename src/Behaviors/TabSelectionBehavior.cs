@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.TabbedPages;
@@ -49,18 +48,13 @@ public sealed class TabSelectionBehavior : Behavior<TabbedPage>
 		if (_previousTabIndex != -1)
 		{
 			var previousTab = tabHost.Tabs.ElementAt(_previousTabIndex);
-			previousTab.OnTabUnselected();
-			previousTab.OnTabUnselectedAsync().FireAndForget(ex =>
-			{
-				ExceptionDispatcher.Handle<TabSelectionBehavior>(ex, nameof(ITabComponent.OnTabUnselectedAsync));
-			});
+			ExceptionDispatcher.Invoke<TabSelectionBehavior>(previousTab.OnTabUnselected, nameof(ITabComponent.OnTabUnselected), previousTab);
+			ExceptionDispatcher.InvokeAsync<TabSelectionBehavior>(previousTab.OnTabUnselectedAsync, nameof(ITabComponent.OnTabUnselectedAsync), previousTab);
 		}
 
-		tabHost.CurrentTab.OnTabSelected();
-		tabHost.CurrentTab.OnTabSelectedAsync().FireAndForget(ex =>
-		{
-			ExceptionDispatcher.Handle<TabSelectionBehavior>(ex, nameof(ITabComponent.OnTabSelectedAsync));
-		});
+		var currentTab = tabHost.CurrentTab;
+		ExceptionDispatcher.Invoke<TabSelectionBehavior>(currentTab.OnTabSelected, nameof(ITabComponent.OnTabSelected), currentTab);
+		ExceptionDispatcher.InvokeAsync<TabSelectionBehavior>(currentTab.OnTabSelectedAsync, nameof(ITabComponent.OnTabSelectedAsync), currentTab);
 		_previousTabIndex = tabIndex;
 	}
 

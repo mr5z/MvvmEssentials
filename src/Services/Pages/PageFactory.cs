@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
-using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Helpers;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
@@ -24,12 +23,12 @@ internal class PageFactory(
 	ILogger<PageFactory> logger,
 	IPageRegistry pageRegistry,
 	IServiceProvider serviceProvider,
-	IDispatcher dispatcher) : IPageFactory
+	ILifecycleExceptionHandler exceptionHandler) : IPageFactory
 {
 	private readonly ILogger<PageFactory> _logger = logger;
 	private readonly IPageRegistry _pageRegistry = pageRegistry;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
-	private readonly IDispatcher _dispatcher = dispatcher;
+	private readonly ILifecycleExceptionHandler _exceptionHandler = exceptionHandler;
 	private readonly ConditionalWeakTable<Page, IServiceScope> _pageScopes = [];
 
 	public event EventHandler<Page>? PageUnloaded;
@@ -147,83 +146,58 @@ internal class PageFactory(
 		}
 	}
 
+	// Lifecycle methods are user code running inside MAUI's own navigation (e.g. NavigationPage's
+	// CurrentPage setter raises Appearing). An exception must never unwind MAUI mid-transition, so every
+	// call goes through the lifecycle exception handler, which applies the configured behavior afterwards.
 	private void Page_Appearing(object? sender, EventArgs e)
 	{
-		if (TryGetViewModel(sender, out var viewModel))
+		if (sender is Page page)
 		{
-			if (viewModel is IPageAppearing vm)
-			{
-				vm.OnPageAppearing();
-				vm.OnPageAppearingAsync().FireAndForget(exception =>
-				{
-					ExceptionDispatcher.Handle(
-						exception,
-						_logger, 
-						_dispatcher, 
-						nameof(vm.OnPageAppearingAsync)
-					);
-				});
-			}
+			HandlePageAppearing(page);
+		}
+	}
+
+	// Internally exposed to simulate MAUI raising Appearing, which needs a window attached to an Application.
+	internal void HandlePageAppearing(Page page)
+	{
+		if (TryGetViewModel(page, out var viewModel) && viewModel is IPageAppearing vm)
+		{
+			_exceptionHandler.Invoke(vm.OnPageAppearing, nameof(IPageAppearing.OnPageAppearing), vm);
+			_exceptionHandler.InvokeAsync(vm.OnPageAppearingAsync, nameof(IPageAppearing.OnPageAppearingAsync), vm);
 		}
 	}
 
 	private void Page_Disappearing(object? sender, EventArgs e)
 	{
-		if (TryGetViewModel(sender, out var viewModel))
+		if (TryGetViewModel(sender, out var viewModel) && viewModel is IPageAppearing vm)
 		{
-			if (viewModel is IPageAppearing vm)
-			{
-				vm.OnPageDisappearing();
-				vm.OnPageDisappearingAsync().FireAndForget(exception =>
-				{
-					ExceptionDispatcher.Handle(
-						exception,
-						_logger, 
-						_dispatcher, 
-						nameof(vm.OnPageDisappearingAsync)
-					);
-				});
-			}
+			_exceptionHandler.Invoke(vm.OnPageDisappearing, nameof(IPageAppearing.OnPageDisappearing), vm);
+			_exceptionHandler.InvokeAsync(vm.OnPageDisappearingAsync, nameof(IPageAppearing.OnPageDisappearingAsync), vm);
 		}
 	}
 
 	private void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
 	{
-		if (TryGetViewModel(sender, out var viewModel))
+		if (sender is Page page)
+			HandlePageNavigatedTo(page);
+	}
+
+	// Internally exposed to simulate MAUI raising NavigatedTo, which a NavigationPage without a handler doesn't do.
+	internal void HandlePageNavigatedTo(Page page)
+	{
+		if (TryGetViewModel(page, out var viewModel) && viewModel is IPageNavigated vm)
 		{
-			if (viewModel is IPageNavigated vm)
-			{
-				vm.OnPageNavigatedTo();
-				vm.OnPageNavigatedToAsync().FireAndForget(exception =>
-				{
-					ExceptionDispatcher.Handle(
-						exception,
-						_logger, 
-						_dispatcher, 
-						nameof(vm.OnPageNavigatedToAsync)
-					);
-				});
-			}
+			_exceptionHandler.Invoke(vm.OnPageNavigatedTo, nameof(IPageNavigated.OnPageNavigatedTo), vm);
+			_exceptionHandler.InvokeAsync(vm.OnPageNavigatedToAsync, nameof(IPageNavigated.OnPageNavigatedToAsync), vm);
 		}
 	}
 
 	private void Page_NavigatedFrom(object? sender, NavigatedFromEventArgs e)
 	{
-		if (TryGetViewModel(sender, out var viewModel))
+		if (TryGetViewModel(sender, out var viewModel) && viewModel is IPageNavigated vm)
 		{
-			if (viewModel is IPageNavigated vm)
-			{
-				vm.OnPageNavigatedFrom();
-				vm.OnPageNavigatedFromAsync().FireAndForget(exception =>
-				{
-					ExceptionDispatcher.Handle(
-						exception,
-						_logger, 
-						_dispatcher, 
-						nameof(vm.OnPageNavigatedFromAsync)
-					);
-				});
-			}
+			_exceptionHandler.Invoke(vm.OnPageNavigatedFrom, nameof(IPageNavigated.OnPageNavigatedFrom), vm);
+			_exceptionHandler.InvokeAsync(vm.OnPageNavigatedFromAsync, nameof(IPageNavigated.OnPageNavigatedFromAsync), vm);
 		}
 	}
 
@@ -242,9 +216,10 @@ internal class PageFactory(
 	// This has been internally exposed to simulate page unload event from MAUI
 	internal void HandlePageUnloaded(Page page)
 	{
+		// Guarded so a throwing OnPageUnloaded can't skip unsubscribing and disposing the scope.
 		if (page.BindingContext is IPageLoad vm)
 		{
-			vm.OnPageUnloaded();
+			_exceptionHandler.Invoke(vm.OnPageUnloaded, nameof(IPageLoad.OnPageUnloaded), vm);
 		}
 		
 		UnregisterPageEvents(page);

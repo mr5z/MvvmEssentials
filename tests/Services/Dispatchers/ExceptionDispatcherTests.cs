@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using NSubstitute;
 using NUnit.Framework;
@@ -26,89 +24,133 @@ public class ExceptionDispatcherGenericHandleTests
         Application.SetCurrentApplication(new Application { Handler = handler });
     }
 
-    [Test]
-    public void HandleGeneric_WhenLoggerAndDispatcherBothResolve_DoesNotThrow()
+    private static ILifecycleExceptionHandler SetApplicationCurrentWithHandler()
     {
-        // Given — both dependencies available via the (substituted) MauiContext
+        var handler = Substitute.For<ILifecycleExceptionHandler>();
         var services = new ServiceCollection();
-        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        services.AddSingleton(Substitute.For<IDispatcher>());
-        using var serviceProvider = services.BuildServiceProvider();
-        SetApplicationCurrentWithServices(serviceProvider);
-
-        var exception = new InvalidOperationException("boom");
-
-        // Then — delegates to the already-tested 4-arg Handle(), which only *records* a
-        // dispatch on the substitute dispatcher rather than executing the rethrow action
-        Assert.DoesNotThrow(
-            () => ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod"));
+        services.AddSingleton(handler);
+        SetApplicationCurrentWithServices(services.BuildServiceProvider());
+        return handler;
     }
 
+    // -----------------------------------------------------------------------
+    // Handle<T>
+    // -----------------------------------------------------------------------
+
     [Test]
-    public void HandleGeneric_WhenLoggerAndDispatcherBothResolve_LogsThroughTheResolvedLogger()
+    public void HandleGeneric_WhenHandlerResolves_DelegatesToIt()
     {
         // Given
-        var loggerFactory = Substitute.For<ILoggerFactory>();
-        var logger = Substitute.For<ILogger>();
-        loggerFactory.CreateLogger(Arg.Any<string>()).Returns(logger);
-
-        var services = new ServiceCollection();
-        services.AddSingleton(loggerFactory);
-        services.AddSingleton(Substitute.For<IDispatcher>());
-        using var serviceProvider = services.BuildServiceProvider();
-        SetApplicationCurrentWithServices(serviceProvider);
-
+        var handler = SetApplicationCurrentWithHandler();
         var exception = new InvalidOperationException("boom");
+        var source = new object();
 
         // When
-        ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod");
+        ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod", source);
 
         // Then
-        Assert.That(logger.ReceivedCalls(), Is.Not.Empty);
+        handler.Received(1).Handle(exception, "MyMethod", source);
     }
 
     [Test]
-    public void HandleGeneric_WhenOnlyLoggerResolves_FallsBackAndRethrows()
+    public void HandleGeneric_WhenHandlerResolves_DoesNotThrow()
     {
-        // Given — IDispatcher deliberately not registered, so the && condition's right
-        // side is independently false (distinct from the all-null case elsewhere, where
-        // the left side already short-circuits)
-        var services = new ServiceCollection();
-        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        using var serviceProvider = services.BuildServiceProvider();
-        SetApplicationCurrentWithServices(serviceProvider);
+        // Given
+        SetApplicationCurrentWithHandler();
 
+        // When / Then
+        Assert.DoesNotThrow(() =>
+            ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(new InvalidOperationException("boom"), "MyMethod"));
+    }
+
+    [Test]
+    public void HandleGeneric_WhenHandlerIsNotRegistered_RethrowsOriginal()
+    {
+        // Given — services exist but the handler isn't registered, so the configured
+        // behavior is unknown and the default (Crash) is applied directly
+        SetApplicationCurrentWithServices(new ServiceCollection().BuildServiceProvider());
         var exception = new InvalidOperationException("boom");
 
-#if DEBUG
+        // When / Then — regardless of the library's own build configuration
+        var thrown = Assert.Throws<InvalidOperationException>(
+            () => ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod"));
+        Assert.That(thrown, Is.SameAs(exception));
+    }
+
+    [Test]
+    public void HandleGeneric_WhenNoApplication_RethrowsOriginal()
+    {
+        // Given
+        Application.Current = null;
+        var exception = new InvalidOperationException("boom");
+
         // When / Then
         var thrown = Assert.Throws<InvalidOperationException>(
             () => ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod"));
         Assert.That(thrown, Is.SameAs(exception));
-#else
-        Assert.DoesNotThrow(
-            () => ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod"));
-#endif
+    }
+
+    // -----------------------------------------------------------------------
+    // Invoke<T> / InvokeAsync<T>
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void InvokeGeneric_WhenActionThrows_DoesNotEscapeAndReportsToHandler()
+    {
+        // Given
+        var handler = SetApplicationCurrentWithHandler();
+        var exception = new InvalidOperationException("boom");
+        var source = new object();
+
+        // When / Then
+        Assert.DoesNotThrow(() => ExceptionDispatcher.Invoke<ExceptionDispatcherGenericHandleTests>(
+            () => throw exception, "OnSomething", source));
+        handler.Received(1).Handle(exception, "OnSomething", source);
     }
 
     [Test]
-    public void HandleGeneric_WhenOnlyDispatcherResolves_FallsBackAndRethrows()
+    public void InvokeGeneric_WhenActionSucceeds_DoesNotReport()
     {
-        // Given — ILoggerFactory deliberately not registered
-        var services = new ServiceCollection();
-        services.AddSingleton(Substitute.For<IDispatcher>());
-        using var serviceProvider = services.BuildServiceProvider();
-        SetApplicationCurrentWithServices(serviceProvider);
+        // Given
+        var handler = SetApplicationCurrentWithHandler();
+        var ran = false;
 
+        // When
+        ExceptionDispatcher.Invoke<ExceptionDispatcherGenericHandleTests>(() => ran = true, "OnSomething", null);
+
+        // Then
+        Assert.That(ran, Is.True);
+        handler.DidNotReceiveWithAnyArgs().Handle(default!, default!, default);
+    }
+
+    [Test]
+    public void InvokeAsyncGeneric_WhenMethodThrowsBeforeReturningTask_DoesNotEscapeAndReportsToHandler()
+    {
+        // Given — a non-async override that throws synchronously
+        var handler = SetApplicationCurrentWithHandler();
         var exception = new InvalidOperationException("boom");
 
-#if DEBUG
-        var thrown = Assert.Throws<InvalidOperationException>(
-            () => ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod"));
-        Assert.That(thrown, Is.SameAs(exception));
-#else
-        Assert.DoesNotThrow(
-            () => ExceptionDispatcher.Handle<ExceptionDispatcherGenericHandleTests>(exception, "MyMethod"));
-#endif
+        // When / Then
+        Assert.DoesNotThrow(() => ExceptionDispatcher.InvokeAsync<ExceptionDispatcherGenericHandleTests>(
+            () => throw exception, "OnSomethingAsync", null));
+        handler.Received(1).Handle(exception, "OnSomethingAsync", null);
+    }
+
+    [Test]
+    public async Task InvokeAsyncGeneric_WhenTaskFaults_ReportsToHandler()
+    {
+        // Given
+        var handler = SetApplicationCurrentWithHandler();
+        var exception = new InvalidOperationException("boom");
+        var reported = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        handler.When(h => h.Handle(exception, "OnSomethingAsync", null)).Do(_ => reported.TrySetResult());
+
+        // When
+        ExceptionDispatcher.InvokeAsync<ExceptionDispatcherGenericHandleTests>(
+            async () => { await Task.Yield(); throw exception; }, "OnSomethingAsync", null);
+
+        // Then
+        var completed = await Task.WhenAny(reported.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.That(completed, Is.SameAs(reported.Task), "the faulted task was never reported");
     }
 }
