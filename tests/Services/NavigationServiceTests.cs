@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
@@ -545,6 +546,7 @@ public class NavigationServiceParameterMappingTests
         services.AddSingleton<IPageFactory, PageFactory>();
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton(Substitute.For<IDispatcher>());
+        services.AddSingleton(Substitute.For<ILifecycleExceptionHandler>());
 
         _applicationContext = Substitute.For<IApplicationContext>();
         services.AddSingleton(_applicationContext);

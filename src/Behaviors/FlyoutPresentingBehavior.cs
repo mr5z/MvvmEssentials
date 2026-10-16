@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using Nkraft.CrossUtility.Extensions;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.FlyoutPages;
 using Nkraft.MvvmEssentials.ViewModels;
@@ -59,22 +58,16 @@ public sealed class FlyoutPresentingBehavior : Behavior<FlyoutPage>
         {
             foreach (var component in components)
             {
-                component.OnFlyoutOpened();
-                component.OnFlyoutOpenedAsync().FireAndForget(ex =>
-                {
-                    ExceptionDispatcher.Handle<FlyoutPresentingBehavior>(ex, nameof(IFlyoutComponent.OnFlyoutOpenedAsync));
-                });
+                ExceptionDispatcher.Invoke<FlyoutPresentingBehavior>(component.OnFlyoutOpened, nameof(IFlyoutComponent.OnFlyoutOpened), component);
+                ExceptionDispatcher.InvokeAsync<FlyoutPresentingBehavior>(component.OnFlyoutOpenedAsync, nameof(IFlyoutComponent.OnFlyoutOpenedAsync), component);
             }
         }
         else
         {
             foreach (var component in components)
             {
-                component.OnFlyoutClosed();
-                component.OnFlyoutClosedAsync().FireAndForget(ex =>
-                {
-                    ExceptionDispatcher.Handle<FlyoutPresentingBehavior>(ex, nameof(IFlyoutComponent.OnFlyoutClosedAsync));
-                });
+                ExceptionDispatcher.Invoke<FlyoutPresentingBehavior>(component.OnFlyoutClosed, nameof(IFlyoutComponent.OnFlyoutClosed), component);
+                ExceptionDispatcher.InvokeAsync<FlyoutPresentingBehavior>(component.OnFlyoutClosedAsync, nameof(IFlyoutComponent.OnFlyoutClosedAsync), component);
             }
         }
     }

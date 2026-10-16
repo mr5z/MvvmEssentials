@@ -1,4 +1,5 @@
 ﻿using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages;
 
 // ReSharper disable once CheckNamespace
@@ -17,5 +18,11 @@ internal static class NavigationServiceCollectionExtension
 		services.AddSingleton<IApplicationContext, ApplicationContext>();
 		
 		services.AddSingleton<AppStartupWindowHook>();
+	}
+
+	public static void AddLifecycleExceptionHandler(this IServiceCollection services, Action<MvvmEssentialsOptions> configureOptions)
+	{
+		services.Configure(configureOptions);
+		services.AddSingleton<ILifecycleExceptionHandler, LifecycleExceptionHandler>();
 	}
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -10,6 +11,7 @@ namespace Nkraft.MvvmEssentials.UnitTest.Services;
 public class AppStartupWindowHookTests
 {
     private IAppStartup _startup = null!;
+    private IApplicationContext _applicationContext = null!;
     private RecordingLogger<AppStartupWindowHook> _logger = null!;
     private AppStartupWindowHook _sut = null!;
 
@@ -18,12 +20,18 @@ public class AppStartupWindowHookTests
     {
         _startup = Substitute.For<IAppStartup>();
 
+        // A root page exists unless a test says otherwise
+        _applicationContext = Substitute.For<IApplicationContext>();
+        _applicationContext.MainPage.Returns(new Page());
+
         // Hand-rolled logger instead of a substitute: avoids Castle DynamicProxy
         // issues with ILogger<T>, and lets us assert what was logged.
         _logger = new RecordingLogger<AppStartupWindowHook>();
 
-        _sut = new AppStartupWindowHook(_logger, _startup);
+        _sut = new AppStartupWindowHook(_logger, _startup, _applicationContext);
     }
+
+    private static Task<IResult> Ok() => Task.FromResult<IResult>(Result.Ok());
 
     // -----------------------------------------------------------------------
     // Happy path
@@ -33,7 +41,7 @@ public class AppStartupWindowHookTests
     public void Attach_WhenStartupSucceeds_CallsOnInitializedAsync()
     {
         // Given
-        _startup.OnInitializedAsync().Returns(Task.CompletedTask);
+        _startup.OnInitializedAsync().Returns(Ok());
 
         // When
         _sut.Attach();
@@ -46,7 +54,7 @@ public class AppStartupWindowHookTests
     public void Attach_WhenStartupSucceeds_DoesNotThrowOrLog()
     {
         // Given
-        _startup.OnInitializedAsync().Returns(Task.CompletedTask);
+        _startup.OnInitializedAsync().Returns(Ok());
 
         // Then
         Assert.DoesNotThrow(() => _sut.Attach());
@@ -71,7 +79,7 @@ public class AppStartupWindowHookTests
         if (throwsSynchronously)
             _startup.OnInitializedAsync().Throws(boom);
         else
-            _startup.OnInitializedAsync().Returns(Task.FromException(boom));
+            _startup.OnInitializedAsync().Returns(Task.FromException<IResult>(boom));
         return boom;
     }
 
@@ -101,6 +109,56 @@ public class AppStartupWindowHookTests
         Assert.That(_logger.Entries, Has.Count.EqualTo(1));
         Assert.That(_logger.Entries[0].Level, Is.EqualTo(LogLevel.Error));
         Assert.That(_logger.Entries[0].Exception, Is.SameAs(boom));
+    }
+
+    // -----------------------------------------------------------------------
+    // Returned result: a failed navigation is rethrown even though the user
+    // never called ThrowIfFailure()
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void Attach_WhenStartupReturnsFailedResult_RethrowsItsException()
+    {
+        // Given — e.g. the startup page's ViewModel constructor threw
+        var boom = new InvalidOperationException("viewmodel boom");
+        _startup.OnInitializedAsync().Returns(Task.FromResult<IResult>(Result.Fail(ErrorCode.Unknown, boom, "navigation failed")));
+        _applicationContext.MainPage.Returns((Page?)null);
+
+        // When
+        var thrown = Assert.Throws<InvalidOperationException>(() => _sut.Attach());
+
+        // Then — the real cause, not a "no root page" error
+        Assert.That(thrown, Is.SameAs(boom));
+    }
+
+    [Test]
+    public void Attach_WhenStartupReturnsFailedResult_DoesNotLogAgain()
+    {
+        // Given — the navigation service already logged the failure
+        _startup.OnInitializedAsync().Returns(Task.FromResult<IResult>(
+            Result.Fail(ErrorCode.Unknown, new InvalidOperationException("boom"), "navigation failed")));
+
+        // When
+        Assert.Throws<InvalidOperationException>(() => _sut.Attach());
+
+        // Then
+        Assert.That(_logger.Entries, Is.Empty);
+    }
+
+    [Test]
+    public void Attach_WhenStartupSucceedsButSetsNoRootPage_ThrowsAndLogs()
+    {
+        // Given — e.g. `return Result.Ok();` without navigating
+        _startup.OnInitializedAsync().Returns(Ok());
+        _applicationContext.MainPage.Returns((Page?)null);
+
+        // When
+        var thrown = Assert.Throws<InvalidOperationException>(() => _sut.Attach());
+
+        // Then
+        Assert.That(thrown!.Message, Does.Contain("no root page was set"));
+        Assert.That(_logger.Entries, Has.Count.EqualTo(1));
+        Assert.That(_logger.Entries[0].Level, Is.EqualTo(LogLevel.Error));
     }
 
     // -----------------------------------------------------------------------
