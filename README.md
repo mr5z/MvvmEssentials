@@ -116,16 +116,9 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
 }
 ```
 
-> **Why return the result?** Navigation never throws; it returns a failed `IResult` carrying the exception
-> (e.g. an unregistered page, or a ViewModel constructor or `OnParametersSet` that threw). At startup there
-> is no page to fall back to, so the library rethrows that exception with its original stack trace. Without
-> it, MAUI would fail with a generic "set MainPage or override CreateWindow" error that hides the real cause.
->
-> To recover instead of crashing, inspect the result and navigate to a fallback page, then return that result.
-> Returning a successful result without navigating anywhere throws an `InvalidOperationException`.
->
-> Exceptions from the start page's lifecycle methods (`OnInitialized`, `OnPageAppearing`, ...) are not part of
-> this result; they are handled by [Lifecycle Exceptions](#lifecycle-exceptions).
+> **Why return the result?** If startup navigation fails (e.g. a ViewModel constructor throws), the library
+> rethrows the real exception instead of MAUI's generic "set MainPage" error. To recover instead, navigate to a
+> fallback page and return that result. Lifecycle exceptions are handled separately (see [Lifecycle Exceptions](#lifecycle-exceptions)).
 
 > **Rules:**
 > - Only one `IAppStartup` implementation is allowed across your app and its referenced projects. Defining two will produce a **compile error (MVE002)**.

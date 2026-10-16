@@ -1,6 +1,6 @@
 # Migration guide
 
-## 1.6.2 → next release
+## 1.6.2 → 1.7.0
 
 ### Lifecycle exceptions crash by default
 
