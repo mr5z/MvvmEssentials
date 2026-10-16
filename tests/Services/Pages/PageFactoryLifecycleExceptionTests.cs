@@ -53,19 +53,47 @@ public class PageFactoryLifecycleExceptionTests
         return (page, (ThrowingLifecycleViewModel)page.BindingContext);
     }
 
+    // MAUI only raises Appearing/NavigatedTo with a platform handler or a window attached to an
+    // Application, which unit tests don't have, so these call the factory's internal hooks directly.
+
     [Test]
-    public void Push_WhenOnNavigatedToThrows_NavigationCompletesAndHandlerIsNotified()
+    public void HandlePageAppearing_WhenOnInitializedThrows_DoesNotThrowAndReports()
+    {
+        // Given — the original bug: OnInitialized throwing inside MAUI's navigation
+        _settings.ThrowOnInitialized = true;
+        var (page, viewModel) = CreatePage();
+
+        // When / Then
+        Assert.DoesNotThrow(() => _sut.HandlePageAppearing(page));
+        _handler.Received(1).Handle(
+            Arg.Is<Exception>(e => e != null && e.Message == ThrowingLifecycleViewModel.InitializedMessage),
+            nameof(IPageAppearing.OnPageAppearing),
+            viewModel);
+    }
+
+    [Test]
+    public void HandlePageAppearing_WhenOnInitializedThrows_AsyncHookStillRuns()
+    {
+        // Given
+        _settings.ThrowOnInitialized = true;
+        var (page, viewModel) = CreatePage();
+
+        // When
+        _sut.HandlePageAppearing(page);
+
+        // Then — OnInitializedAsync runs as part of OnPageAppearingAsync
+        Assert.That(viewModel.InitializedAsyncCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void HandlePageNavigatedTo_WhenOnNavigatedToThrows_DoesNotThrowAndReports()
     {
         // Given
         _settings.ThrowOnNavigatedTo = true;
         var (page, viewModel) = CreatePage();
-        var navigationPage = new NavigationPage(new Page());
 
-        // When — MAUI raises NavigatedTo from inside its own push
-        Assert.DoesNotThrowAsync(() => navigationPage.PushAsync(page, animated: false));
-
-        // Then — MAUI's state is consistent, and the failure was reported instead of thrown
-        Assert.That(navigationPage.CurrentPage, Is.SameAs(page));
+        // When / Then
+        Assert.DoesNotThrow(() => _sut.HandlePageNavigatedTo(page));
         _handler.Received(1).Handle(
             Arg.Is<Exception>(e => e.Message == ThrowingLifecycleViewModel.NavigatedToMessage),
             nameof(IPageNavigated.OnPageNavigatedTo),
@@ -73,32 +101,28 @@ public class PageFactoryLifecycleExceptionTests
     }
 
     [Test]
-    public void Push_WhenOnNavigatedToThrows_AsyncHookStillRuns()
+    public void HandlePageNavigatedTo_WhenOnNavigatedToThrows_AsyncHookStillRuns()
     {
         // Given
         _settings.ThrowOnNavigatedTo = true;
         var (page, viewModel) = CreatePage();
-        var navigationPage = new NavigationPage(new Page());
 
         // When
-        Assert.DoesNotThrowAsync(() => navigationPage.PushAsync(page, animated: false));
+        _sut.HandlePageNavigatedTo(page);
 
         // Then
         Assert.That(viewModel.NavigatedToAsyncCount, Is.EqualTo(1));
     }
 
     [Test]
-    public void Push_WhenAsyncHookThrowsBeforeReturningTask_IsReportedNotThrown()
+    public void HandlePageNavigatedTo_WhenAsyncHookThrowsBeforeReturningTask_IsReportedNotThrown()
     {
         // Given — a non-async override (`Task OnNavigatedToAsync() => throw ...`)
         _settings.ThrowOnNavigatedToAsyncSynchronously = true;
         var (page, viewModel) = CreatePage();
-        var navigationPage = new NavigationPage(new Page());
 
-        // When
-        Assert.DoesNotThrowAsync(() => navigationPage.PushAsync(page, animated: false));
-
-        // Then
+        // When / Then
+        Assert.DoesNotThrow(() => _sut.HandlePageNavigatedTo(page));
         _handler.Received(1).Handle(
             Arg.Any<Exception>(),
             nameof(IPageNavigated.OnPageNavigatedToAsync),
@@ -126,6 +150,7 @@ public class PageFactoryLifecycleExceptionTests
 
 internal sealed class ThrowingLifecycleSettings
 {
+    public bool ThrowOnInitialized { get; set; }
     public bool ThrowOnNavigatedTo { get; set; }
     public bool ThrowOnNavigatedToAsyncSynchronously { get; set; }
     public bool ThrowOnUnloaded { get; set; }
@@ -135,10 +160,25 @@ internal class ThrowingLifecyclePage : Page { }
 
 internal class ThrowingLifecycleViewModel(ThrowingLifecycleSettings settings) : PageViewModel
 {
+    public const string InitializedMessage = "OnInitialized boom";
     public const string NavigatedToMessage = "OnNavigatedTo boom";
+
+    public int InitializedAsyncCount { get; private set; }
 
     public int NavigatedToAsyncCount { get; private set; }
     public int DisposeCount { get; private set; }
+
+    protected override void OnInitialized()
+    {
+        if (settings.ThrowOnInitialized)
+            throw new InvalidOperationException(InitializedMessage);
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        InitializedAsyncCount++;
+        return Task.CompletedTask;
+    }
 
     protected override void OnNavigatedTo()
     {

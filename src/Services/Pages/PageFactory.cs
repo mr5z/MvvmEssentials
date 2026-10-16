@@ -151,7 +151,16 @@ internal class PageFactory(
 	// call goes through the lifecycle exception handler, which applies the configured behavior afterwards.
 	private void Page_Appearing(object? sender, EventArgs e)
 	{
-		if (TryGetViewModel(sender, out var viewModel) && viewModel is IPageAppearing vm)
+		if (sender is Page page)
+		{
+			HandlePageAppearing(page);
+		}
+	}
+
+	// Internally exposed to simulate MAUI raising Appearing, which needs a window attached to an Application.
+	internal void HandlePageAppearing(Page page)
+	{
+		if (TryGetViewModel(page, out var viewModel) && viewModel is IPageAppearing vm)
 		{
 			_exceptionHandler.Invoke(vm.OnPageAppearing, nameof(IPageAppearing.OnPageAppearing), vm);
 			_exceptionHandler.InvokeAsync(vm.OnPageAppearingAsync, nameof(IPageAppearing.OnPageAppearingAsync), vm);
@@ -169,7 +178,14 @@ internal class PageFactory(
 
 	private void Page_NavigatedTo(object? sender, NavigatedToEventArgs e)
 	{
-		if (TryGetViewModel(sender, out var viewModel) && viewModel is IPageNavigated vm)
+		if (sender is Page page)
+			HandlePageNavigatedTo(page);
+	}
+
+	// Internally exposed to simulate MAUI raising NavigatedTo, which a NavigationPage without a handler doesn't do.
+	internal void HandlePageNavigatedTo(Page page)
+	{
+		if (TryGetViewModel(page, out var viewModel) && viewModel is IPageNavigated vm)
 		{
 			_exceptionHandler.Invoke(vm.OnPageNavigatedTo, nameof(IPageNavigated.OnPageNavigatedTo), vm);
 			_exceptionHandler.InvokeAsync(vm.OnPageNavigatedToAsync, nameof(IPageNavigated.OnPageNavigatedToAsync), vm);
