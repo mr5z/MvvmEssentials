@@ -202,5 +202,7 @@ public class AppStartupGeneratorTests
         Assert.That(diagnostics, Is.Empty);
         Assert.That(generated, Does.Contain("GeneratedAppStartup"));
         Assert.That(generated, Does.Contain("Push<global::Core.LandingViewModel>"));
+        // A failed initial navigation must surface its cause instead of MAUI's "set MainPage" error.
+        Assert.That(generated, Does.Contain("ResultExtensions.ThrowIfFailure(result)"));
     }
 }

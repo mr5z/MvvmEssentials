@@ -72,7 +72,7 @@ internal sealed class ModalService(
         {
             const string message = "An error occurred when trying to decode modal name '{ModalName}'.";
             _logger.LogError(ex, message, modalName);
-            return Result.Fail(ErrorCode.InvalidParameter, message, modalName);
+            return Result.Fail(ErrorCode.InvalidParameter, ex, message, modalName);
         }
 
         if (pageInfoList.Length != 1)
@@ -98,7 +98,7 @@ internal sealed class ModalService(
         {
             const string message = "An error occurred while trying to present '{ModalName}'.";
             _logger.LogError(ex, message, modalName);
-            return Result.Fail(ErrorCode.General, message, modalName);
+            return Result.Fail(ErrorCode.General, ex, message, modalName);
         }
         finally
         {
@@ -131,7 +131,7 @@ internal sealed class ModalService(
         {
             const string message = "An error occurred while trying to dismiss modal page.";
             _logger.LogError(ex, message);
-            return Result.Fail(ErrorCode.General, message);
+            return Result.Fail(ErrorCode.General, ex, message);
         }
         finally
         {
@@ -163,7 +163,7 @@ internal sealed class ModalService(
         {
             const string message = "An error occurred while trying to dismiss all modal pages.";
             _logger.LogError(ex, message);
-            return Result.Fail(ErrorCode.General, message);
+            return Result.Fail(ErrorCode.General, ex, message);
         }
         finally
         {

@@ -107,13 +107,22 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
     {
         var isLoggedIn = await _authService.CheckAsync();
 
-        await _navigationService
+        var result = await _navigationService
             .Absolute(withNavigation: false)
             .Push(isLoggedIn ? typeof(HomeViewModel) : typeof(LoginViewModel))
             .NavigateAsync();
+
+        // Navigation never throws; it returns a failed IResult carrying the exception.
+        // At startup there's no page to fall back to, so rethrow the original cause.
+        result.ThrowIfFailure();
     }
 }
 ```
+
+> **Why check the result?** If startup navigation fails (e.g. a ViewModel constructor throws) and the
+> result is ignored, no root page is set, and MAUI throws a generic "set MainPage or override
+> CreateWindow" error that hides the real exception. `ThrowIfFailure()` rethrows `IResult.Exception`
+> with its original stack trace. You can also inspect `result.Exception` and navigate to a fallback page instead.
 
 > **Rules:**
 > - Only one `IAppStartup` implementation is allowed across your app and its referenced projects. Defining two will produce a **compile error (MVE002)**.

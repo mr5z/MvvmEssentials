@@ -65,7 +65,7 @@ internal sealed class PopupService : IPopupService
 		{
 			const string message = "An error occurred when trying to decode popup name '{PopupName}'.";
 			_logger.LogError(ex, message, popupName);
-			return Result.Fail(ErrorCode.General, message);
+			return Result.Fail(ErrorCode.General, ex, message);
 		}
 
 		if (pageInfoList.Length > 1)
@@ -91,7 +91,7 @@ internal sealed class PopupService : IPopupService
 		{
 			const string message = "An error occurred while trying to show '{PopupName}'.";
 			_logger.LogError(ex, message, popupName);
-			return Result.Fail(ErrorCode.General, message, popupName);
+			return Result.Fail(ErrorCode.General, ex, message, popupName);
 		}
 	}
 
@@ -137,7 +137,7 @@ internal sealed class PopupService : IPopupService
 		{
 			const string message = "An error occurred while trying to dismiss popup '{PopupName}'.";
 			_logger.LogError(ex, message, popupName);
-			return Result.Fail(ErrorCode.General, message, popupName);
+			return Result.Fail(ErrorCode.General, ex, message, popupName);
 		}
 	}
 
@@ -154,7 +154,7 @@ internal sealed class PopupService : IPopupService
 		{
 			const string message = "An error occurred while trying to dismiss all popups.";
 			_logger.LogError(ex, message);
-			return Result.Fail(ErrorCode.General, message);
+			return Result.Fail(ErrorCode.General, ex, message);
 		}
 	}
 }
