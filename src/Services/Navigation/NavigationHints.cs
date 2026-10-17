@@ -6,5 +6,7 @@ internal static class NavigationHints
     
     public const string IsFlyoutDetailRoot = "__IsFlyoutDetailRoot";
 
-    public const string PopupCompletionParam = "__Completion";
+    public const string PopupCompletionParam = "__PopupCompletion";
+    
+    public const string ModalCompletionParam = "__ModalCompletion";
 }

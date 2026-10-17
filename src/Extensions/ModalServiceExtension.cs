@@ -34,7 +34,7 @@ public static class ModalServiceExtension
 			IModalService modal, string modalName, INavigationParameters parameters, bool animated)
 		{
 			var tcs = new TaskCompletionSource<TResult>();
-			parameters[NavigationHints.PopupCompletionParam] = tcs;
+			parameters[NavigationHints.ModalCompletionParam] = tcs;
 
 			var navResult = await modal.PresentAsync(modalName, parameters, animated);
 			if (navResult.IsFailure)

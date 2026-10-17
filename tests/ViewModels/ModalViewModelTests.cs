@@ -23,7 +23,7 @@ public class ModalViewModelTests
         _tcs = new TaskCompletionSource<TestModalResult>();
 
         var parameters = new NavigationParameters();
-        parameters.Add(NavigationHints.PopupCompletionParam, _tcs);
+        parameters.Add(NavigationHints.ModalCompletionParam, _tcs);
         ((IParametersSet)_sut).OnParametersSet(parameters);
     }
 

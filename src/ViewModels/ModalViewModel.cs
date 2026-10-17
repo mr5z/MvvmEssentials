@@ -27,7 +27,7 @@ public partial class ModalViewModel<TResult>(IModalService modalService)
 	{
 		base.HandleParametersSet(parameters);
 
-		if (parameters.TryGetValue<TaskCompletionSource<TResult>>(NavigationHints.PopupCompletionParam, out var completion))
+		if (parameters.TryGetValue<TaskCompletionSource<TResult>>(NavigationHints.ModalCompletionParam, out var completion))
 		{
 			_completion = completion;
 		}
