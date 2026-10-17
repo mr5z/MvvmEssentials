@@ -72,6 +72,28 @@ The step's view binds to it like any other `ContentView`:
 > `INotifyPropertyChanged`. Bindable properties you add yourself (like `SelectedGoal`) need change
 > notification raised for the UI to update — wire it up the same way you do elsewhere in your app.
 
+### Requiring an answer (optional)
+
+Override `CanAdvance` to keep the wizard on a step until it is answered. For example, with no
+preselected goal:
+
+```cs
+public TrainingGoal? SelectedGoal { get; set; }
+
+protected override bool CanAdvance => SelectedGoal is not null;
+
+// Also runs when going Back from an unanswered step, so don't assume an answer here
+protected override OnboardingState OnStepExited(OnboardingState state) => state with
+{
+    Goal = SelectedGoal ?? state.Goal
+};
+```
+
+The host re-reads `CanAdvance` when the step is entered and whenever the step raises `PropertyChanged`
+for **any** property, so no property names are involved. Read only state that raises `PropertyChanged`,
+which is the same requirement as for the step's own bindings. `CanAdvance` also gates completion on
+the last step.
+
 ## 3. Define the host
 
 List the steps, handle completion, and expose commands for Next/Back:
@@ -169,6 +191,21 @@ All of these raise `PropertyChanged` as the wizard advances, so you can bind to 
 | `CurrentIndex` | `int` | Progress indicators, step counters |
 | `CanGoBack` | `bool` | Showing or enabling the Back button |
 | `IsLastStep` | `bool` | Switching the Next button to "Finish" |
+| `CanGoNext` | `bool` | Enabling the Next button (`false` while the current step can't advance) |
+
+To disable Next while the current step is unanswered, gate the command on `CanGoNext`:
+
+```cs
+[RelayCommand(CanExecute = nameof(CanGoNext))] private Task Next() => GoNextAsync();
+
+protected override void OnPropertyChanged(PropertyChangedEventArgs args)
+{
+    base.OnPropertyChanged(args);
+
+    if (args.PropertyName == nameof(CanGoNext))
+        NextCommand.NotifyCanExecuteChanged();
+}
+```
 
 For example, a progress dot that lights up on the second step:
 
@@ -221,8 +258,10 @@ protected override void OnPropertyChanged(PropertyChangedEventArgs args)
   instance, though the enter/exit hooks still fire on each visit.
 - `GoNextAsync` on the last step commits the current step (`OnStepExited`), then invokes
   `OnCompletedAsync` instead of advancing.
-- `GoNextAsync` silently no-ops when `CanAdvanceFrom(CurrentIndex)` is `false` — override it to gate a
-  step. It does not auto-disable your Next button; bind enablement yourself if you want that.
+- `GoNextAsync` silently no-ops when `CanAdvanceFrom(CurrentIndex)` is `false`. By default that is the
+  current step's `CanAdvance`. It does not auto-disable your Next button; gate it on `CanGoNext` (above).
+- Override `CanAdvanceFrom` only for rules that live on the host. `CanGoNext` is re-read whenever the
+  host or the current step raises `PropertyChanged`, so read only state that does.
 - `GoBackAsync` returns a `Task` for call-site consistency but completes synchronously.
 - When the host's DI scope is disposed, the view factory disposes every cached step scope, along with
   any `IDisposable` step VM.
@@ -239,6 +278,7 @@ step's `WizardStepViewModel` adds:
 |---|---|
 | `OnStepEntered` | Every time the step becomes the current step |
 | `OnStepExited` | Every time the wizard leaves the step (including before completion on the last step); returns the mutated state |
+| `CanAdvance` | Read when the step is entered, whenever it raises `PropertyChanged`, and by `GoNextAsync` |
 | `OnDispose` | Called when the host's view factory is disposed |
 
 </details>

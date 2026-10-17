@@ -5,4 +5,6 @@ internal interface IWizardStep<TState>
     void OnStepEntered(TState state);
 
     TState OnStepExited(TState state);
+
+    bool CanAdvance { get; }
 }
