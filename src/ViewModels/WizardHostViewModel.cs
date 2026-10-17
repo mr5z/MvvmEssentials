@@ -1,13 +1,37 @@
 using System.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Wizards;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
-public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactory) : PageViewModel where TState : new()
+/// <summary>
+/// Hosts a multi-step flow in one page. Push it like any page, or present it with
+/// <c>IModalService.PresentAsync&lt;THostViewModel, TState&gt;()</c> and hand the final state back with
+/// <see cref="Dismiss(TState)"/>.
+/// </summary>
+public abstract partial class WizardHostViewModel<TState>(IContentViewFactory viewFactory)
+    : PageViewModel, IModalViewModel<TState>, IModalDismissible where TState : new()
 {
     private readonly IContentViewFactory _viewFactory = viewFactory;
     private readonly Dictionary<int, ContentView> _stepCache = [];
+
+    // Set only when ModalService presented this page
+    private ModalSession<TState>? _modalSession;
+
+    private protected override void HandleParametersSet(INavigationParameters parameters)
+    {
+        base.HandleParametersSet(parameters);
+
+        if (parameters.TryGetValue<IModalService>(NavigationHints.ModalPresenter, out var modalService))
+        {
+            _modalSession = new ModalSession<TState>(modalService);
+            _modalSession.Attach(parameters);
+        }
+    }
 
     private protected override void HandleInitialized()
     {
@@ -27,6 +51,9 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
 
         _viewFactory.Dispose();
         _stepCache.Clear();
+
+        // Disposed without going through Dismiss(): Android back button, iOS sheet swipe-down
+        _modalSession?.NotifyDisposed();
     }
 
     private void SetStep(int index)
@@ -181,6 +208,60 @@ public abstract class WizardHostViewModel<TState>(IContentViewFactory viewFactor
     }
 
     protected TState State { get; set; } = new();
+
+    /// <summary>Whether <see cref="IModalService"/> presented this wizard, so it can be left with <c>Dismiss</c>.</summary>
+    protected bool IsModal => _modalSession is not null;
+
+    /// <summary>
+    /// Modal only. Asked before the wizard is dismissed without a result: the <see cref="Dismiss()"/> command
+    /// (Cancel / close) and the Android Back button when it isn't going to a previous step.
+    /// Return <c>false</c> to keep the wizard open. Not called for <see cref="Dismiss(TState)"/> or the iOS
+    /// sheet swipe-down gesture.
+    /// </summary>
+    protected virtual Task<bool> CanDismissAsync() => Task.FromResult(true);
+
+    /// <summary>
+    /// Modal only. When <c>true</c> (default), the Android Back button goes to the previous step while
+    /// <see cref="CanGoBack"/> is <c>true</c>, and dismisses only from the first step.
+    /// </summary>
+    protected virtual bool ShouldGoBackOnBackButtonPressed => true;
+
+    /// <summary>
+    /// Modal only. Dismisses without a result (Cancel / close) from any step; the caller receives
+    /// <c>ErrorCode.Cancelled</c>. Returns <c>false</c> if not presented modally, <see cref="CanDismissAsync"/>
+    /// declined, or the modal could not be dismissed.
+    /// </summary>
+    [RelayCommand]
+    public Task<bool> Dismiss()
+        => _modalSession?.DismissAsync(CanDismissAsync) ?? Task.FromResult(false);
+
+    /// <summary>
+    /// Modal only. Dismisses the wizard and hands <paramref name="state"/> to the caller; call it from
+    /// <see cref="OnCompletedAsync"/>, usually with <see cref="State"/>. Fails with <c>ErrorCode.InvalidState</c>
+    /// if the wizard was not presented modally.
+    /// </summary>
+    protected Task<IResult> Dismiss(TState state)
+    {
+        if (_modalSession is null)
+        {
+            const string message = "The wizard was not presented with IModalService.";
+            return Task.FromResult<IResult>(Result.Fail(ErrorCode.InvalidState, message));
+        }
+
+        return _modalSession.DismissAsync(state);
+    }
+
+    // Android Back on a modal; the Cancel / close command calls Dismiss() directly.
+    async Task<bool> IModalDismissible.Dismiss()
+    {
+        if (ShouldGoBackOnBackButtonPressed && CanGoBack)
+        {
+            await GoBackAsync();
+            return false;
+        }
+
+        return await Dismiss();
+    }
 
     /// <summary>
     /// The wizard's steps, in order. Build each entry with <see cref="StepOf{TViewModel}"/>.

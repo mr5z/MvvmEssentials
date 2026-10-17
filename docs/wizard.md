@@ -251,6 +251,61 @@ protected override void OnPropertyChanged(PropertyChangedEventArgs args)
 
 ---
 
+## Presenting the wizard modally (optional)
+
+The same host can be pushed like a page or presented as a [modal](modals.md) that returns its final
+`TState` to the caller. Nothing changes in the host's declaration; leave the wizard with `Dismiss`:
+
+```cs
+internal sealed partial class AddCardHostViewModel(
+    IContentViewFactory viewFactory,
+    IDialogService dialogs) : WizardHostViewModel<AddCardState>(viewFactory)
+{
+    [RelayCommand] private Task Next() => GoNextAsync();
+    [RelayCommand] private Task Back() => GoBackAsync();
+
+    protected override IReadOnlyList<WizardStep> Steps =>
+    [
+        StepOf<CardNumberViewModel>(),
+        StepOf<BillingAddressViewModel>(),
+    ];
+
+    // Close the modal with Dismiss, not INavigationService, which acts on the page behind it.
+    protected override Task OnCompletedAsync() => Dismiss(State);
+
+    // Optional: ask before discarding answers
+    protected override async Task<bool> CanDismissAsync()
+        => await dialogs.ConfirmAsync("Discard this card?");
+}
+```
+
+Register it the same way (section 4), bind Cancel/close to `DismissCommand`, then present it and await
+the final state:
+
+```cs
+var result = await _modalService.PresentAsync<AddCardHostViewModel, AddCardState>();
+if (result.TryGetValue(out var state))
+{
+    // completed
+}
+// ErrorCode.Cancelled when the user cancelled, pressed Back on the first step, or swiped an iOS sheet away
+```
+
+A host used both ways can check `IsModal` in `OnCompletedAsync`. When the wizard wasn't presented with
+`IModalService`, `Dismiss()` returns `false` and `Dismiss(state)` fails with `ErrorCode.InvalidState`.
+
+| Action (modal) | Result |
+|---|---|
+| Next on the last step | `OnCompletedAsync`, which calls `Dismiss(State)` |
+| `DismissCommand` (Cancel / close), any step | Asks `CanDismissAsync`; caller receives `Cancelled` |
+| Android Back, later step | Previous step; the modal stays open |
+| Android Back, first step | Asks `CanDismissAsync`; caller receives `Cancelled` |
+| iOS sheet swipe-down | Caller receives `Cancelled` (MAUI can't intercept it) |
+
+Override `ShouldGoBackOnBackButtonPressed` to return `false` if Back should always dismiss.
+
+---
+
 ## Behavior notes
 
 - The first step is built and entered when the host page first appears (via `OnInitialized`).

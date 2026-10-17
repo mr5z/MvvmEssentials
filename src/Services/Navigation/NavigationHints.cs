@@ -9,4 +9,6 @@ internal static class NavigationHints
     public const string PopupCompletionParam = "__PopupCompletion";
     
     public const string ModalCompletionParam = "__ModalCompletion";
+
+    public const string ModalPresenter = "__ModalPresenter";
 }

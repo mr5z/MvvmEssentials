@@ -4,6 +4,7 @@ using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Pages;
 using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using iOSPage = Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Page;
 
@@ -87,7 +88,10 @@ internal sealed class ModalService(
 
         try
         {
-            var modalPage = lease.Create(pageInfoList[0], parameters);
+            var modalParameters = parameters ?? new NavigationParameters();
+            modalParameters[NavigationHints.ModalPresenter] = this;
+
+            var modalPage = lease.Create(pageInfoList[0], modalParameters);
             var presentedPage = WrapIfNeeded(modalPage);
             ObserveModalPopping(window);
             await window.Navigation.PushModalAsync(presentedPage, animated);

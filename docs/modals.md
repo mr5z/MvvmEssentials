@@ -115,6 +115,8 @@ Apple's and Google's guidance for modal tasks, and how to follow it here:
   and Save in the top bar. Bind Cancel/close to `DismissCommand`.
 - **Don't lose work silently.** Override `CanDismissAsync` when the modal holds unsaved input.
 - **Keep it to one task.** Keep the modal to a single screen; pushing pages inside a modal isn't supported.
+  For a task that needs several steps, present a [wizard](wizard.md#presenting-the-wizard-modally-optional),
+  which keeps every step inside the one modal page.
 - **One modal at a time.** Close a modal before presenting another one; a popup on top is fine.
 
 ## Navigation inside a modal
