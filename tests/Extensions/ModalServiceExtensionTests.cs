@@ -27,7 +27,7 @@ public class ModalServiceExtensionTests
             {
                 if (callInfo.Arg<INavigationParameters>()
                     ?.TryGetValue<TaskCompletionSource<TestModalResult>>(
-                        NavigationHints.PopupCompletionParam, out var tcs) == true)
+                        NavigationHints.ModalCompletionParam, out var tcs) == true)
                 {
                     complete(tcs!);
                 }

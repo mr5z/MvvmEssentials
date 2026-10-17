@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
@@ -123,6 +124,33 @@ public class ModalServiceTests
 
         // Then
         pageFactory.Received(1).ReleasePage(page);
+    }
+
+    // -----------------------------------------------------------------------
+    // PresentAsync: tells the view model it is shown modally
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task PresentAsync_PassesItselfAsModalPresenter()
+    {
+        // Given
+        var pageFactory = Substitute.For<IPageFactory>();
+        pageFactory.GetPageTypesFromPath(Arg.Any<string>()).Returns([new PageInfo(typeof(FakePage))]);
+        INavigationParameters? received = null;
+        pageFactory.CreatePage(Arg.Any<PageInfo>(), Arg.Do<INavigationParameters?>(p => received = p))
+            .Returns(new ContentPage());
+        var context = Substitute.For<IApplicationContext>();
+        context.Windows.Returns([new Window(new ContentPage())]);
+        IModalService sut = new ModalService(
+            NullLogger<ModalService>.Instance, pageFactory, context, Substitute.For<IDispatcher>());
+
+        // When
+        await sut.PresentAsync("FakePage");
+
+        // Then
+        Assert.That(received, Is.Not.Null);
+        Assert.That(received!.TryGetValue<IModalService>(NavigationHints.ModalPresenter, out var presenter), Is.True);
+        Assert.That(presenter, Is.SameAs(sut));
     }
 
     // -----------------------------------------------------------------------

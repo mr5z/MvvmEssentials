@@ -6,7 +6,8 @@ namespace Nkraft.MvvmEssentials.Services.Modals;
 internal interface IModalDismissible
 {
     /// <summary>
-    /// Dismisses the modal without a result, after the view model's dismissal guard agrees.
+    /// Handles Back: dismisses the modal without a result after the view model's dismissal guard agrees,
+    /// or, for a modal wizard, goes to the previous step instead. Returns <c>true</c> only if the modal was dismissed.
     /// </summary>
     Task<bool> Dismiss();
 }
