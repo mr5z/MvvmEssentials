@@ -28,10 +28,10 @@ jobs:
         run: dotnet workload install maui-android
 
       - name: Restore dependencies
-        run: dotnet restore MvvmEssentials.sln
+        run: dotnet restore MvvmEssentials.slnx
 
       - name: Build
-        run: dotnet build MvvmEssentials.sln --no-restore --configuration Release -p:GeneratePackageOnBuild=false
+        run: dotnet build MvvmEssentials.slnx --no-restore --configuration Release -p:GeneratePackageOnBuild=false
 
   test:
     runs-on: ubuntu-latest
@@ -48,10 +48,10 @@ jobs:
         run: dotnet workload install maui-android
 
       - name: Restore dependencies
-        run: dotnet restore MvvmEssentials.sln
+        run: dotnet restore MvvmEssentials.slnx
 
       - name: Test
-        run: dotnet test MvvmEssentials.sln --no-restore --configuration Release --logger "console;verbosity=detailed" -p:GeneratePackageOnBuild=false
+        run: dotnet test MvvmEssentials.slnx --no-restore --configuration Release --logger "console;verbosity=detailed" -p:GeneratePackageOnBuild=false
 
   quality-report:
     runs-on: ubuntu-latest
@@ -70,11 +70,11 @@ jobs:
         run: dotnet workload install maui-android
 
       - name: Restore dependencies
-        run: dotnet restore MvvmEssentials.sln
+        run: dotnet restore MvvmEssentials.slnx
 
       - name: Test with coverage
         run: >
-          dotnet test MvvmEssentials.sln --configuration Release
+          dotnet test MvvmEssentials.slnx --configuration Release
           -p:GeneratePackageOnBuild=false
           --collect:"XPlat Code Coverage" --results-directory ./coverage-raw
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[Mopups]*,[CrossUtility]*"
