@@ -158,8 +158,8 @@ registry.MapPage<MainHostPage, MainHostViewModel>(isInitial: true) // navigatabl
         .RegisterPage<ProfileViewModel>()   // bound in XAML as a TabbedPage tab
     .MapPage<OnboardingHostPage, OnboardingHostViewModel>() // navigatable wizard host
         .MapView<OnboardingGoalView, OnboardingGoalViewModel>() // wizard step
-    .MapPage<OrdersPage, OrdersViewModel>()      // navigatable
-    .MapPage<SettingsPage, SettingsViewModel>(); // navigatable
+    .MapPage<OrdersPage, OrdersViewModel>()      // navigable
+    .MapPage<SettingsPage, SettingsViewModel>(); // navigable
 ```
 
 ---
