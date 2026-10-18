@@ -30,6 +30,7 @@ internal class PageFactory(
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
 	private readonly ILifecycleExceptionHandler _exceptionHandler = exceptionHandler;
 	private readonly ConditionalWeakTable<Page, IServiceScope> _pageScopes = [];
+	private readonly ConditionalWeakTable<Page, DetachedPageWatch> _detachedPages = [];
 
 	public event EventHandler<Page>? PageUnloaded;
 
@@ -99,6 +100,7 @@ internal class PageFactory(
 	
 	void IPageFactory.ReleasePage(Page page)
 	{
+		StopWatchingDetachedPage(page);
 		UnregisterPageEvents(page);
 		DisposeScope(page);
 	}
@@ -130,6 +132,7 @@ internal class PageFactory(
 			page.Disappearing += Page_Disappearing;
 			page.NavigatedTo += Page_NavigatedTo;
 			page.NavigatedFrom += Page_NavigatedFrom;
+			page.Loaded += Page_Loaded;
 			page.Unloaded += Page_Unloaded;
 		}
 	}
@@ -142,6 +145,7 @@ internal class PageFactory(
 			page.Disappearing -= Page_Disappearing;
 			page.NavigatedTo -= Page_NavigatedTo;
 			page.NavigatedFrom -= Page_NavigatedFrom;
+			page.Loaded -= Page_Loaded;
 			page.Unloaded -= Page_Unloaded;
 		}
 	}
@@ -213,9 +217,41 @@ internal class PageFactory(
 		HandlePageUnloaded(page);
 	}
 	
+	private void Page_Loaded(object? sender, EventArgs e)
+	{
+		if (sender is Page page)
+		{
+			HandlePageLoaded(page);
+		}
+	}
+
+	// Internally exposed to simulate MAUI raising Loaded, which needs a platform handler.
+	internal void HandlePageLoaded(Page page) => StopWatchingDetachedPage(page);
+
 	// This has been internally exposed to simulate page unload event from MAUI
 	internal void HandlePageUnloaded(Page page)
 	{
+		// Unloaded means the page's platform view left the window, not that the page was removed.
+		// Android raises it when it destroys a backgrounded Activity, and MAUI later re-attaches the
+		// same page to the recreated Activity. A page still under a Window is only detached: keep its
+		// scope and release it once it is taken out of the tree while unloaded.
+		if (IsInWindow(page))
+		{
+			WatchDetachedPage(page);
+			return;
+		}
+
+		ReleaseRemovedPage(page);
+	}
+
+	private void ReleaseRemovedPage(Page page)
+	{
+		StopWatchingDetachedPage(page);
+
+		// Already released (by an earlier removal or a PageLease): don't notify or dispose twice.
+		if (_pageScopes.TryGetValue(page, out _) == false)
+			return;
+
 		// Guarded so a throwing OnPageUnloaded can't skip unsubscribing and disposing the scope.
 		if (page.BindingContext is IPageLoad vm)
 		{
@@ -225,6 +261,57 @@ internal class PageFactory(
 		UnregisterPageEvents(page);
 		PageUnloaded?.Invoke(this, page);
 		DisposeScope(page);
+	}
+
+	private void WatchDetachedPage(Page page)
+	{
+		if (_detachedPages.TryGetValue(page, out var watch))
+		{
+			watch.Rewatch();
+			return;
+		}
+
+		watch = new DetachedPageWatch(page, HandleDetachedPageMoved);
+		_detachedPages.AddOrUpdate(page, watch);
+		watch.Rewatch();
+	}
+
+	private void StopWatchingDetachedPage(Page page)
+	{
+		if (_detachedPages.TryGetValue(page, out var watch))
+		{
+			watch.Stop();
+			_detachedPages.Remove(page);
+		}
+	}
+
+	// A parent changed on the detached page or one of its ancestors (a pop, a modal or popup
+	// dismissal, the root being replaced, the page's TabbedPage being removed).
+	private void HandleDetachedPageMoved(Page page)
+	{
+		if (page.IsLoaded)
+		{
+			StopWatchingDetachedPage(page);
+		}
+		else if (IsInWindow(page))
+		{
+			WatchDetachedPage(page); // still in the tree, but the ancestor chain may have changed
+		}
+		else
+		{
+			ReleaseRemovedPage(page);
+		}
+	}
+
+	private static bool IsInWindow(Page page)
+	{
+		for (Element? current = page.Parent; current is not null; current = current.Parent)
+		{
+			if (current is Window)
+				return true;
+		}
+
+		return false;
 	}
 	
 	private void DisposeScope(Page page)
@@ -245,5 +332,33 @@ internal class PageFactory(
 		}
 		resultViewModel = null;
 		return false;
+	}
+
+	// Subscribes to ParentChanged on a detached page and each ancestor below its Window, so removal
+	// is seen wherever it happens in the chain (e.g. a tab whose TabbedPage is popped).
+	private sealed class DetachedPageWatch(Page page, Action<Page> onMoved)
+	{
+		private readonly List<Element> _chain = [];
+
+		public void Rewatch()
+		{
+			Stop();
+			for (Element? current = page; current is not null and not Window; current = current.Parent)
+			{
+				current.ParentChanged += Element_ParentChanged;
+				_chain.Add(current);
+			}
+		}
+
+		public void Stop()
+		{
+			foreach (var element in _chain)
+			{
+				element.ParentChanged -= Element_ParentChanged;
+			}
+			_chain.Clear();
+		}
+
+		private void Element_ParentChanged(object? sender, EventArgs e) => onMoved(page);
 	}
 }
