@@ -94,6 +94,29 @@ for **any** property, so no property names are involved. Read only state that ra
 which is the same requirement as for the step's own bindings. `CanAdvance` also gates completion on
 the last step.
 
+### Checking before moving on (optional)
+
+A disabled Next can't say what's missing, and `CanAdvance` can't await. For either, override
+`CanAdvanceAsync`. It is asked when Next is invoked and `CanAdvance` allows it, before the step is exited;
+return `false` to stay:
+
+```cs
+protected override async Task<bool> CanAdvanceAsync()
+{
+    if (DaysPerWeek < 6)
+        return true;
+
+    return await _dialogs.ConfirmAsync("Six or more days leaves little time to recover. Continue?");
+}
+```
+
+- It doesn't affect `CanGoNext`, which stays synchronous, so Next stays enabled while it would decline.
+- Back doesn't ask it; going back loses nothing, since the step is cached with its answers.
+- While it is pending, another Next does nothing. If Back moves the wizard or the page goes away before it
+  answers, that Next is dropped.
+- The host can add its own check by overriding `CanAdvanceFromAsync`, the async counterpart of
+  `CanAdvanceFrom`; by default it asks the step.
+
 ## 3. Define the host
 
 List the steps, handle completion, and expose commands for Next/Back:
@@ -335,6 +358,8 @@ Override `ShouldGoBackOnBackButtonPressed` to return `false` if Back should alwa
   `OnCompletedAsync` instead of advancing. Steps after it that `ShouldSkipStep` skips don't count.
 - `GoNextAsync` silently no-ops when `CanAdvanceFrom(CurrentIndex)` is `false`. By default that is the
   current step's `CanAdvance`. It does not auto-disable your Next button; gate it on `CanGoNext` (above).
+  It then awaits `CanAdvanceFromAsync(CurrentIndex)`, by default the step's `CanAdvanceAsync`, and stays put
+  on `false`.
 - Override `CanAdvanceFrom` only for rules that live on the host. `CanGoNext` is re-read whenever the
   host or the current step raises `PropertyChanged`, so read only state that does.
 - `GoBackAsync` returns a `Task` for call-site consistency but completes synchronously.
@@ -354,6 +379,7 @@ step's `WizardStepViewModel` adds:
 | `OnStepEntered` | Every time the step becomes the current step |
 | `OnStepExited` | Every time the wizard leaves the step (including before completion on the last step); returns the mutated state |
 | `CanAdvance` | Read when the step is entered, whenever it raises `PropertyChanged`, and by `GoNextAsync` |
+| `CanAdvanceAsync` | By `GoNextAsync`, after `CanAdvance` allows it and before `OnStepExited` |
 | `OnDispose` | Called when the host's view factory is disposed |
 
 </details>

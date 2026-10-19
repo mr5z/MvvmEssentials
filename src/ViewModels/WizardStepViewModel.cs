@@ -10,6 +10,8 @@ public class WizardStepViewModel<TState> : BaseViewModel, IWizardStep<TState>, I
 
     bool IWizardStep<TState>.CanAdvance => CanAdvance;
 
+    Task<bool> IWizardStep<TState>.CanAdvanceAsync() => CanAdvanceAsync();
+
     protected virtual void OnStepEntered(TState state) { }
 
     protected virtual TState OnStepExited(TState state) => state;
@@ -19,6 +21,13 @@ public class WizardStepViewModel<TState> : BaseViewModel, IWizardStep<TState>, I
     /// whenever the step raises <c>PropertyChanged</c>, so read state your view already binds to.
     /// </summary>
     protected virtual bool CanAdvance => true;
+
+    /// <summary>
+    /// Asked when Next is invoked and <see cref="CanAdvance"/> allows it, before the step is exited. Return
+    /// <c>false</c> to stay, for example after telling the user what's missing. Use it for checks a disabled Next
+    /// can't explain, or that need to await; it does not affect <c>CanGoNext</c>.
+    /// </summary>
+    protected virtual Task<bool> CanAdvanceAsync() => Task.FromResult(true);
 
     protected virtual void OnDispose() { }
 
