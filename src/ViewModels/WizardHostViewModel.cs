@@ -37,7 +37,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     {
         base.HandleInitialized();
 
-        SetStep(0);
+        EnterStep(0);
     }
 
     private protected override void HandleDispose()
@@ -56,10 +56,9 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
         _modalSession?.NotifyDisposed();
     }
 
-    private void SetStep(int index)
+    // Callers commit the outgoing step first, so ShouldSkipStep can read what it just wrote to State
+    private void EnterStep(int index)
     {
-        State = CommitCurrentStep(State);
-
         if (_stepCache.TryGetValue(index, out var view) == false)
         {
             view = Steps[index].Create(_viewFactory);
@@ -85,6 +84,12 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
         {
             UpdateCanGoNext();
         }
+
+        // Also covers CurrentIndex, which every step change raises
+        if (args.PropertyName != nameof(IsLastStep))
+        {
+            UpdateIsLastStep();
+        }
     }
 
     private void Step_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -107,6 +112,39 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
 
     private void UpdateCanGoNext() => CanGoNext = CurrentStep is not null && CanAdvanceFrom(CurrentIndex);
 
+    private void UpdateIsLastStep() => IsLastStep = CurrentIndex >= 0 && NextIndexAfter(CurrentIndex) < 0;
+
+    // -1 when every step after index is skipped
+    private int NextIndexAfter(int index)
+    {
+        for (var next = index + 1; next < Steps.Count; next++)
+        {
+            if (ShouldSkipStep(next) == false)
+                return next;
+        }
+
+        return -1;
+    }
+
+    // The first step is never skipped, so this finds one whenever index > 0
+    private int PreviousIndexBefore(int index)
+    {
+        for (var previous = index - 1; previous > 0; previous--)
+        {
+            if (ShouldSkipStep(previous) == false)
+                return previous;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Whether Next and Back pass over the step at <paramref name="index"/>. Asked each time the wizard moves,
+    /// after the step being left has committed its state, so it can read <see cref="State"/>. Never asked for
+    /// the first step, which is always shown. A skipped step is not created, entered or exited.
+    /// </summary>
+    protected virtual bool ShouldSkipStep(int index) => false;
+
     /// <summary>
     /// Whether the wizard may move past the step at <paramref name="index"/>, or complete if it is the last.
     /// Defaults to the step's <c>CanAdvance</c>. <see cref="CanGoNext"/> is re-read whenever the host or the
@@ -127,21 +165,24 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
         if (CanAdvanceFrom(CurrentIndex) == false)
             return;
 
-        if (IsLastStep)
+        State = CommitCurrentStep(State);
+
+        var next = NextIndexAfter(CurrentIndex);
+        if (next < 0)
         {
-            State = CommitCurrentStep(State);
             await OnCompletedAsync();
             return;
         }
 
-        SetStep(CurrentIndex + 1);
+        EnterStep(next);
     }
 
     protected Task GoBackAsync()
     {
         if (CanGoBack)
         {
-            SetStep(CurrentIndex - 1);
+            State = CommitCurrentStep(State);
+            EnterStep(PreviousIndexBefore(CurrentIndex));
         }
 
         return Task.CompletedTask;
@@ -178,20 +219,34 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
                 return;
 
             var wasFirst = CanGoBack == false;
-            var wasLast = IsLastStep;
             field = value;
 
+            // IsLastStep follows from OnPropertyChanged
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(CurrentIndex)));
             if (wasFirst != (CanGoBack == false))
                 OnPropertyChanged(new PropertyChangedEventArgs(nameof(CanGoBack)));
-            if (wasLast != IsLastStep)
-                OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsLastStep)));
         }
-    } = -1; // To trigger INPC by SetStep(0) from OnInitialized()
+    } = -1; // To trigger INPC by EnterStep(0) from OnInitialized()
 
     public bool CanGoBack => CurrentIndex > 0;
 
-    public bool IsLastStep => CurrentIndex == Steps.Count - 1;
+    /// <summary>
+    /// Whether Next completes the wizard: the current step is the last one, or every step after it is skipped
+    /// (<see cref="ShouldSkipStep"/>). Re-read on every step change and whenever the host raises
+    /// <c>PropertyChanged</c>.
+    /// </summary>
+    public bool IsLastStep
+    {
+        get;
+        private set
+        {
+            if (field == value)
+                return;
+
+            field = value;
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsLastStep)));
+        }
+    }
 
     /// <summary>Whether Next can proceed from the current step. <c>false</c> until the first step is entered.</summary>
     public bool CanGoNext

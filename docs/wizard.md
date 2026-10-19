@@ -140,6 +140,26 @@ registration, next.
 
 That is the whole host — its state is already bindable, as the next step shows.
 
+### Skipping steps (optional)
+
+Override `ShouldSkipStep` when a step only applies to some answers. Next and Back pass over a skipped
+step in either direction. For example, skip the schedule question for someone who only wants to browse:
+
+```cs
+protected override bool ShouldSkipStep(int index)
+    => index == 2 && State.Goal == TrainingGoal.JustBrowsing;
+```
+
+The wizard asks each time it moves, after the step being left has committed its state, so the answer
+the user just gave on the goal step already counts. A skipped step is not created, entered or exited.
+If every step after the current one is skipped, Next completes the wizard and `IsLastStep` is `true`.
+
+- The first step is always shown; `ShouldSkipStep` is never asked about index 0.
+- Answers a step committed before it became skipped stay in `State`. Clear them in `OnCompletedAsync`
+  if they shouldn't count.
+- `IsLastStep` reflects `State` as last committed, so it can't anticipate an answer still on screen.
+  It is re-read on every step change and whenever the host raises `PropertyChanged`.
+
 ## 4. Register the host and steps
 
 The host is a `PageViewModel`, so map it like any page. Map each step's view to its VM with
@@ -190,7 +210,7 @@ All of these raise `PropertyChanged` as the wizard advances, so you can bind to 
 | `CurrentStep` | `ContentView?` | The step content area |
 | `CurrentIndex` | `int` | Progress indicators, step counters |
 | `CanGoBack` | `bool` | Showing or enabling the Back button |
-| `IsLastStep` | `bool` | Switching the Next button to "Finish" |
+| `IsLastStep` | `bool` | Switching the Next button to "Finish" (`true` when every later step is skipped) |
 | `CanGoNext` | `bool` | Enabling the Next button (`false` while the current step can't advance) |
 
 To disable Next while the current step is unanswered, gate the command on `CanGoNext`:
@@ -312,7 +332,7 @@ Override `ShouldGoBackOnBackButtonPressed` to return `false` if Back should alwa
 - Each step's `ContentView` and VM are created once and **cached**; revisiting a step reuses the same
   instance, though the enter/exit hooks still fire on each visit.
 - `GoNextAsync` on the last step commits the current step (`OnStepExited`), then invokes
-  `OnCompletedAsync` instead of advancing.
+  `OnCompletedAsync` instead of advancing. Steps after it that `ShouldSkipStep` skips don't count.
 - `GoNextAsync` silently no-ops when `CanAdvanceFrom(CurrentIndex)` is `false`. By default that is the
   current step's `CanAdvance`. It does not auto-disable your Next button; gate it on `CanGoNext` (above).
 - Override `CanAdvanceFrom` only for rules that live on the host. `CanGoNext` is re-read whenever the
