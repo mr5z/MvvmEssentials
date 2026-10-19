@@ -7,4 +7,6 @@ internal interface IWizardStep<TState>
     TState OnStepExited(TState state);
 
     bool CanAdvance { get; }
+
+    Task<bool> CanAdvanceAsync();
 }

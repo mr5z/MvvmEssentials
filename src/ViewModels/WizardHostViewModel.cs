@@ -22,6 +22,10 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     // Set only when ModalService presented this page
     private ModalSession<TState>? _modalSession;
 
+    // GoNextAsync awaits CanAdvanceFromAsync; these let it drop out if things changed meanwhile
+    private bool _isCheckingAdvance;
+    private bool _isDisposed;
+
     private protected override void HandleParametersSet(INavigationParameters parameters)
     {
         base.HandleParametersSet(parameters);
@@ -43,6 +47,8 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     private protected override void HandleDispose()
     {
         base.HandleDispose();
+
+        _isDisposed = true;
 
         foreach (var view in _stepCache.Values)
         {
@@ -158,11 +164,44 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
         return ((IWizardStep<TState>)view.BindingContext).CanAdvance;
     }
 
+    /// <summary>
+    /// Asked by <see cref="GoNextAsync"/> once <see cref="CanAdvanceFrom"/> allows it, before the step at
+    /// <paramref name="index"/> is exited. Return <c>false</c> to stay, for example after telling the user what's
+    /// missing. Defaults to the step's <c>CanAdvanceAsync</c>. Not part of <see cref="CanGoNext"/>.
+    /// </summary>
+    protected virtual Task<bool> CanAdvanceFromAsync(int index)
+    {
+        if (_stepCache.TryGetValue(index, out var view) == false)
+            return Task.FromResult(true);
+
+        return ((IWizardStep<TState>)view.BindingContext).CanAdvanceAsync();
+    }
+
     protected abstract Task OnCompletedAsync();
 
     protected async Task GoNextAsync()
     {
-        if (CanAdvanceFrom(CurrentIndex) == false)
+        // Another Next is still being checked; it decides
+        if (_isCheckingAdvance)
+            return;
+
+        var index = CurrentIndex;
+        if (CanAdvanceFrom(index) == false)
+            return;
+
+        bool canAdvance;
+        _isCheckingAdvance = true;
+        try
+        {
+            canAdvance = await CanAdvanceFromAsync(index);
+        }
+        finally
+        {
+            _isCheckingAdvance = false;
+        }
+
+        // Back moved the wizard, or the page went away, while it was waiting: this Next no longer applies
+        if (canAdvance == false || CurrentIndex != index || _isDisposed)
             return;
 
         State = CommitCurrentStep(State);
