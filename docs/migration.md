@@ -1,5 +1,27 @@
 # Migration guide
 
+## 1.7.4 → 1.8.0
+
+### `IPageRegistry` is for configuration only
+
+`IPageRegistry` now has just `MapPage`, `RegisterPage` and `MapView`, and is no longer registered in the
+DI container. `ResolveViewModelType`, `ResolvePageType`, `ResolveViewType` and `InitialViewModelType` are
+removed; the library resolves pages internally. If you only use it inside `ConfigureMvvmEssentials`, nothing
+changes. Injecting `IPageRegistry` now fails at runtime, when the container can't resolve it.
+
+### Mapped pages and views need a public parameterless constructor
+
+`MapPage<TPage, TViewModel>` and `MapView<TView, TViewModel>` now require `TPage`/`TView` to have a public
+parameterless constructor (`new()`), so pages and views are created without reflection. They already needed
+one: until now a missing constructor failed at runtime, and now the compiler flags it.
+
+### Object parameters are flagged for trimming
+
+The navigation overloads that take a parameters object are marked `[RequiresUnreferencedCode]`. Nothing changes
+unless you trim or publish with native AOT; then each call shows a trim warning. Switch those calls to a
+generated `With(...)` destination or `NavigationParameters`. See
+[Navigation Page](navigation-page.md#navigationextension-examples).
+
 ## 1.6.2 → 1.7.0
 
 ### Lifecycle exceptions crash by default

@@ -1,4 +1,5 @@
-﻿using Nkraft.CrossUtility.Helpers;
+﻿using System.Diagnostics.CodeAnalysis;
+using Nkraft.CrossUtility.Helpers;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
@@ -27,6 +28,7 @@ public static class NavigationExtension
 		/// <typeparam name="TViewModel">The ViewModel type to navigate to. The corresponding Page must be registered.</typeparam>
 		/// <typeparam name="TParameter">The type of the parameters object. Properties will be mapped to navigation parameters.</typeparam>
 		/// <returns>An <see cref="IResult"/> indicating the outcome of the navigation operation.</returns>
+		[RequiresUnreferencedCode(PageLink.ObjectParametersMessage)]
 		public async Task<IResult> NavigateAsync<TViewModel, TParameter>(TParameter? parameters = null, bool animated = true)
 			where TViewModel : PageViewModel
 			where TParameter : class
@@ -90,7 +92,18 @@ public static class NavigationExtension
 		/// <returns>An updated <see cref="IPageLink" /> with the new segment appended.</returns>
 		public IPageLink Push(PageDestination dest)
 		{
-			return pageLink.AppendSegment(dest.PageName, dest.Parameters);
+			return ((PageLink)pageLink).AppendSegment(dest.PageName, dest.Parameters);
+		}
+
+		/// <summary>
+		/// Appends a page segment, without parameters, to the navigation path for the specified ViewModel type.
+		/// </summary>
+		/// <param name="viewModelType">The type of ViewModel which should have the "ViewModel" in its name suffix convention.</param>
+		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
+		public IPageLink Push(Type viewModelType)
+		{
+			var pageName = PageHelper.ToPageName(viewModelType, PagePattern.Page);
+			return ((PageLink)pageLink).AppendSegment(pageName, parameters: null);
 		}
 		
 		/// <summary>
@@ -104,9 +117,21 @@ public static class NavigationExtension
 		/// <param name="viewModelType">The type of ViewModel which should have the "ViewModel" in its name suffix convention.</param>
 		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
 		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
-		public IPageLink Push(Type viewModelType, object? parameters = null)
+		[RequiresUnreferencedCode(PageLink.ObjectParametersMessage)]
+		public IPageLink Push(Type viewModelType, object? parameters)
 		{
 			return pageLink.Push<object>(viewModelType, parameters);
+		}
+
+		/// <summary>
+		/// Appends a page segment, without parameters, to the navigation path for the specified ViewModel type.
+		/// </summary>
+		/// <typeparam name="TViewModel">The ViewModel type to append. The corresponding Page must be registered.</typeparam>
+		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
+		public IPageLink Push<TViewModel>() where TViewModel : PageViewModel
+		{
+			var pageName = PageHelper.ToPageName<TViewModel>(PagePattern.Page);
+			return ((PageLink)pageLink).AppendSegment(pageName, parameters: null);
 		}
 
 		/// <summary>
@@ -115,7 +140,8 @@ public static class NavigationExtension
 		/// <typeparam name="TViewModel">The ViewModel type to append. The corresponding Page must be registered.</typeparam>
 		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
 		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
-		public IPageLink Push<TViewModel>(object? parameters = null) where TViewModel : PageViewModel
+		[RequiresUnreferencedCode(PageLink.ObjectParametersMessage)]
+		public IPageLink Push<TViewModel>(object? parameters) where TViewModel : PageViewModel
 		{
 			return pageLink.Push<TViewModel, object>(parameters);
 		}
@@ -127,6 +153,7 @@ public static class NavigationExtension
 		/// <param name="viewModelType">The type of ViewModel which should have the "ViewModel" in its name suffix convention.</param>
 		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
 		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
+		[RequiresUnreferencedCode(PageLink.ObjectParametersMessage)]
 		public IPageLink Push<TParameter>(Type viewModelType, TParameter? parameters = null)
 			where TParameter : class
 		{
@@ -141,6 +168,7 @@ public static class NavigationExtension
 		/// <typeparam name="TParameter">The type of the parameters object. Properties will be mapped to navigation parameters.</typeparam>
 		/// <param name="parameters">If passed with an object, it must contain "primitive types" only.</param>
 		/// <returns>An updated <see cref="IPageLink"/> with the new segment appended.</returns>
+		[RequiresUnreferencedCode(PageLink.ObjectParametersMessage)]
 		public IPageLink Push<TViewModel, TParameter>(TParameter? parameters = null)
 			where TViewModel : PageViewModel
 			where TParameter : class

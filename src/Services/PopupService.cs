@@ -21,7 +21,7 @@ internal sealed class PopupService : IPopupService
 	private readonly ILogger<PopupService> _logger;
 	private readonly IPopupNavigation _popupNavigation;
 	private readonly IPageFactory _pageFactory;
-	private readonly IPageRegistry _pageRegistry;
+	private readonly IPageCatalog _pageCatalog;
 
 	private readonly OrderedDictionary<Type, WeakReference<PopupPage>> _activePopups = [];
 
@@ -29,12 +29,12 @@ internal sealed class PopupService : IPopupService
 		ILogger<PopupService> logger, 
 		IPopupNavigation popupNavigation,
 		IPageFactory pageFactory,
-		IPageRegistry pageRegistry)
+		IPageCatalog pageCatalog)
 	{
 		_logger = logger;
 		_popupNavigation = popupNavigation;
 		_pageFactory = pageFactory;
-		_pageRegistry = pageRegistry;
+		_pageCatalog = pageCatalog;
 
 		_pageFactory.PageUnloaded += PageFactory_PageUnloaded;
 	}
@@ -107,7 +107,7 @@ internal sealed class PopupService : IPopupService
 				return Result.Ok();
 			}
 			
-			var popupType = _pageRegistry.ResolvePageType(popupName);
+			var popupType = _pageCatalog.ResolvePageType(popupName);
 			if (popupType is null)
 			{
 				const string message = "Unable to resolve popup '{PopupName}' from registry.";

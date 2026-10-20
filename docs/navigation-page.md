@@ -45,6 +45,13 @@ await _navigationService.Absolute(withNavigation: true)
 // Constructs "//NavigationPage/FirstPage?A=1/SecondPage?B=2/ThirdPage?C=3"
 ```
 
+> **Trimming and native AOT:** overloads that take a parameters object (`Push<TViewModel>(object)`,
+> `Push<TViewModel, TParameter>`, `Push(Type, object)`, `NavigateAsync<TViewModel, TParameter>`) read its
+> properties by reflection, which trimming can remove. They are marked `[RequiresUnreferencedCode]`, so a trimmed
+> app gets a warning where it calls them. Use a generated `With(...)` destination (`Push(PageDestination)`,
+> `NavigateAsync(PageDestination)`) or `NavigationParameters` instead. `Push<TViewModel>()` and `Push(Type)`
+> without parameters are trim-safe.
+
 **2. Navigation with parameters**
 
 ```cs

@@ -17,16 +17,28 @@ public class PageRegistryCollectionExtensionTests
     [Test]
     public void AddPageRegistry_InvokesConfigureCallbackWithNewRegistry()
     {
+        // Given
+        IPageRegistry? configuredRegistry = null;
+
         // When
-        _services.AddPageRegistry(_ => { });
+        _services.AddPageRegistry(registry => configuredRegistry = registry);
 
         // Then
-        var instance = _services.BuildServiceProvider().GetRequiredService<IPageRegistry>();
-        Assert.That(instance, Is.Not.Null);
+        Assert.That(configuredRegistry, Is.Not.Null);
     }
 
     [Test]
-    public void AddPageRegistry_RegistersTheConfiguredRegistryAsSingleton()
+    public void AddPageRegistry_DoesNotRegisterIPageRegistry()
+    {
+        // When
+        _services.AddPageRegistry(_ => { });
+
+        // Then: the registry is configuration only; the library resolves IPageCatalog.
+        Assert.That(_services.Any(d => d.ServiceType == typeof(IPageRegistry)), Is.False);
+    }
+
+    [Test]
+    public void AddPageRegistry_RegistersTheSameRegistryAsPageCatalog()
     {
         // Given
         IPageRegistry? configuredRegistry = null;
@@ -35,7 +47,7 @@ public class PageRegistryCollectionExtensionTests
         _services.AddPageRegistry(registry => configuredRegistry = registry);
 
         // Then
-        var descriptor = _services.FirstOrDefault(d => d.ServiceType == typeof(IPageRegistry));
+        var descriptor = _services.FirstOrDefault(d => d.ServiceType == typeof(IPageCatalog));
         Assert.That(descriptor, Is.Not.Null);
         Assert.That(descriptor!.Lifetime, Is.EqualTo(ServiceLifetime.Singleton));
         Assert.That(descriptor.ImplementationInstance, Is.SameAs(configuredRegistry));

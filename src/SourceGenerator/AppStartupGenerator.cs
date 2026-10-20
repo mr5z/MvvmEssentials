@@ -121,7 +121,7 @@ public sealed class AppStartupGenerator : IIncrementalGenerator
         if (validInitials.Count > 1)
         {
             ctx.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.MultipleStartupsDefined, Location.None,
+                Diagnostics.MultipleInitialPages, Location.None,
                 string.Join(", ", validInitials)));
             return;
         }

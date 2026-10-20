@@ -15,7 +15,7 @@ public class PopupServiceTests
 {
     private IPopupNavigation _popupNavigation = null!;
     private IPageFactory _pageFactory = null!;
-    private IPageRegistry _pageRegistry = null!;
+    private IPageCatalog _pageCatalog = null!;
     private IPopupService _sut = null!;
 
     [SetUp]
@@ -23,7 +23,7 @@ public class PopupServiceTests
     {
         _popupNavigation = Substitute.For<IPopupNavigation>();
         _pageFactory = Substitute.For<IPageFactory>();
-        _pageRegistry = Substitute.For<IPageRegistry>();
+        _pageCatalog = Substitute.For<IPageCatalog>();
 
         // NullLogger avoids Castle DynamicProxy issues with ILogger<PopupService>
         // where PopupService is internal
@@ -31,7 +31,7 @@ public class PopupServiceTests
             NullLogger<PopupService>.Instance,
             _popupNavigation,
             _pageFactory,
-            _pageRegistry);
+            _pageCatalog);
     }
 
     // -----------------------------------------------------------------------
@@ -222,7 +222,7 @@ public class PopupServiceTests
     public async Task DismissAsync_WhenPopupNameNotRegistered_ReturnsGeneralFailure()
     {
         // Given
-        _pageRegistry.ResolvePageType("UnknownPopup").Returns((Type?)null);
+        _pageCatalog.ResolvePageType("UnknownPopup").Returns((Type?)null);
 
         // When
         var result = await _sut.DismissAsync("UnknownPopup");
@@ -236,7 +236,7 @@ public class PopupServiceTests
     public async Task DismissAsync_WhenPopupNotCurrentlyActive_ReturnsInvalidStateFailure()
     {
         // Given — registered type, but never presented, so it isn't tracked as active
-        _pageRegistry.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
+        _pageCatalog.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
 
         // When
         var result = await _sut.DismissAsync("ConfirmPopup");
@@ -259,7 +259,7 @@ public class PopupServiceTests
             .Returns(popupPage);
         await _sut.PresentAsync("ConfirmPopup");
 
-        _pageRegistry.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
+        _pageCatalog.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
 
         // When
         var result = await _sut.DismissAsync("ConfirmPopup");
@@ -281,7 +281,7 @@ public class PopupServiceTests
             .Returns(popupPage);
         await _sut.PresentAsync("ConfirmPopup");
 
-        _pageRegistry.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
+        _pageCatalog.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
 
         // When
         await _sut.DismissAsync("ConfirmPopup", animated: true);
@@ -348,7 +348,7 @@ public class PopupServiceTests
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
             .Returns(popupPage);
         await _sut.PresentAsync("ConfirmPopup");
-        _pageRegistry.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
+        _pageCatalog.ResolvePageType("ConfirmPopup").Returns(typeof(PopupPage));
 
         // When — simulate MAUI unloading the popup natively
         RaisePageUnloaded(popupPage);
