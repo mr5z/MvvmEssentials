@@ -73,4 +73,15 @@ internal static class Diagnostics
         category: "Nkraft.MvvmEssentials",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    /// <summary>
+    /// MVE008: More than one page marked with isInitial: true.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MultipleInitialPages = new(
+        id: "MVE008",
+        title: "Multiple initial pages",
+        messageFormat: "Only one MapPage call may be marked with isInitial: true. Marked: {0}.",
+        category: "Nkraft.MvvmEssentials",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

@@ -29,7 +29,7 @@ public class PageFactoryLifecycleExceptionTests
 
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<ThrowingLifecyclePage, ThrowingLifecycleViewModel>();
-        services.AddSingleton(registry);
+        services.AddSingleton((IPageCatalog)registry);
 
         _settings = new ThrowingLifecycleSettings();
         services.AddSingleton(_settings);

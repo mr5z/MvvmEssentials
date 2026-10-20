@@ -19,7 +19,7 @@ public class ContentViewFactoryTests
         IPageRegistry registry = new PageRegistry(services);
         registry.MapView<FakeContentView, FakeViewModel>(); // also registers FakeViewModel as scoped
         _serviceProvider = services.BuildServiceProvider();
-        _sut = new ContentViewFactory(_serviceProvider, registry);
+        _sut = new ContentViewFactory(_serviceProvider, (IPageCatalog)registry);
     }
 
     [TearDown]

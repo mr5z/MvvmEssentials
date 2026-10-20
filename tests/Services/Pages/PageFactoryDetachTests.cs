@@ -30,7 +30,7 @@ public class PageFactoryDetachTests
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<DetachTestPage, TrackablePageViewModel>();
         registry.MapPage<DetachTestPopup, TrackablePageViewModel>();
-        services.AddSingleton(registry);
+        services.AddSingleton((IPageCatalog)registry);
 
         // Invoke is an extension over Handle, so a substitute still runs the lifecycle method.
         services.AddSingleton(Substitute.For<ILifecycleExceptionHandler>());

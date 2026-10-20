@@ -124,6 +124,7 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
 > - Only one `IAppStartup` implementation is allowed across your app and its referenced projects. Defining two will produce a **compile error (MVE002)**.
 > - If it lives in a referenced project, it must be `public`. Otherwise you get a **compile error (MVE007)**.
 > - If no `IAppStartup` is found and no page is marked `isInitial: true`, a **compiler warning (MVE001)** is emitted.
+> - Mark one page only, with `isInitial: true` or just `true`. Marking two produces a **compile error (MVE008)**. The flag must be the literal `true`: a variable or expression can't be read at compile time, so it counts as unmarked.
 > - When `IAppStartup` is defined, the `isInitial: true` flag is ignored.
 
 ---

@@ -1,10 +1,14 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
+// SetNavigationParameter finds [NavigationParameter] properties with GetType().GetProperty. The annotation makes the
+// trimmer keep every property (and its setter) on each derived ViewModel, so that lookup survives trimming and AOT.
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 public abstract class NavigableEntryViewModel : BaseViewModel,
 	IParametersSet,
 	IRootPageNavigated

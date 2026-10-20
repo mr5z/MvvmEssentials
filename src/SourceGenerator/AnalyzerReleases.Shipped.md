@@ -10,3 +10,18 @@ MVE003  | Design   | Error    | ViewModel with navigation parameters without par
 MVE004  | Design   | Error    | Invalid PreferredName on [NavigationParameter]
 MVE005  | Design   | Error    | Duplicate With(...) parameter name
 MVE006  | Design   | Error    | [NavigationParameter] requires PageViewModel
+
+## Release 1.4.0
+### Changed Rules
+Rule ID | New Category          | New Severity | Old Category | Old Severity | Notes
+--------|-----------------------|--------------|--------------|--------------|------
+MVE003  | Nkraft.MvvmEssentials | Error        | Design       | Error        | Category changed
+MVE004  | Nkraft.MvvmEssentials | Error        | Design       | Error        | Category changed
+MVE005  | Nkraft.MvvmEssentials | Error        | Design       | Error        | Category changed
+MVE006  | Nkraft.MvvmEssentials | Warning      | Design       | Error        | Category and severity changed
+
+## Release 1.6.1
+### New Rules
+Rule ID | Category              | Severity | Notes
+--------|-----------------------|----------|------
+MVE007  | Nkraft.MvvmEssentials | Error    | IAppStartup implementation is not accessible

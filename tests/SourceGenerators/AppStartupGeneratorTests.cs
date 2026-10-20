@@ -207,4 +207,76 @@ public class AppStartupGeneratorTests
         // The navigation result is returned so AppStartupWindowHook can rethrow a failure's real cause.
         Assert.That(generated, Does.Contain("Task<global::Nkraft.CrossUtility.Patterns.IResult> IAppStartup.OnInitializedAsync()"));
     }
+
+    [Test]
+    public void Generator_WhenInitialPageMarkedPositionally_GeneratesDefaultStartup()
+    {
+        var core = Core("namespace Core { public class LandingViewModel : Nkraft.MvvmEssentials.ViewModels.PageViewModel {} }");
+
+        var (generated, diagnostics) = Run(Compile("App", Root + """
+            public class LandingPage : Microsoft.Maui.Controls.ContentPage {}
+
+            public static class Registration
+            {
+                public static void Configure(IPageRegistry registry)
+                    => registry.MapPage<LandingPage, Core.LandingViewModel>(true);
+            }
+            """, core));
+
+        Assert.That(diagnostics, Is.Empty);
+        Assert.That(generated, Does.Contain("Push<global::Core.LandingViewModel>"));
+    }
+
+    [TestCase("false")]
+    [TestCase("isInitial: false")]
+    [TestCase("")]
+    public void Generator_WhenNoPageMarkedInitial_ReportsMve001(string arguments)
+    {
+        var core = Core("namespace Core { public class LandingViewModel : Nkraft.MvvmEssentials.ViewModels.PageViewModel {} }");
+
+        var (generated, diagnostics) = Run(Compile("App", Root + $$"""
+            public class LandingPage : Microsoft.Maui.Controls.ContentPage {}
+
+            public static class Registration
+            {
+                public static void Configure(IPageRegistry registry)
+                    => registry.MapPage<LandingPage, Core.LandingViewModel>({{arguments}});
+            }
+            """, core));
+
+        Assert.That(Ids(diagnostics), Does.Contain("MVE001"));
+        Assert.That(generated, Does.Not.Contain("GeneratedAppStartup"));
+    }
+
+    [TestCase("isInitial: true", "isInitial: true")]
+    [TestCase("true", "true")]
+    [TestCase("isInitial: true", "true")]
+    public void Generator_WhenTwoPagesMarkedInitial_ReportsMve008(string first, string second)
+    {
+        var core = Core("""
+            namespace Core
+            {
+                public class LandingViewModel : Nkraft.MvvmEssentials.ViewModels.PageViewModel {}
+                public class HomeViewModel : Nkraft.MvvmEssentials.ViewModels.PageViewModel {}
+            }
+            """);
+
+        var (generated, diagnostics) = Run(Compile("App", Root + $$"""
+            public class LandingPage : Microsoft.Maui.Controls.ContentPage {}
+            public class HomePage : Microsoft.Maui.Controls.ContentPage {}
+
+            public static class Registration
+            {
+                public static void Configure(IPageRegistry registry)
+                    => registry
+                        .MapPage<LandingPage, Core.LandingViewModel>({{first}})
+                        .MapPage<HomePage, Core.HomeViewModel>({{second}});
+            }
+            """, core));
+
+        var error = diagnostics.Single(d => d.Id == "MVE008");
+        Assert.That(error.Severity, Is.EqualTo(DiagnosticSeverity.Error));
+        Assert.That(error.GetMessage(), Does.Contain("Core.LandingViewModel").And.Contain("Core.HomeViewModel"));
+        Assert.That(generated, Does.Not.Contain("GeneratedAppStartup"));
+    }
 }

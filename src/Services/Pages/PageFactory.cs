@@ -21,12 +21,12 @@ internal interface IPageFactory
 
 internal class PageFactory(
 	ILogger<PageFactory> logger,
-	IPageRegistry pageRegistry,
+	IPageCatalog pageCatalog,
 	IServiceProvider serviceProvider,
 	ILifecycleExceptionHandler exceptionHandler) : IPageFactory
 {
 	private readonly ILogger<PageFactory> _logger = logger;
-	private readonly IPageRegistry _pageRegistry = pageRegistry;
+	private readonly IPageCatalog _pageCatalog = pageCatalog;
 	private readonly IServiceProvider _serviceProvider = serviceProvider;
 	private readonly ILifecycleExceptionHandler _exceptionHandler = exceptionHandler;
 	private readonly ConditionalWeakTable<Page, IServiceScope> _pageScopes = [];
@@ -37,16 +37,12 @@ internal class PageFactory(
 	// TODO implement page reuse strategy if needed.
 	Page IPageFactory.CreatePage(PageInfo pageInfo, INavigationParameters? parameters)
 	{
-		var page = Activator.CreateInstance(pageInfo.PageType) as Page
-			?? throw new InvalidOperationException(
-				$"Could not create instance of page type '{pageInfo.PageType.FullName}'. " +
-				"Make sure the page is registered in the DI container and you are using the correct service.");
-		
+		var page = _pageCatalog.CreatePage(pageInfo.PageType);
 		var scope = _serviceProvider.CreateScope();
 		
 		try
 		{
-			var viewModelType = _pageRegistry.ResolveViewModelType(pageInfo.PageType);
+			var viewModelType = _pageCatalog.ResolveViewModelType(pageInfo.PageType);
 			if (viewModelType is not null)
 			{
 				var viewModel = scope.ServiceProvider.GetRequiredService(viewModelType);
@@ -91,7 +87,7 @@ internal class PageFactory(
 			var pageName = parts[0];
 			var queryParameters = parts.Length > 1 ? parts[1] : string.Empty;
 			var queryDictionary = QueryStringHelper.ToDictionary(queryParameters);
-			var pageType = _pageRegistry.ResolvePageType(pageName);
+			var pageType = _pageCatalog.ResolvePageType(pageName);
 			return pageType is null
 				? throw new InvalidOperationException($"Page '{pageName}' not found.")
 				: new PageInfo(pageType, queryDictionary);

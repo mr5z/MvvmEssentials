@@ -12,18 +12,16 @@ public interface IContentViewFactory : IDisposable
     ContentView CreateView<TViewModel>() where TViewModel : BaseViewModel;
 }
 
-internal sealed class ContentViewFactory(IServiceProvider serviceProvider, IPageRegistry pageRegistry) : IContentViewFactory
+internal sealed class ContentViewFactory(IServiceProvider serviceProvider, IPageCatalog pageCatalog) : IContentViewFactory
 {
     private readonly Dictionary<ContentView, IServiceScope> _viewScopes = [];
 
     ContentView IContentViewFactory.CreateView<TViewModel>()
     {
-        var viewType = pageRegistry.ResolveViewType(typeof(TViewModel))
+        var view = pageCatalog.CreateView(typeof(TViewModel))
             ?? throw new InvalidOperationException(
                 $"No view is mapped to '{typeof(TViewModel).FullName}'. " +
                 $"Call MapView<TView, {typeof(TViewModel).Name}>() in ConfigureMvvmEssentials.");
-
-        var view = (ContentView)Activator.CreateInstance(viewType)!;
 
         var scope = serviceProvider.CreateScope();
         try

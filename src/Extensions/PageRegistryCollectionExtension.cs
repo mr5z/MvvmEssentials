@@ -9,6 +9,6 @@ internal static class PageRegistryCollectionExtension
 	{
 		var registry = new PageRegistry(services);
 		configure(registry);
-		services.AddSingleton<IPageRegistry>(registry);
+		services.AddSingleton<IPageCatalog>(registry);
 	}
 }

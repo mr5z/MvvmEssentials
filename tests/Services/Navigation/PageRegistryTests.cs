@@ -38,7 +38,7 @@ public class PageRegistryTests
         _sut.MapPage<FakePage, FakeViewModel>();
 
         // When
-        var resolved = _sut.ResolveViewModelType(typeof(FakePage));
+        var resolved = ((IPageCatalog)_sut).ResolveViewModelType(typeof(FakePage));
 
         // Then
         Assert.That(resolved, Is.EqualTo(typeof(FakeViewModel)));
@@ -64,8 +64,8 @@ public class PageRegistryTests
             .MapPage<FakeSecondPage, FakeSecondViewModel>();
 
         // Then
-        Assert.That(_sut.ResolveViewModelType(typeof(FakePage)), Is.EqualTo(typeof(FakeViewModel)));
-        Assert.That(_sut.ResolveViewModelType(typeof(FakeSecondPage)), Is.EqualTo(typeof(FakeSecondViewModel)));
+        Assert.That(((IPageCatalog)_sut).ResolveViewModelType(typeof(FakePage)), Is.EqualTo(typeof(FakeViewModel)));
+        Assert.That(((IPageCatalog)_sut).ResolveViewModelType(typeof(FakeSecondPage)), Is.EqualTo(typeof(FakeSecondViewModel)));
     }
 
     // -----------------------------------------------------------------------
@@ -88,23 +88,13 @@ public class PageRegistryTests
     // -----------------------------------------------------------------------
 
     [Test]
-    public void MapPage_WithIsInitialTrue_SetsInitialViewModelType()
+    public void MapPage_WithIsInitialFalse_DoesNotCountAsTheInitialPage()
     {
-        // When
-        _sut.MapPage<FakePage, FakeViewModel>(isInitial: true);
-
-        // Then
-        Assert.That(_sut.InitialViewModelType, Is.EqualTo(typeof(FakeViewModel)));
-    }
-
-    [Test]
-    public void MapPage_WithIsInitialFalse_LeavesInitialViewModelTypeNull()
-    {
-        // When
+        // Given
         _sut.MapPage<FakePage, FakeViewModel>(isInitial: false);
 
         // Then
-        Assert.That(_sut.InitialViewModelType, Is.Null);
+        Assert.DoesNotThrow(() => _sut.MapPage<FakeSecondPage, FakeSecondViewModel>(isInitial: true));
     }
 
     [Test]
@@ -118,6 +108,17 @@ public class PageRegistryTests
             _sut.MapPage<FakeSecondPage, FakeSecondViewModel>(isInitial: true));
     }
 
+    [Test]
+    public void MapPage_WhenSecondPageMarkedInitialPositionally_ThrowsInvalidOperationException()
+    {
+        // Given
+        _sut.MapPage<FakePage, FakeViewModel>(true);
+
+        // Then
+        Assert.Throws<InvalidOperationException>(() =>
+            _sut.MapPage<FakeSecondPage, FakeSecondViewModel>(true));
+    }
+
     // -----------------------------------------------------------------------
     // ResolveViewModelType — unknown page
     // -----------------------------------------------------------------------
@@ -126,7 +127,7 @@ public class PageRegistryTests
     public void ResolveViewModelType_WhenPageNeverRegistered_ReturnsNull()
     {
         // Then
-        Assert.That(_sut.ResolveViewModelType(typeof(FakePage)), Is.Null);
+        Assert.That(((IPageCatalog)_sut).ResolveViewModelType(typeof(FakePage)), Is.Null);
     }
 
     // -----------------------------------------------------------------------
@@ -144,6 +145,44 @@ public class PageRegistryTests
         Assert.That(descriptor, Is.Not.Null);
 
         // But not mapped to any page
-        Assert.That(_sut.ResolveViewModelType(typeof(FakePage)), Is.Null);
+        Assert.That(((IPageCatalog)_sut).ResolveViewModelType(typeof(FakePage)), Is.Null);
+    }
+
+    // -----------------------------------------------------------------------
+    // IPageCatalog.CreatePage
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void CreatePage_WhenPageMapped_ReturnsNewInstanceEachCall()
+    {
+        // Given
+        _sut.MapPage<FakePage, FakeViewModel>();
+        var catalog = (IPageCatalog)_sut;
+
+        // When
+        var first = catalog.CreatePage(typeof(FakePage));
+        var second = catalog.CreatePage(typeof(FakePage));
+
+        // Then
+        Assert.That(first, Is.TypeOf<FakePage>());
+        Assert.That(second, Is.Not.SameAs(first));
+    }
+
+    [Test]
+    public void CreatePage_ForNavigationPageWithoutMapping_ReturnsNavigationPage()
+    {
+        // When
+        var page = ((IPageCatalog)_sut).CreatePage(typeof(NavigationPage));
+
+        // Then
+        Assert.That(page, Is.TypeOf<NavigationPage>());
+    }
+
+    [Test]
+    public void CreatePage_WhenPageNeverRegistered_ThrowsWithMapPageHint()
+    {
+        // Then
+        var ex = Assert.Throws<InvalidOperationException>(() => ((IPageCatalog)_sut).CreatePage(typeof(FakePage)));
+        Assert.That(ex!.Message, Does.Contain("MapPage"));
     }
 }

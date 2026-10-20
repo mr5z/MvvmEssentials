@@ -24,7 +24,7 @@ public class NavigationServiceScopeLifetimeTests
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<LeakProbePage, LeakProbeViewModel>();
         registry.MapPage<LeakProbeSecondPage, LeakProbeViewModel>();
-        services.AddSingleton(registry);
+        services.AddSingleton((IPageCatalog)registry);
 
         services.AddSingleton<DisposalTracker>();
 

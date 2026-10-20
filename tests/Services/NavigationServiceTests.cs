@@ -538,7 +538,7 @@ public class NavigationServiceParameterMappingTests
         IPageRegistry registry = new PageRegistry(services);
         registry.MapPage<MappablePage, MappableViewModel>();
         registry.MapPage<MappableSecondPage, MappableViewModel>();
-        services.AddSingleton(registry);
+        services.AddSingleton((IPageCatalog)registry);
 
         // Real factory + service with NullLoggers (avoids ILogger<internal T> proxy issue)
         services.AddSingleton<ILogger<PageFactory>>(NullLogger<PageFactory>.Instance);

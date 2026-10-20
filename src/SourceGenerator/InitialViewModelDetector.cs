@@ -7,7 +7,9 @@ namespace Nkraft.MvvmEssentials.SourceGenerator;
 /// <summary>
 /// Detects invocations of the form:
 ///   registry.MapPage&lt;TPage, TViewModel&gt;(isInitial: true)
+///   registry.MapPage&lt;TPage, TViewModel&gt;(true)
 /// and extracts TViewModel's full type name so AppStartupGenerator can use it.
+/// Only the literal <c>true</c> is recognized: a variable or expression can't be evaluated at compile time.
 /// </summary>
 internal static class InitialViewModelDetector
 {
@@ -34,10 +36,10 @@ internal static class InitialViewModelDetector
         if (typeArgs.Count != 2)
             return null;
 
-        // Check for isInitial: true in the argument list
+        // isInitial is MapPage's only parameter, so it is either named or the first positional argument
         var args = invocation.ArgumentList.Arguments;
-        var isInitialArg = args.FirstOrDefault(a =>
-            a.NameColon?.Name.Identifier.Text == IsInitialParamName);
+        var isInitialArg = args.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == IsInitialParamName)
+            ?? (args.Count > 0 && args[0].NameColon is null ? args[0] : null);
 
         // Must be the literal `true`
         if (isInitialArg?.Expression is not LiteralExpressionSyntax literal)

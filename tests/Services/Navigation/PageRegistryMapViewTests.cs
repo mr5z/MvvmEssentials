@@ -20,7 +20,7 @@ public class PageRegistryMapViewTests
     }
 
     [Test]
-    public void MapView_RegistersViewModelAsScopedAndResolvesViewType()
+    public void MapView_RegistersViewModelAsScoped()
     {
         // When
         _registry.MapView<MappedContentView, FakeViewModel>();
@@ -28,7 +28,6 @@ public class PageRegistryMapViewTests
         // Then
         var descriptor = _services.FirstOrDefault(d => d.ServiceType == typeof(FakeViewModel));
         Assert.That(descriptor!.Lifetime, Is.EqualTo(ServiceLifetime.Scoped));
-        Assert.That(_registry.ResolveViewType(typeof(FakeViewModel)), Is.EqualTo(typeof(MappedContentView)));
     }
 
     [Test]
@@ -39,5 +38,25 @@ public class PageRegistryMapViewTests
 
         // Then
         Assert.Throws<InvalidOperationException>(() => _registry.MapView<MappedContentView, FakeViewModel>());
+    }
+
+    [Test]
+    public void CreateView_WhenViewModelMapped_ReturnsNewViewInstance()
+    {
+        // Given
+        _registry.MapView<MappedContentView, FakeViewModel>();
+
+        // When
+        var view = ((IPageCatalog)_registry).CreateView(typeof(FakeViewModel));
+
+        // Then
+        Assert.That(view, Is.TypeOf<MappedContentView>());
+    }
+
+    [Test]
+    public void CreateView_WhenViewModelNotMapped_ReturnsNull()
+    {
+        // Then
+        Assert.That(((IPageCatalog)_registry).CreateView(typeof(FakeViewModel)), Is.Null);
     }
 }

@@ -12,16 +12,16 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.7.4</AssemblyVersion>
-    <FileVersion>1.7.4</FileVersion>
-    <Version>1.7.4</Version>
+    <AssemblyVersion>1.8.0</AssemblyVersion>
+    <FileVersion>1.8.0</FileVersion>
+    <Version>1.8.0</Version>
     <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>Wizard can now skip steps!</PackageReleaseNotes>
+    <PackageReleaseNotes>Trimming and native AOT ready. Breaking: IPageRegistry is configuration only, and mapped pages and views need a public parameterless constructor. See docs/migration.md.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 
