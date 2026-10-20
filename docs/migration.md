@@ -65,12 +65,12 @@ automatically. Returning `Result.Ok()` without navigating now throws an `Invalid
 ## 1.5.1 → 1.6.0: Wizard steps use `MapView`
 
 `CreateView<TView, TViewModel>()` is removed. Steps are now declared by ViewModel only with
-`Defer<TViewModel>()`, and the view is mapped at registration. This lets wizard hosts live in a project that doesn't reference your views.
+`StepOf<TViewModel>()`, and the view is mapped at registration. This lets wizard hosts live in a project that doesn't reference your views.
 
 For each step:
 
 1. In the host, change `Steps` to `IReadOnlyList<WizardStep>` and each
-   `f => f.CreateView<OnboardingGoalView, OnboardingGoalViewModel>()` to `Defer<OnboardingGoalViewModel>()`.
+   `f => f.CreateView<OnboardingGoalView, OnboardingGoalViewModel>()` to `StepOf<OnboardingGoalViewModel>()`.
 2. In `ConfigureMvvmEssentials`, change `.RegisterPage<OnboardingGoalViewModel>()` to
    `.MapView<OnboardingGoalView, OnboardingGoalViewModel>()`.
 
