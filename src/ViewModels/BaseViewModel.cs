@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using Nkraft.MvvmEssentials.Helpers;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
@@ -18,6 +17,4 @@ public class BaseViewModel : INotifyPropertyChanged
 	}
 
 	protected string ViewModelName => GetType().Name;
-
-	internal virtual string PageName => PageHelper.ToPageName(GetType(), PagePattern.Page);
 }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
@@ -85,6 +86,25 @@ internal class TrackablePageViewModel : PageViewModel
         NavigatedToRootAsyncCount++;
         return Task.CompletedTask;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Trackable SectionViewModel
+// ---------------------------------------------------------------------------
+
+internal class TrackableSectionViewModel : SectionViewModel
+{
+    public int DisposeCount { get; private set; }
+
+    public string? Text { get; set; }
+
+    public void SetText(string? text)
+    {
+        Text = text;
+        OnPropertyChanged(new PropertyChangedEventArgs(nameof(Text)));
+    }
+
+    protected override void OnDispose() => DisposeCount++;
 }
 
 // ---------------------------------------------------------------------------

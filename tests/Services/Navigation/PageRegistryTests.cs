@@ -149,6 +149,26 @@ public class PageRegistryTests
     }
 
     // -----------------------------------------------------------------------
+    // RegisterSection
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void RegisterSection_RegistersSectionAsScopedWithoutMapping()
+    {
+        // When
+        var returned = _sut.RegisterSection<TrackableSectionViewModel>();
+
+        // Then — scoped in DI
+        var descriptor = _services.FirstOrDefault(d => d.ServiceType == typeof(TrackableSectionViewModel));
+        Assert.That(descriptor, Is.Not.Null);
+        Assert.That(descriptor!.Lifetime, Is.EqualTo(ServiceLifetime.Scoped));
+
+        // Chains, and maps nothing
+        Assert.That(returned, Is.SameAs(_sut));
+        Assert.That(((IPageCatalog)_sut).ResolveViewModelType(typeof(FakePage)), Is.Null);
+    }
+
+    // -----------------------------------------------------------------------
     // IPageCatalog.CreatePage
     // -----------------------------------------------------------------------
 

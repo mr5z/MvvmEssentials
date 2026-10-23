@@ -13,7 +13,6 @@ public class BaseViewModelTests
             => OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
 
         public string ExposedViewModelName => ViewModelName;
-        public string ExposedPageName => PageName;
     }
 
     private ExposedViewModel _sut = null!;
@@ -65,13 +64,6 @@ public class BaseViewModelTests
     // -----------------------------------------------------------------------
     // Name helpers
     // -----------------------------------------------------------------------
-
-    [Test]
-    public void PageName_ReflectsClassNameWithPageSuffix()
-    {
-        // ExposedViewModel → "ExposedPage"
-        Assert.That(_sut.ExposedPageName, Is.EqualTo("ExposedPage"));
-    }
 
     [Test]
     public void ViewModelName_ReturnsFullTypeName()

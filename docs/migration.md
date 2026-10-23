@@ -1,5 +1,10 @@
 # Migration guide
 
+## 1.8.0 → 1.9.0
+
+Additive only. `SectionViewModel` is a new base for the bindable parts of a page, registered with
+`IPageRegistry.RegisterSection`; nothing existing changes. See [Sections](sections.md).
+
 ## 1.7.4 → 1.8.0
 
 ### `IPageRegistry` is for configuration only

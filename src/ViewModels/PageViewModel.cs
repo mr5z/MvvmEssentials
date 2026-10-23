@@ -1,4 +1,5 @@
-﻿using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
+﻿using Nkraft.MvvmEssentials.Helpers;
+using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
@@ -8,6 +9,8 @@ public class PageViewModel : NavigableEntryViewModel,
 	IPageLoad,
 	IDisposable
 {
+	internal virtual string PageName => PageHelper.ToPageName(GetType(), PagePattern.Page);
+
 	private protected virtual void HandleInitialized() { }
 
 	private protected virtual Task HandleInitializedAsync() => Task.CompletedTask;
