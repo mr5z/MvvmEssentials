@@ -12,16 +12,16 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.8.0</AssemblyVersion>
-    <FileVersion>1.8.0</FileVersion>
-    <Version>1.8.0</Version>
+    <AssemblyVersion>1.9.0</AssemblyVersion>
+    <FileVersion>1.9.0</FileVersion>
+    <Version>1.9.0</Version>
     <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>Trimming and native AOT ready. Breaking: IPageRegistry is configuration only, and mapped pages and views need a public parameterless constructor. See docs/migration.md.</PackageReleaseNotes>
+    <PackageReleaseNotes>Adds SectionViewModel, a base for the bindable parts of a page, and IPageRegistry.RegisterSection. See docs/sections.md.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 

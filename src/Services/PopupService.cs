@@ -43,7 +43,7 @@ internal sealed class PopupService : IPopupService
 	{
 		if (page is PopupPage popup)
 		{
-			var viewModel = popup.BindingContext as BaseViewModel;
+			var viewModel = popup.BindingContext as PageViewModel;
 			var popupRemoved = _activePopups.Remove(popup.GetType());
 			if (popupRemoved == false)
 			{

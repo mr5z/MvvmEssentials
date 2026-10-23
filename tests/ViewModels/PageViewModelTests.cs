@@ -339,4 +339,15 @@ public class PageViewModelTests
         Assert.That(sut.InitializedAsyncCount, Is.EqualTo(1));
         Assert.That(sut.OnPageAppearingAsyncCallCount, Is.EqualTo(2));
     }
+
+    // -----------------------------------------------------------------------
+    // PageName
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void PageName_ReflectsClassNameWithPageSuffix()
+    {
+        // TrackablePageViewModel → "TrackablePagePage"
+        Assert.That(_sut.PageName, Is.EqualTo("TrackablePagePage"));
+    }
 }

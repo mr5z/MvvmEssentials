@@ -33,6 +33,17 @@ public interface IPageRegistry
 		where TViewModel : BaseViewModel;
 
 	/// <summary>
+	/// Registers a section (a bindable part of a page, exposed as a property of the page's ViewModel) with a scoped
+	/// lifetime: one instance per page, disposed with the page's DI scope. Use this instead of registering the
+	/// section in the container yourself; a singleton is never disposed, and a transient gives each injection site
+	/// its own instance.
+	/// </summary>
+	/// <typeparam name="TSection">The section type to register.</typeparam>
+	IPageRegistry RegisterSection<
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TSection>()
+		where TSection : SectionViewModel;
+
+	/// <summary>
 	/// Maps a <see cref="ContentView"/> type to a ViewModel type and registers the ViewModel with a
 	/// scoped lifetime. Lets a ViewModel library request a view by ViewModel type alone
 	/// (<see cref="IContentViewFactory.CreateView{TViewModel}"/>) without referencing the view's assembly.
@@ -118,6 +129,13 @@ internal sealed class PageRegistry(IServiceCollection services) : IPageRegistry,
 		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TViewModel>()
 	{
 		_services.AddScoped<TViewModel>();
+		return this;
+	}
+
+	IPageRegistry IPageRegistry.RegisterSection<
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TSection>()
+	{
+		_services.AddScoped<TSection>();
 		return this;
 	}
 

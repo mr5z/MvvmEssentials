@@ -21,6 +21,7 @@ surface, see its guide:
 - [Modals](https://github.com/mr5z/MvvmEssentials/blob/main/docs/modals.md) — pages that return a result, with the same top bar as regular pages
 - [Popups](https://github.com/mr5z/MvvmEssentials/blob/main/docs/popups.md) — modal dialogs with result handling (powered by [Nkraft.Mopups](https://www.nuget.org/packages/Nkraft.Mopups/), a maintained fork of Mopups)
 - [Wizard](https://github.com/mr5z/MvvmEssentials/blob/main/docs/wizard.md) — multi-step flows over a shared state object
+- [Sections](https://github.com/mr5z/MvvmEssentials/blob/main/docs/sections.md) — bindable parts of a page, scoped to it and disposed with it
 
 # Setup
 
@@ -129,15 +130,15 @@ public class AppStartup(INavigationService navigationService, IAuthService authS
 
 ---
 
-# MapPage vs RegisterPage vs MapView
+# MapPage vs RegisterPage vs MapView vs RegisterSection
 
-All three register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
-| | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` | `MapView<TView, TViewModel>` |
-|---|---|---|---|
-| Navigable via `NavigateAsync` | ✅ Yes | ❌ No | ❌ No |
-| Creates a mapping | ✅ Page–VM | ❌ No | ✅ ContentView–VM |
-| Scoped DI lifetime | ✅ Yes | ✅ Yes | ✅ Yes |
-| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu) | Views built by VM type (wizard steps) |
+All four register a ViewModel with a scoped lifetime in the DI container, but they serve different roles:
+| | `MapPage<TPage, TViewModel>` | `RegisterPage<TViewModel>` | `MapView<TView, TViewModel>` | `RegisterSection<TSection>` |
+|---|---|---|---|---|
+| Navigable via `NavigateAsync` | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| Creates a mapping | ✅ Page–VM | ❌ No | ✅ ContentView–VM | ❌ No |
+| Scoped DI lifetime | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| Use for | Pages navigated to by the navigation service | VMs bound via XAML (tabs, flyout menu) | Views built by VM type (wizard steps) | Parts of a page, injected into its VM |
 
 Use `MapView` when a ViewModel asks for its view by VM type alone, as wizard steps do with
 `CreateView<TViewModel>()`. This keeps ViewModels free of view types, so they can live in a separate
@@ -146,6 +147,10 @@ project from your views. See [Wizard](https://github.com/mr5z/MvvmEssentials/blo
 Use `RegisterPage` for any ViewModel that is wired to its page or view via XAML `BindingContext`
 rather than created by the navigation service. The navigation service has no knowledge of these VMs
 and will not be able to navigate to them by name.
+
+Use `RegisterSection` for a `SectionViewModel`: a part of a page that the page's ViewModel takes as a
+constructor dependency and exposes as a property. See
+[Sections](https://github.com/mr5z/MvvmEssentials/blob/main/docs/sections.md).
 
 The flyout's initial detail is the one exception: it is bound in XAML like the others, but if your
 app returns to it (for example, a "home" action in the menu), it must use `MapPage` so the navigation
