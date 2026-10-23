@@ -11,20 +11,29 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 /// <summary>
 /// Hosts a multi-step flow in one page. Push it like any page, or present it with
 /// <c>IModalService.PresentAsync&lt;THostViewModel, TState&gt;()</c> and hand the final state back with
-/// <see cref="Dismiss(TState)"/>.
+/// <see cref="Dismiss(TState)"/>. Pass a <see cref="TimeProvider"/> to control the repeated-tap window in tests.
 /// </summary>
-public abstract partial class WizardHostViewModel<TState>(IContentViewFactory viewFactory)
+public abstract partial class WizardHostViewModel<TState>(IContentViewFactory viewFactory, TimeProvider clock)
     : PageViewModel, IModalViewModel<TState>, IModalDismissible where TState : new()
 {
     private readonly IContentViewFactory _viewFactory = viewFactory;
+    private readonly TimeProvider _clock = clock;
     private readonly Dictionary<int, ContentView> _stepCache = [];
 
     // Set only when ModalService presented this page
     private ModalSession<TState>? _modalSession;
 
-    // GoNextAsync awaits CanAdvanceFromAsync; these let it drop out if things changed meanwhile
-    private bool _isCheckingAdvance;
+    // GoNextAsync awaits CanAdvanceFromAsync and OnCompletedAsync; these let a second Next drop out meanwhile
+    private bool _isAdvancing;
     private bool _isDisposed;
+
+    // When the current step was entered; Next and Back inside RepeatedTapWindow of it are ignored
+    private DateTimeOffset? _stepEnteredAt;
+
+    protected WizardHostViewModel(IContentViewFactory viewFactory)
+        : this(viewFactory, TimeProvider.System)
+    {
+    }
 
     private protected override void HandleParametersSet(INavigationParameters parameters)
     {
@@ -74,6 +83,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
 
         CurrentIndex = index;
         CurrentStep = view;
+        _stepEnteredAt = _clock.GetUtcNow();
 
         var incoming = (IWizardStep<TState>)view.BindingContext;
         incoming.OnStepEntered(State);
@@ -179,46 +189,53 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
 
     protected abstract Task OnCompletedAsync();
 
+    /// <summary>
+    /// Moves to the next step, or completes from the last one. Ignored while an earlier Next is still running,
+    /// and for a short while after a step change, so a bounce or double tap can't act on a step the user
+    /// hasn't seen yet.
+    /// </summary>
     protected async Task GoNextAsync()
     {
-        // Another Next is still being checked; it decides
-        if (_isCheckingAdvance)
+        // Another Next is still running; it decides
+        if (_isAdvancing || IsRepeatedTap)
             return;
 
         var index = CurrentIndex;
         if (CanAdvanceFrom(index) == false)
             return;
 
-        bool canAdvance;
-        _isCheckingAdvance = true;
+        _isAdvancing = true;
         try
         {
-            canAdvance = await CanAdvanceFromAsync(index);
+            var canAdvance = await CanAdvanceFromAsync(index);
+
+            // Back moved the wizard, or the page went away, while it was waiting: this Next no longer applies
+            if (canAdvance == false || CurrentIndex != index || _isDisposed)
+                return;
+
+            State = CommitCurrentStep(State);
+
+            var next = NextIndexAfter(CurrentIndex);
+            if (next < 0)
+            {
+                await OnCompletedAsync();
+                return;
+            }
+
+            EnterStep(next);
         }
         finally
         {
-            _isCheckingAdvance = false;
+            _isAdvancing = false;
         }
-
-        // Back moved the wizard, or the page went away, while it was waiting: this Next no longer applies
-        if (canAdvance == false || CurrentIndex != index || _isDisposed)
-            return;
-
-        State = CommitCurrentStep(State);
-
-        var next = NextIndexAfter(CurrentIndex);
-        if (next < 0)
-        {
-            await OnCompletedAsync();
-            return;
-        }
-
-        EnterStep(next);
     }
 
+    /// <summary>
+    /// Moves to the previous step. Ignored for a short while after a step change, like <see cref="GoNextAsync"/>.
+    /// </summary>
     protected Task GoBackAsync()
     {
-        if (CanGoBack)
+        if (CanGoBack && IsRepeatedTap == false)
         {
             State = CommitCurrentStep(State);
             EnterStep(PreviousIndexBefore(CurrentIndex));
@@ -226,6 +243,16 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// How long after a step change Next and Back are ignored. A tap this soon can't be a decision about the
+    /// new step, which the user hasn't seen yet: it's a bounce, a double tap, or a platform delivering one tap
+    /// twice. Defaults to Android's double-tap timeout, 300 ms; return <see cref="TimeSpan.Zero"/> to turn it off.
+    /// </summary>
+    protected virtual TimeSpan RepeatedTapWindow => TimeSpan.FromMilliseconds(300);
+
+    private bool IsRepeatedTap
+        => _stepEnteredAt is { } enteredAt && _clock.GetUtcNow() - enteredAt < RepeatedTapWindow;
 
     private TState CommitCurrentStep(TState state)
     {

@@ -45,8 +45,11 @@ internal sealed class CheckedContentViewFactory : IContentViewFactory
     void IDisposable.Dispose() { }
 }
 
-internal sealed class CheckedWizardHostViewModel(IContentViewFactory viewFactory, int stepCount)
-    : WizardHostViewModel<FakeWizardState>(viewFactory)
+internal sealed class CheckedWizardHostViewModel(
+    IContentViewFactory viewFactory,
+    int stepCount,
+    TimeProvider? clock = null)
+    : WizardHostViewModel<FakeWizardState>(viewFactory, clock ?? new FakeTimeProvider())
 {
     public int CompletedCount { get; private set; }
     public bool HostAllowsAdvance { get; set; } = true;

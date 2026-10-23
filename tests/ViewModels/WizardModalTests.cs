@@ -13,8 +13,11 @@ namespace Nkraft.MvvmEssentials.UnitTest.ViewModels;
 // Fakes (FakeWizardState, FakeWizardStepViewModel, FakeContentViewFactory live in WizardHostViewModelTests.cs)
 // ---------------------------------------------------------------------------
 
-internal sealed class PresentableWizardHostViewModel(IContentViewFactory viewFactory, int stepCount)
-    : WizardHostViewModel<FakeWizardState>(viewFactory)
+internal sealed class PresentableWizardHostViewModel(
+    IContentViewFactory viewFactory,
+    int stepCount,
+    TimeProvider? clock = null)
+    : WizardHostViewModel<FakeWizardState>(viewFactory, clock ?? new FakeTimeProvider())
 {
     public bool AllowDismiss { get; set; } = true;
     public bool GoBackOnBackButton { get; set; } = true;

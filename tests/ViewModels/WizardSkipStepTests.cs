@@ -39,8 +39,11 @@ internal sealed class AnsweringContentViewFactory : IContentViewFactory
     void IDisposable.Dispose() { }
 }
 
-internal sealed class SkippingWizardHostViewModel(IContentViewFactory viewFactory, int stepCount)
-    : WizardHostViewModel<FakeWizardState>(viewFactory)
+internal sealed class SkippingWizardHostViewModel(
+    IContentViewFactory viewFactory,
+    int stepCount,
+    TimeProvider? clock = null)
+    : WizardHostViewModel<FakeWizardState>(viewFactory, clock ?? new FakeTimeProvider())
 {
     public int CompletedCount { get; private set; }
     public List<int> AskedIndices { get; } = [];

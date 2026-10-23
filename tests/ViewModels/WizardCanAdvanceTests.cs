@@ -41,8 +41,11 @@ internal sealed class GatedContentViewFactory : IContentViewFactory
     void IDisposable.Dispose() { }
 }
 
-internal sealed class GatedWizardHostViewModel(IContentViewFactory viewFactory, int stepCount)
-    : WizardHostViewModel<FakeWizardState>(viewFactory)
+internal sealed class GatedWizardHostViewModel(
+    IContentViewFactory viewFactory,
+    int stepCount,
+    TimeProvider? clock = null)
+    : WizardHostViewModel<FakeWizardState>(viewFactory, clock ?? new FakeTimeProvider())
 {
     public int CompletedCount { get; private set; }
     public bool HostAllowsAdvance
