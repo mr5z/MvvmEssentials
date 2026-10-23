@@ -225,7 +225,7 @@ flowchart TD
 
 # Resource Cleanup (IDisposable)
 
-All ViewModels (`PageViewModel`, `TabViewModel`, `FlyoutMenuViewModel`, `PopupViewModel`, `WizardStepViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope.
+All ViewModels (`PageViewModel`, `TabViewModel`, `FlyoutMenuViewModel`, `PopupViewModel`, `WizardStepViewModel`, `SectionViewModel`) implement `IDisposable`. When a page is unloaded, the library automatically disposes its ViewModel via the DI scope, along with every section registered for it.
 
 To clean up resources, override `OnDispose()` in your ViewModel:
 
