@@ -15,6 +15,24 @@ internal sealed record FakeWizardState
     public int Value { get; init; }
 }
 
+// Moves AutoAdvance past on every read, so back-to-back Next calls in a test are never taken for a double tap.
+// Set AutoAdvance to zero and call Advance to test the repeated-tap window itself.
+internal sealed class FakeTimeProvider : TimeProvider
+{
+    private DateTimeOffset _now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+    public TimeSpan AutoAdvance { get; set; } = TimeSpan.FromSeconds(1);
+
+    public void Advance(TimeSpan by) => _now += by;
+
+    public override DateTimeOffset GetUtcNow()
+    {
+        var now = _now;
+        _now += AutoAdvance;
+        return now;
+    }
+}
+
 internal sealed class FakeWizardStepViewModel : WizardStepViewModel<FakeWizardState>
 {
     public int OnStepEnteredCount { get; private set; }
@@ -52,8 +70,11 @@ internal sealed class FakeContentViewFactory : IContentViewFactory
 
 // Subclassing exposes the protected members we need to drive/assert against, mirroring
 // exactly how a real consumer host VM (e.g. OnboardingHostViewModel) is written.
-internal sealed class ExposedWizardHostViewModel(IContentViewFactory viewFactory, int stepCount)
-    : WizardHostViewModel<FakeWizardState>(viewFactory)
+internal sealed class ExposedWizardHostViewModel(
+    IContentViewFactory viewFactory,
+    int stepCount,
+    TimeProvider? clock = null)
+    : WizardHostViewModel<FakeWizardState>(viewFactory, clock ?? new FakeTimeProvider())
 {
     public int CompletedCount { get; private set; }
     
