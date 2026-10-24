@@ -1,6 +1,6 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
@@ -28,7 +28,7 @@ internal sealed class PresentableWizardHostViewModel(
     public void SimulateUnload() => ((IDisposable)this).Dispose();
 
     // What ModalService does when Android Back pops a modal it didn't start
-    public Task<bool> SimulateBackButton() => ((IModalDismissible)this).Dismiss();
+    public Task<bool> SimulateBackButton() => ((IDismissible)this).Dismiss();
 
     public Task PublicGoNextAsync() => GoNextAsync();
     public int PublicCurrentIndex => CurrentIndex;
@@ -53,25 +53,24 @@ internal sealed class PresentableWizardHostViewModel(
 [TestFixture]
 public class WizardModalTests
 {
-    private IModalService _modalService = null!;
+    private IStackPresenter _presenter = null!;
     private FakeContentViewFactory _factory = null!;
-    private TaskCompletionSource<FakeWizardState> _tcs = null!;
+    private Presentation<FakeWizardState> _presentation = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _modalService = Substitute.For<IModalService>();
-        _modalService.DismissAsync().Returns(Result.Ok());
+        _presenter = Substitute.For<IStackPresenter>();
+        _presenter.DismissAsync(Arg.Any<Presentation>()).Returns(Result.Ok());
         _factory = new FakeContentViewFactory();
-        _tcs = new TaskCompletionSource<FakeWizardState>();
+        _presentation = new Presentation<FakeWizardState>();
+        _presentation.Open(_presenter, new ContentPage(), new ContentPage());
     }
 
     // Parameters as ModalService + PresentAsync<TViewModel, TResult> pass them
     private PresentableWizardHostViewModel CreateModalSut(int stepCount)
     {
-        var parameters = new NavigationParameters();
-        parameters.Add(NavigationHints.ModalPresenter, _modalService);
-        parameters.Add(NavigationHints.ModalCompletionParam, _tcs);
+        var parameters = new NavigationParameters { { NavigationHints.Presentation, _presentation } };
         return CreateSut(stepCount, parameters);
     }
 
@@ -102,7 +101,7 @@ public class WizardModalTests
         Assert.That(dismissed, Is.False);
         Assert.That(sut.CompletionResult?.IsFailure, Is.True);
         Assert.That(sut.CanDismissCallCount, Is.EqualTo(0));
-        await _modalService.DidNotReceive().DismissAsync();
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
     }
 
     // -----------------------------------------------------------------------
@@ -121,8 +120,8 @@ public class WizardModalTests
 
         // Then
         Assert.That(sut.PublicIsModal, Is.True);
-        Assert.That(await _tcs.Task, Is.EqualTo(new FakeWizardState()));
-        await _modalService.Received(1).DismissAsync();
+        Assert.That(await _presentation.Result, Is.EqualTo(new FakeWizardState()));
+        await _presenter.Received(1).DismissAsync(Arg.Any<Presentation>());
     }
 
     // -----------------------------------------------------------------------
@@ -143,8 +142,8 @@ public class WizardModalTests
         Assert.That(dismissed, Is.False);
         Assert.That(sut.PublicCurrentIndex, Is.EqualTo(0));
         Assert.That(sut.CanDismissCallCount, Is.EqualTo(0));
-        await _modalService.DidNotReceive().DismissAsync();
-        Assert.That(_tcs.Task.IsCompleted, Is.False);
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
     [Test]
@@ -159,7 +158,7 @@ public class WizardModalTests
         // Then
         Assert.That(dismissed, Is.True);
         Assert.That(sut.CanDismissCallCount, Is.EqualTo(1));
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
     }
 
     [Test]
@@ -176,7 +175,7 @@ public class WizardModalTests
         // Then
         Assert.That(dismissed, Is.True);
         Assert.That(sut.PublicCurrentIndex, Is.EqualTo(1));
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
     }
 
     [Test]
@@ -191,8 +190,8 @@ public class WizardModalTests
 
         // Then
         Assert.That(dismissed, Is.False);
-        await _modalService.DidNotReceive().DismissAsync();
-        Assert.That(_tcs.Task.IsCompleted, Is.False);
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
     // -----------------------------------------------------------------------
@@ -212,15 +211,15 @@ public class WizardModalTests
         // Then
         Assert.That(dismissed, Is.True);
         Assert.That(sut.PublicCurrentIndex, Is.EqualTo(1));
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
     }
 
     // -----------------------------------------------------------------------
-    // Dispose — system dismissal (iOS sheet swipe-down)
+    // Dispose — the modal closing, not the view model, completes the caller
     // -----------------------------------------------------------------------
 
     [Test]
-    public void Dispose_WithoutDismiss_CancelsCallerTaskAndDisposesSteps()
+    public void Dispose_WithoutDismiss_DisposesStepsAndLeavesTheCallerToTheModal()
     {
         // Given
         var sut = CreateModalSut(stepCount: 2);
@@ -229,8 +228,21 @@ public class WizardModalTests
         sut.SimulateUnload();
 
         // Then
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
         Assert.That(_factory.DisposeCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void ModalClosedBySystem_CancelsTheCaller()
+    {
+        // Given: iOS sheet swipe-down; ModalService reports MAUI's ModalPopped
+        CreateModalSut(stepCount: 2);
+
+        // When
+        _presentation.OnClosed();
+
+        // Then
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
     }
 
     [Test]
@@ -238,7 +250,7 @@ public class WizardModalTests
     {
         // Given — MAUI may unload the page before PopModalAsync returns
         var sut = CreateModalSut(stepCount: 1);
-        _modalService.DismissAsync().Returns(_ =>
+        _presenter.DismissAsync(Arg.Any<Presentation>()).Returns(_ =>
         {
             sut.SimulateUnload();
             return Result.Ok();
@@ -248,6 +260,6 @@ public class WizardModalTests
         await sut.PublicGoNextAsync();
 
         // Then
-        Assert.That(_tcs.Task.IsCompletedSuccessfully, Is.True);
+        Assert.That(_presentation.Result.IsCompletedSuccessfully, Is.True);
     }
 }

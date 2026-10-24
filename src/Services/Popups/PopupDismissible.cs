@@ -1,11 +1,12 @@
-﻿namespace Nkraft.MvvmEssentials.Services.Popups;
+using Nkraft.MvvmEssentials.Services.Presentations;
 
-internal interface IPopupDismissible
+namespace Nkraft.MvvmEssentials.Services.Popups;
+
+/// <summary>
+/// What <see cref="Pages.PopupPage"/> asks its view model: whether a background tap or Back dismisses, and then to dismiss.
+/// </summary>
+internal interface IPopupDismissible : IDismissible
 {
-	Task<bool> Dismiss();
-
-	void NotifyCancellation();
-
 	bool ShouldDismissOnBackButtonPressed { get; }
 
 	bool ShouldDismissOnBackgroundTapped { get; }

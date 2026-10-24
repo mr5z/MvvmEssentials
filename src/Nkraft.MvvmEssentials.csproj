@@ -12,16 +12,14 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <AssemblyVersion>1.9.1.2</AssemblyVersion>
-    <FileVersion>1.9.1.2</FileVersion>
-    <Version>1.9.1.2</Version>
+    <Version>1.10.0-alpha.1</Version>
     <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>Adds SectionViewModel, a base for the bindable parts of a page, and IPageRegistry.RegisterSection. See docs/sections.md.</PackageReleaseNotes>
+    <PackageReleaseNotes>Modals can hold several pages: ModalViewModel.PushAsync/PopAsync navigate inside the modal, and any page of it can finish it with Dismiss(result). Popups and modals share PresentedViewModel; popups gain CanDismissAsync, and a background tap or Back now dismisses through the view model. Breaking: INavigationService relative navigation fails while a modal is open. See docs/migration.md.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 

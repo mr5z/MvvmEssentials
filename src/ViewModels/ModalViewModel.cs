@@ -1,7 +1,7 @@
-using CommunityToolkit.Mvvm.Input;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Pages;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
 
@@ -9,44 +9,44 @@ public interface IModalViewModel;
 
 public interface IModalViewModel<TResult> : IModalViewModel;
 
-public partial class ModalViewModel<TResult>(IModalService modalService)
-	: PageViewModel, IModalViewModel<TResult>, IModalDismissible
+/// <summary>
+/// A page of a modal that returns a <typeparamref name="TResult"/> to the caller of
+/// <c>IModalService.PresentAsync&lt;TViewModel, TResult&gt;</c>.
+/// <para>
+/// A modal can hold several of these pages: <see cref="PushAsync(ModalDestination{TResult}, bool)"/> pushes the next
+/// one inside the modal, and only accepts pages of the same <typeparamref name="TResult"/>, so any page of the modal can
+/// finish it with <c>Dismiss(result)</c>. Pass data to the next page through its navigation parameters (<c>With(...)</c>).
+/// </para>
+/// <para>
+/// Android Back goes to the previous page inside the modal, and on the first page is routed to <c>Dismiss()</c>, so
+/// <c>CanDismissAsync</c> can keep the modal open. The iOS sheet swipe-down can't be intercepted.
+/// </para>
+/// </summary>
+public class ModalViewModel<TResult>(IModalService modalService)
+	: PresentedViewModel<TResult>, IModalViewModel<TResult>
 {
-	private readonly ModalSession<TResult> _session = new(modalService);
-
-	private protected override void HandleParametersSet(INavigationParameters parameters)
-	{
-		base.HandleParametersSet(parameters);
-
-		_session.Attach(parameters);
-	}
-
-	private protected override void HandleDispose()
-	{
-		base.HandleDispose();
-
-		// Disposed without going through Dismiss(): Android back button, iOS sheet swipe-down
-		_session.NotifyDisposed();
-	}
+	private readonly IModalService _modalService = modalService;
 
 	/// <summary>
-	/// Asked before the modal is dismissed without a result: the <see cref="Dismiss()"/> command
-	/// (Cancel / close) and the Android Back button.
-	/// Return <c>false</c> to keep the modal open, for example after the user chose not to discard changes.
-	/// <para>
-	/// Not called for <see cref="Dismiss(TResult)"/>, and not called for the iOS sheet swipe-down gesture,
-	/// which MAUI doesn't let the app intercept.
-	/// </para>
+	/// Pushes the next page inside this modal, e.g. <c>PushAsync(ConfirmViewModel.With(draft))</c>. The destination's
+	/// result type must be this modal's, so the pushed page can finish it too.
+	/// Fails with <c>ErrorCode.NotSupported</c> when the modal sets <c>Modal.WithNavigation="False"</c>.
 	/// </summary>
-	protected virtual Task<bool> CanDismissAsync() => Task.FromResult(true);
+	protected Task<IResult> PushAsync(ModalDestination<TResult> destination, bool animated = true)
+		=> InPresentation(presentation => presentation.PushAsync(destination.ModalName, destination.Parameters, animated));
 
 	/// <summary>
-	/// Dismisses without a result (Cancel / close); the caller awaiting the modal receives <c>ErrorCode.Cancelled</c>.
-	/// Returns <c>false</c> if <see cref="CanDismissAsync"/> declined or the modal could not be dismissed.
-	/// Calls made while a dismissal is in progress share its outcome.
+	/// Pushes <typeparamref name="TNext"/> inside this modal, for a page without navigation parameters.
 	/// </summary>
-	[RelayCommand]
-	public Task<bool> Dismiss() => _session.DismissAsync(CanDismissAsync);
+	protected Task<IResult> PushAsync<TNext>(bool animated = true) where TNext : IModalViewModel<TResult>
+		=> InPresentation(presentation => presentation.PushAsync(PageHelper.ToPageName<TNext>(PagePattern.Page), null, animated));
 
-	protected Task<IResult> Dismiss(TResult result) => _session.DismissAsync(result);
+	/// <summary>
+	/// Goes back to the previous page inside this modal. Returns <c>ErrorCode.NotHandled</c> on the modal's first
+	/// page: leave the modal with <c>Dismiss()</c> there.
+	/// </summary>
+	protected Task<IResult> PopAsync(bool animated = true)
+		=> InPresentation(presentation => presentation.PopAsync(animated));
+
+	private protected override Task<IResult> DismissTopAsync() => _modalService.DismissAsync();
 }

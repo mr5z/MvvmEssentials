@@ -1,7 +1,7 @@
 ﻿using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
 
@@ -33,33 +33,9 @@ public static class PopupServiceExtension
 			return await popupService.DismissAsync(popupName, animated);
 		}
 		
-		private static async Task<Result<TResult>> PresentAsync<TResult>(
+		private static Task<Result<TResult>> PresentAsync<TResult>(
 			IPopupService popup, string popupName, INavigationParameters parameters, bool animated)
-		{
-			var tcs = new TaskCompletionSource<TResult>();
-			parameters[NavigationHints.PopupCompletionParam] = tcs;
-
-			var navResult = await popup.PresentAsync(popupName, parameters, animated);
-			if (navResult.IsFailure)
-				return Result.Fail<TResult>(ErrorCode.InvalidState, 
-					navResult.Exception, "Failed to display popup '{PopupName}'.", popupName);
-
-			try
-			{
-				var popupResult = await tcs.Task;
-				return Result.Ok(popupResult);
-			}
-			catch (TaskCanceledException)
-			{
-				const string message = "Popup '{PopupName}' has been cancelled.";
-				var dismissResult = await popup.DismissAsync(popupName, animated);
-				return Result.Fail<TResult>(ErrorCode.Cancelled, dismissResult.Exception, message, popupName);
-			}
-			catch (Exception ex)
-			{
-				const string message = "Failed to dismiss popup '{PopupName}'.";
-				return Result.Fail<TResult>(ErrorCode.Unknown, ex, message, popupName);
-			}
-		}
+			=> Presenting.PresentForResultAsync<TResult>(
+				p => popup.PresentAsync(popupName, p, animated), parameters, popupName);
 	}
 }

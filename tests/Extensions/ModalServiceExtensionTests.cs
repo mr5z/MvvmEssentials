@@ -1,5 +1,6 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
@@ -19,20 +20,27 @@ public class ModalServiceExtensionTests
         _modalService = Substitute.For<IModalService>();
     }
 
-    private void PresentCompletesWith(Action<TaskCompletionSource<TestModalResult>> complete)
+    // Completes the presentation the extension passes, the way the modal closing would
+    private void PresentCompletesWith(Action<Presentation<TestModalResult>> complete)
     {
         _modalService
             .PresentAsync(Arg.Any<string>(), Arg.Any<INavigationParameters>(), Arg.Any<bool>())
             .Returns(callInfo =>
             {
                 if (callInfo.Arg<INavigationParameters>()
-                    ?.TryGetValue<TaskCompletionSource<TestModalResult>>(
-                        NavigationHints.ModalCompletionParam, out var tcs) == true)
+                    ?.TryGetValue<Presentation<TestModalResult>>(
+                        NavigationHints.Presentation, out var presentation) == true)
                 {
-                    complete(tcs!);
+                    complete(presentation!);
                 }
                 return Result.Ok();
             });
+    }
+
+    private static void CloseWith(Presentation<TestModalResult> presentation, TestModalResult result)
+    {
+        presentation.SetPendingResult(result);
+        presentation.OnClosed();
     }
 
     // -----------------------------------------------------------------------
@@ -45,7 +53,7 @@ public class ModalServiceExtensionTests
         // Given — completion must resolve, otherwise the extension awaits forever
         var parameters = new NavigationParameters();
         var destination = new ModalDestination<TestModalResult>("EditPage", parameters);
-        PresentCompletesWith(tcs => tcs.SetResult(new TestModalResult(true)));
+        PresentCompletesWith(p => CloseWith(p, new TestModalResult(true)));
 
         // When
         await _modalService.PresentAsync(destination, animated: false);
@@ -60,7 +68,7 @@ public class ModalServiceExtensionTests
         // Given
         var destination = new ModalDestination<TestModalResult>("EditPage", new NavigationParameters());
         var expected = new TestModalResult(true);
-        PresentCompletesWith(tcs => tcs.SetResult(expected));
+        PresentCompletesWith(p => CloseWith(p, expected));
 
         // When
         var result = await _modalService.PresentAsync(destination);
@@ -94,7 +102,7 @@ public class ModalServiceExtensionTests
     public async Task PresentAsync_WithResult_UsesPageNamingConvention()
     {
         // Given
-        PresentCompletesWith(tcs => tcs.SetResult(new TestModalResult(true)));
+        PresentCompletesWith(p => CloseWith(p, new TestModalResult(true)));
 
         // When
         await _modalService.PresentAsync<TestModalViewModel, TestModalResult>();
@@ -123,7 +131,7 @@ public class ModalServiceExtensionTests
     {
         // Given
         var expected = new TestModalResult(true);
-        PresentCompletesWith(tcs => tcs.SetResult(expected));
+        PresentCompletesWith(p => CloseWith(p, expected));
 
         // When
         var result = await _modalService.PresentAsync<TestModalViewModel, TestModalResult>();
@@ -137,7 +145,7 @@ public class ModalServiceExtensionTests
     public async Task PresentAsync_WithResult_WhenCancelled_ReturnsCancelledFailure()
     {
         // Given
-        PresentCompletesWith(tcs => tcs.SetCanceled());
+        PresentCompletesWith(p => p.OnClosed());
 
         // When
         var result = await _modalService.PresentAsync<TestModalViewModel, TestModalResult>();
@@ -150,25 +158,12 @@ public class ModalServiceExtensionTests
     public async Task PresentAsync_WithResult_WhenCancelled_DoesNotDismissAgain()
     {
         // Given — the modal is already gone; dismissing would pop whatever is on top now
-        PresentCompletesWith(tcs => tcs.SetCanceled());
+        PresentCompletesWith(p => p.OnClosed());
 
         // When
         await _modalService.PresentAsync<TestModalViewModel, TestModalResult>();
 
         // Then
         await _modalService.DidNotReceive().DismissAsync(Arg.Any<bool>());
-    }
-
-    [Test]
-    public async Task PresentAsync_WithResult_WhenCompletionFaults_ReturnsUnknownFailure()
-    {
-        // Given
-        PresentCompletesWith(tcs => tcs.SetException(new InvalidOperationException("boom")));
-
-        // When
-        var result = await _modalService.PresentAsync<TestModalViewModel, TestModalResult>();
-
-        // Then
-        Assert.That(result.ErrorCode, Is.EqualTo(ErrorCode.Unknown));
     }
 }

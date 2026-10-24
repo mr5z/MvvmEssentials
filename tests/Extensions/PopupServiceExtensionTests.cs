@@ -2,6 +2,7 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
 using NUnit.Framework;
@@ -19,12 +20,14 @@ public class PopupServiceExtensionTests
         _popupService = Substitute.For<IPopupService>();
     }
 
+    // Completes the presentation the extension passes, the way the popup closing would
     private static void CompleteWith(INavigationParameters? parameters, TestPopupResult value)
     {
-        if (parameters?.TryGetValue<TaskCompletionSource<TestPopupResult>>(
-                NavigationHints.PopupCompletionParam, out var tcs) == true)
+        if (parameters?.TryGetValue<Presentation<TestPopupResult>>(
+                NavigationHints.Presentation, out var presentation) == true)
         {
-            tcs.SetResult(value);
+            presentation.SetPendingResult(value);
+            presentation.OnClosed();
         }
     }
 
@@ -83,14 +86,13 @@ public class PopupServiceExtensionTests
             .Returns(callInfo =>
             {
                 if (callInfo.Arg<INavigationParameters>()
-                    ?.TryGetValue<TaskCompletionSource<TestPopupResult>>(
-                        NavigationHints.PopupCompletionParam, out var tcs) == true)
+                    ?.TryGetValue<Presentation<TestPopupResult>>(
+                        NavigationHints.Presentation, out var presentation) == true)
                 {
-                    tcs.SetCanceled();
+                    presentation.OnClosed(); // removed without a result
                 }
                 return Result.Ok();
             });
-        _popupService.DismissAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(Result.Ok());
 
         // When
         var result = await _popupService.PresentAsync(destination);
@@ -101,7 +103,7 @@ public class PopupServiceExtensionTests
     }
 
     [Test]
-    public async Task PresentAsync_WithDestination_WhenCancelled_DismissesThePopup()
+    public async Task PresentAsync_WithDestination_WhenCancelled_DoesNotDismissAgain()
     {
         // Given
         var destination = new PopupDestination<TestPopupResult>("ConfirmPopup", new NavigationParameters());
@@ -111,20 +113,19 @@ public class PopupServiceExtensionTests
             .Returns(callInfo =>
             {
                 if (callInfo.Arg<INavigationParameters>()
-                    ?.TryGetValue<TaskCompletionSource<TestPopupResult>>(
-                        NavigationHints.PopupCompletionParam, out var tcs) == true)
+                    ?.TryGetValue<Presentation<TestPopupResult>>(
+                        NavigationHints.Presentation, out var presentation) == true)
                 {
-                    tcs!.SetCanceled();
+                    presentation.OnClosed(); // removed without a result
                 }
                 return Result.Ok();
             });
-        _popupService.DismissAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(Result.Ok());
 
         // When
         await _popupService.PresentAsync(destination);
 
-        // Then
-        await _popupService.Received(1).DismissAsync("ConfirmPopup", Arg.Any<bool>());
+        // Then: the popup is already gone; dismissing would remove whatever is on top now
+        await _popupService.DidNotReceive().DismissAsync(Arg.Any<string>(), Arg.Any<bool>());
     }
 
     // -----------------------------------------------------------------------
@@ -161,7 +162,6 @@ public class PopupServiceExtensionTests
     public async Task DismissAsync_WithViewModelType_UsesPopupNamingConvention()
     {
         // Given
-        _popupService.DismissAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(Result.Ok());
 
         // When
         await _popupService.DismissAsync<TestPopupViewModel>();

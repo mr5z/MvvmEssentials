@@ -1,5 +1,24 @@
 # Migration guide
 
+## 1.9.1.2 → 1.10.0
+
+### Popups: dismissal goes through the view model
+
+`PopupViewModel<TResult>` and `ModalViewModel<TResult>` now share `PresentedViewModel<TResult>`, so popups gain
+`CanDismissAsync` (default `true`; nothing changes unless you override it). Two behaviours changed:
+
+- A background tap or Android Back now dismisses the popup itself, after `CanDismissAsync`. Before, it only
+  cancelled the caller, who then dismissed the popup; a popup presented with `PresentAsync(name)` (no caller)
+  couldn't be dismissed by a tap at all.
+- When a dismiss fails, the popup is still on screen, so the caller keeps waiting. Before, the caller received
+  an `Unknown` failure.
+
+### Navigation while a modal is open
+
+`INavigationService`'s relative navigation (`NavigateAsync("Page")`, `NavigateBackAsync`, `NavigateToRootAsync`)
+fails with `NotSupported` while a modal is open. Before, it navigated the hidden pages behind the modal. Inside a
+modal, navigate from its view models with `PushAsync` / `PopAsync`; see [Modals](modals.md#pages-inside-a-modal).
+
 ## 1.8.0 → 1.9.0
 
 Additive only. `SectionViewModel` is a new base for the bindable parts of a page, registered with

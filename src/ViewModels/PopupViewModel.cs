@@ -1,8 +1,6 @@
-﻿using CommunityToolkit.Mvvm.Input;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Popups;
 
 namespace Nkraft.MvvmEssentials.ViewModels;
@@ -11,60 +9,28 @@ public interface IPopupViewModel;
 
 public interface IPopupViewModel<TResult> : IPopupViewModel;
 
-public partial class PopupViewModel<TResult>(IPopupService popupService) : PageViewModel, IPopupViewModel<TResult>, IPopupDismissible
+/// <summary>
+/// A popup that returns a <typeparamref name="TResult"/> to the caller of
+/// <c>IPopupService.PresentAsync&lt;TViewModel, TResult&gt;</c>.
+/// <para>
+/// A background tap or Android Back is routed to <c>Dismiss()</c> when the matching <c>ShouldDismissOn...</c> allows
+/// it, so <c>CanDismissAsync</c> can keep the popup open.
+/// </para>
+/// </summary>
+public class PopupViewModel<TResult>(IPopupService popupService)
+	: PresentedViewModel<TResult>, IPopupViewModel<TResult>, IPopupDismissible
 {
 	private readonly IPopupService _popupService = popupService;
-
-	private TaskCompletionSource<TResult>? _completion;
-
-	private protected override void HandleParametersSet(INavigationParameters parameters)
-	{
-		base.HandleParametersSet(parameters);
-
-		if (parameters.TryGetValue<TaskCompletionSource<TResult>>(NavigationHints.PopupCompletionParam, out var completion))
-		{
-			_completion = completion;
-		}
-	}
-
-	[RelayCommand]
-	public async Task<bool> Dismiss()
-	{
-		var result = await _popupService.DismissAsync();
-		if (result.IsSuccess)
-		{
-			_completion?.TrySetCanceled();
-		}
-		return result.IsSuccess;
-	}
-
-	protected async Task<IResult> Dismiss(TResult result)
-	{
-		var popupResult = await _popupService.DismissAsync();
-		if (popupResult.IsSuccess)
-		{
-			_completion?.TrySetResult(result);
-		}
-		else
-		{
-			_completion?.TrySetException(popupResult.Exception ?? new Exception(popupResult.ErrorMessage));
-		}
-
-		return popupResult;
-	}
 
 	protected virtual bool ShouldDismissOnBackButtonPressed => true;
 
 	protected virtual bool ShouldDismissOnBackgroundTapped => true;
-	
+
 	bool IPopupDismissible.ShouldDismissOnBackButtonPressed => ShouldDismissOnBackButtonPressed;
-	
+
 	bool IPopupDismissible.ShouldDismissOnBackgroundTapped => ShouldDismissOnBackgroundTapped;
 
-	void IPopupDismissible.NotifyCancellation()
-	{
-		_completion?.TrySetCanceled();
-	}
+	private protected override Task<IResult> DismissTopAsync() => _popupService.DismissAsync();
 
 	internal sealed override string PageName => PageHelper.ToPageName(GetType(), PagePattern.Popup);
 }
