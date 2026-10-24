@@ -2,7 +2,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.Mopups.Contracts;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Presentations;
+using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
@@ -376,5 +379,120 @@ public class PopupServiceTests
 
         // Then
         Assert.DoesNotThrow(() => RaisePageUnloaded(regularPage));
+    }
+
+    // -----------------------------------------------------------------------
+    // Presentations: the caller's result follows the popup page
+    // -----------------------------------------------------------------------
+
+    private async Task<(PopupPage Page, Presentation<TestPopupResult> Presentation)> PresentForResultAsync()
+    {
+        var popupPage = new PopupPage();
+        _pageFactory.GetPageTypesFromPath(Arg.Any<string>()).Returns([new PageInfo(typeof(PopupPage))]);
+        _pageFactory.CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>()).Returns(popupPage);
+
+        var presentation = new Presentation<TestPopupResult>();
+        var parameters = new NavigationParameters { { NavigationHints.Presentation, presentation } };
+        var presented = await _sut.PresentAsync("ConfirmPopup", parameters);
+        Assert.That(presented.IsSuccess, Is.True);
+        return (popupPage, presentation);
+    }
+
+    [Test]
+    public async Task PresentAsync_OpensTheCallersPresentationOnThePopup()
+    {
+        // When
+        var (popupPage, presentation) = await PresentForResultAsync();
+
+        // Then
+        Assert.That(presentation.Host, Is.SameAs(popupPage));
+        Assert.That(presentation.IsClosed, Is.False);
+    }
+
+    [Test]
+    public async Task PresentAsync_WithoutACaller_StillGivesThePageAPresentation()
+    {
+        // Given: PresentAsync(name), nobody awaits a result
+        INavigationParameters? received = null;
+        _pageFactory.GetPageTypesFromPath(Arg.Any<string>()).Returns([new PageInfo(typeof(PopupPage))]);
+        _pageFactory.CreatePage(Arg.Any<PageInfo>(), Arg.Do<INavigationParameters?>(p => received = p)).Returns(new PopupPage());
+
+        // When
+        await _sut.PresentAsync("ConfirmPopup");
+
+        // Then: so Dismiss() still works through it
+        Assert.That(received!.TryGetValue<Presentation>(NavigationHints.Presentation, out _), Is.True);
+    }
+
+    [Test]
+    public async Task PageUnloaded_CompletesTheCallerAsCancelled()
+    {
+        // Given
+        var (popupPage, presentation) = await PresentForResultAsync();
+
+        // When: Mopups removed the popup (background tap, PopAsync, PopAllAsync)
+        RaisePageUnloaded(popupPage);
+
+        // Then
+        Assert.That(presentation.Result.IsCanceled, Is.True);
+    }
+
+    [Test]
+    public async Task Complete_RemovesThatPopupAndGivesTheCallerTheResult()
+    {
+        // Given
+        var (popupPage, presentation) = await PresentForResultAsync();
+
+        // When: what Dismiss(result) on the view model does; the presentation asks this service to remove
+        // the page, then closes itself (in the app, the page's Unloaded closes it too)
+        var dismissed = await presentation.CompleteAsync(new TestPopupResult(true));
+
+        // Then
+        Assert.That(dismissed.IsSuccess, Is.True);
+        await _popupNavigation.Received(1).RemovePageAsync(popupPage, Arg.Any<bool>());
+        Assert.That(await presentation.Result, Is.EqualTo(new TestPopupResult(true)));
+    }
+
+    [Test]
+    public async Task PresenterDismiss_RemovesThePageButLeavesClosingToThePresentation()
+    {
+        // Given
+        var (popupPage, presentation) = await PresentForResultAsync();
+
+        // When: the presenter alone
+        var dismissed = await ((IPresenter)_sut).DismissAsync(presentation);
+
+        // Then: the page is gone; the presentation closes from Presentation.DismissAsync or PageUnloaded, not here
+        Assert.That(dismissed.IsSuccess, Is.True);
+        await _popupNavigation.Received(1).RemovePageAsync(popupPage, Arg.Any<bool>());
+        Assert.That(presentation.IsClosed, Is.False);
+    }
+
+    [Test]
+    public async Task PresenterDismiss_WhenMopupsThrows_LeavesTheCallerWaiting()
+    {
+        // Given
+        var (popupPage, presentation) = await PresentForResultAsync();
+        _popupNavigation.RemovePageAsync(popupPage, Arg.Any<bool>()).Returns(Task.FromException(new InvalidOperationException("boom")));
+
+        // When
+        var dismissed = await ((IPresenter)_sut).DismissAsync(presentation);
+
+        // Then
+        Assert.That(dismissed.ErrorCode, Is.EqualTo(ErrorCode.General));
+        Assert.That(presentation.Result.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task DismissAllAsync_CancelsEveryWaitingCaller()
+    {
+        // Given
+        var (_, presentation) = await PresentForResultAsync();
+
+        // When
+        await _sut.DismissAllAsync();
+
+        // Then
+        Assert.That(presentation.Result.IsCanceled, Is.True);
     }
 }

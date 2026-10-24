@@ -1,8 +1,7 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
-using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
 
@@ -31,30 +30,9 @@ public static class ModalServiceExtension
 				parameters ?? new NavigationParameters(),
 				animated);
 
-		private static async Task<Result<TResult>> PresentAsync<TResult>(
+		private static Task<Result<TResult>> PresentAsync<TResult>(
 			IModalService modal, string modalName, INavigationParameters parameters, bool animated)
-		{
-			// The presentation the caller awaits; ModalService opens it and hands it to the modal's pages
-			var presentation = new ModalPresentation<TResult>();
-			parameters[NavigationHints.ModalPresentation] = presentation;
-
-			var navResult = await modal.PresentAsync(modalName, parameters, animated);
-			if (navResult.IsFailure)
-				return Result.Fail<TResult>(ErrorCode.InvalidState, 
-					navResult.Exception, "Failed to present modal '{ModalName}'.", modalName);
-
-			try
-			{
-				var modalResult = await presentation.Result;
-				return Result.Ok(modalResult);
-			}
-			catch (TaskCanceledException)
-			{
-				// Unlike popups, a cancelled modal is already gone: either Dismiss() popped it or the system did.
-				// Dismissing here would pop whichever modal is now on top.
-				const string message = "Modal '{ModalName}' has been cancelled.";
-				return Result.Fail<TResult>(ErrorCode.Cancelled, message, modalName);
-			}
-		}
+			=> Presenting.PresentForResultAsync<TResult>(
+				p => modal.PresentAsync(modalName, p, animated), parameters, modalName);
 	}
 }

@@ -2,7 +2,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Wizards;
 
@@ -14,14 +14,14 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 /// <see cref="Dismiss(TState)"/>. Pass a <see cref="TimeProvider"/> to control the repeated-tap window in tests.
 /// </summary>
 public abstract partial class WizardHostViewModel<TState>(IContentViewFactory viewFactory, TimeProvider clock)
-    : PageViewModel, IModalViewModel<TState>, IModalDismissible where TState : new()
+    : PageViewModel, IModalViewModel<TState>, IDismissible where TState : new()
 {
     private readonly IContentViewFactory _viewFactory = viewFactory;
     private readonly TimeProvider _clock = clock;
     private readonly Dictionary<int, ContentView> _stepCache = [];
 
     // The modal this wizard is in; set only when ModalService presented it
-    private ModalPresentation? _presentation;
+    private Presentation? _presentation;
 
     // GoNextAsync awaits CanAdvanceFromAsync and OnCompletedAsync; these let a second Next drop out meanwhile
     private bool _isAdvancing;
@@ -39,7 +39,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     {
         base.HandleParametersSet(parameters);
 
-        parameters.TryGetValue(NavigationHints.ModalPresentation, out _presentation);
+        parameters.TryGetValue(NavigationHints.Presentation, out _presentation);
     }
 
     private protected override void HandleInitialized()
@@ -366,7 +366,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     }
 
     // Android Back on a modal; the Cancel / close command calls Dismiss() directly.
-    async Task<bool> IModalDismissible.Dismiss()
+    async Task<bool> IDismissible.Dismiss()
     {
         if (ShouldGoBackOnBackButtonPressed && CanGoBack)
         {

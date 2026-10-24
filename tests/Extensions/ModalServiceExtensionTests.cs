@@ -1,6 +1,6 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
@@ -21,15 +21,15 @@ public class ModalServiceExtensionTests
     }
 
     // Completes the presentation the extension passes, the way the modal closing would
-    private void PresentCompletesWith(Action<ModalPresentation<TestModalResult>> complete)
+    private void PresentCompletesWith(Action<Presentation<TestModalResult>> complete)
     {
         _modalService
             .PresentAsync(Arg.Any<string>(), Arg.Any<INavigationParameters>(), Arg.Any<bool>())
             .Returns(callInfo =>
             {
                 if (callInfo.Arg<INavigationParameters>()
-                    ?.TryGetValue<ModalPresentation<TestModalResult>>(
-                        NavigationHints.ModalPresentation, out var presentation) == true)
+                    ?.TryGetValue<Presentation<TestModalResult>>(
+                        NavigationHints.Presentation, out var presentation) == true)
                 {
                     complete(presentation!);
                 }
@@ -37,7 +37,7 @@ public class ModalServiceExtensionTests
             });
     }
 
-    private static void CloseWith(ModalPresentation<TestModalResult> presentation, TestModalResult result)
+    private static void CloseWith(Presentation<TestModalResult> presentation, TestModalResult result)
     {
         presentation.SetPendingResult(result);
         presentation.OnClosed();

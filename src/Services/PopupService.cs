@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.Mopups.Contracts;
+using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.ViewModels;
 using PopupPage = Nkraft.Mopups.Pages.PopupPage;
 
@@ -16,7 +18,7 @@ public interface IPopupService
 	Task<IResult> DismissAllAsync(bool animated = true);
 }
 
-internal sealed class PopupService : IPopupService
+internal sealed class PopupService : IPopupService, IPresenter
 {
 	private readonly ILogger<PopupService> _logger;
 	private readonly IPopupNavigation _popupNavigation;
@@ -24,6 +26,9 @@ internal sealed class PopupService : IPopupService
 	private readonly IPageCatalog _pageCatalog;
 
 	private readonly OrderedDictionary<Type, WeakReference<PopupPage>> _activePopups = [];
+
+	// The popups this service presented and that are still on screen
+	private readonly Dictionary<PopupPage, Presentation> _presentations = [];
 
 	public PopupService(
 		ILogger<PopupService> logger, 
@@ -43,6 +48,12 @@ internal sealed class PopupService : IPopupService
 	{
 		if (page is PopupPage popup)
 		{
+			// Mopups removed it (ours, a background tap, PopAllAsync): complete a waiting caller
+			if (_presentations.Remove(popup, out var presentation))
+			{
+				presentation.OnClosed();
+			}
+
 			var viewModel = popup.BindingContext as PageViewModel;
 			var popupRemoved = _activePopups.Remove(popup.GetType());
 			if (popupRemoved == false)
@@ -79,12 +90,23 @@ internal sealed class PopupService : IPopupService
 
 		try
 		{
+			// PresentAsync<TViewModel, TResult> passes a presentation that the caller awaits; otherwise nobody does
+			var popupParameters = parameters ?? new NavigationParameters();
+			if (popupParameters.TryGetValue<Presentation>(NavigationHints.Presentation, out var presentation) == false)
+			{
+				presentation = new Presentation();
+				popupParameters[NavigationHints.Presentation] = presentation;
+			}
+
 			var pageInfo = pageInfoList.Single();
-			var popupPage = (PopupPage)lease.Create(pageInfo, parameters);
+			var popupPage = (PopupPage)lease.Create(pageInfo, popupParameters);
 			var popupType = popupPage.GetType();
+			presentation.Open(this, popupPage, popupPage);
+
 			await _popupNavigation.PushAsync(popupPage, animated);
 			lease.Commit(popupPage);
 			_activePopups[popupType] = new WeakReference<PopupPage>(popupPage);
+			_presentations[popupPage] = presentation;
 			return Result.Ok();
 		}
 		catch (Exception ex)
@@ -148,6 +170,7 @@ internal sealed class PopupService : IPopupService
 			await _popupNavigation.PopAllAsync(animated);
 			// TODO figure out if this is really needed
 			_activePopups.Clear();
+			CloseAllPresentations();
 			return Result.Ok();
 		}
 		catch (Exception ex)
@@ -156,5 +179,39 @@ internal sealed class PopupService : IPopupService
 			_logger.LogError(ex, message);
 			return Result.Fail(ErrorCode.General, ex, message);
 		}
+	}
+
+	// -----------------------------------------------------------------------
+	// IPresenter: what a presentation asks for
+	// -----------------------------------------------------------------------
+
+	async Task<IResult> IPresenter.DismissAsync(Presentation presentation)
+	{
+		if (presentation.IsClosed || presentation.Host is not PopupPage popupPage)
+		{
+			const string message = "The popup has already closed.";
+			_logger.LogInformation(message);
+			return Result.Fail(ErrorCode.NotHandled, message);
+		}
+
+		try
+		{
+			// Removes this popup wherever it is in the popup stack; PageUnloaded then closes the presentation
+			await _popupNavigation.RemovePageAsync(popupPage, animate: true);
+			return Result.Ok();
+		}
+		catch (Exception ex)
+		{
+			const string message = "An error occurred while trying to dismiss popup '{PopupName}'.";
+			_logger.LogError(ex, message, popupPage.GetType().Name);
+			return Result.Fail(ErrorCode.General, ex, message, popupPage.GetType().Name);
+		}
+	}
+
+	private void CloseAllPresentations()
+	{
+		var closed = _presentations.Values.ToList();
+		_presentations.Clear();
+		closed.ForEach(presentation => presentation.OnClosed());
 	}
 }

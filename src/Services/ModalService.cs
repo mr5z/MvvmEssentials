@@ -4,6 +4,7 @@ using Nkraft.CrossUtility.Extensions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Pages;
 using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using iOSPage = Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Page;
@@ -43,7 +44,7 @@ internal sealed class ModalService(
     ILogger<ModalService> logger,
     IPageFactory pageFactory,
     IApplicationContext context,
-    IDispatcher dispatcher) : IModalService, IModalPresenter
+    IDispatcher dispatcher) : IModalService, IStackPresenter
 {
     private readonly ILogger<ModalService> _logger = logger;
     private readonly IPageFactory _pageFactory = pageFactory;
@@ -52,7 +53,7 @@ internal sealed class ModalService(
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     // The modals this service presented and that are still on screen, keyed by the page pushed with PushModalAsync
-    private readonly Dictionary<Page, ModalPresentation> _presentations = [];
+    private readonly Dictionary<Page, Presentation> _presentations = [];
 
     // The modal this service is removing right now. Its pop is let through; any other pop
     // (Android Back) is routed to the view model first.
@@ -79,10 +80,10 @@ internal sealed class ModalService(
         {
             // PresentAsync<TViewModel, TResult> passes a presentation that the caller awaits; otherwise nobody does
             var modalParameters = parameters ?? new NavigationParameters();
-            if (modalParameters.TryGetValue<ModalPresentation>(NavigationHints.ModalPresentation, out var presentation) == false)
+            if (modalParameters.TryGetValue<Presentation>(NavigationHints.Presentation, out var presentation) == false)
             {
-                presentation = new ModalPresentation();
-                modalParameters[NavigationHints.ModalPresentation] = presentation;
+                presentation = new Presentation();
+                modalParameters[NavigationHints.Presentation] = presentation;
             }
 
             var modalPage = lease.Create(pageInfo, modalParameters);
@@ -98,7 +99,9 @@ internal sealed class ModalService(
         catch (Exception ex)
         {
             if (host is not null)
+            {
                 _presentations.Remove(host);
+            }
 
             const string message = "An error occurred while trying to present '{ModalName}'.";
             _logger.LogError(ex, message, modalName);
@@ -176,11 +179,11 @@ internal sealed class ModalService(
     }
 
     // -----------------------------------------------------------------------
-    // IModalPresenter: what a presentation asks for
+    // IStackPresenter: what a presentation asks for (DismissAsync is IPresenter's)
     // -----------------------------------------------------------------------
 
-    async Task<IResult> IModalPresenter.PushAsync(
-        ModalPresentation presentation, string pageName, INavigationParameters? parameters, bool animated)
+    async Task<IResult> IStackPresenter.PushAsync(
+        Presentation presentation, string pageName, INavigationParameters? parameters, bool animated)
     {
         if (ResolveSinglePage(pageName, out var pageInfo) is { } invalidName)
             return invalidName;
@@ -196,8 +199,10 @@ internal sealed class ModalService(
             // A copy, so the caller's parameters aren't changed; the page joins the same presentation
             var pageParameters = new NavigationParameters();
             foreach (var (key, value) in parameters ?? new NavigationParameters())
+            {
                 pageParameters.Add(key, value);
-            pageParameters[NavigationHints.ModalPresentation] = presentation;
+            }
+            pageParameters[NavigationHints.Presentation] = presentation;
 
             await stack.PushAsync(lease.Create(pageInfo, pageParameters), animated);
             lease.Commit(presentation.Host!);
@@ -215,7 +220,7 @@ internal sealed class ModalService(
         }
     }
 
-    async Task<IResult> IModalPresenter.PopAsync(ModalPresentation presentation, bool animated)
+    async Task<IResult> IStackPresenter.PopAsync(Presentation presentation, bool animated)
     {
         await _gate.WaitAsync();
 
@@ -246,7 +251,7 @@ internal sealed class ModalService(
         }
     }
 
-    async Task<IResult> IModalPresenter.DismissAsync(ModalPresentation presentation)
+    async Task<IResult> IPresenter.DismissAsync(Presentation presentation)
     {
         if (TryGetWindow(out var window) == false)
             return WindowNotFound();
@@ -332,7 +337,7 @@ internal sealed class ModalService(
     }
 
     // The NavigationPage hosting the presentation's pages, which exists unless Modal.WithNavigation="False"
-    private IResult? FindStack(ModalPresentation presentation, out NavigationPage stack)
+    private IResult? FindStack(Presentation presentation, out NavigationPage stack)
     {
         stack = null!;
 
@@ -392,7 +397,9 @@ internal sealed class ModalService(
     private void OnModalPopped(object? sender, ModalPoppedEventArgs e)
     {
         if (_presentations.Remove(e.Modal, out var presentation))
+        {
             presentation.OnClosed();
+        }
     }
 
     // Replacing the window's page (absolute navigation) makes MAUI clear its modal stack without ModalPopped.
@@ -425,7 +432,7 @@ internal sealed class ModalService(
         }
 
         var page = presentation?.FirstPage ?? (e.Modal is NavigationPage host ? host.RootPage : e.Modal);
-        if (page.BindingContext is not IModalDismissible dismissible)
+        if (page.BindingContext is not IDismissible dismissible)
             return;
 
         e.Cancel = true;

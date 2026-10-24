@@ -1,6 +1,6 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
@@ -28,7 +28,7 @@ internal sealed class PresentableWizardHostViewModel(
     public void SimulateUnload() => ((IDisposable)this).Dispose();
 
     // What ModalService does when Android Back pops a modal it didn't start
-    public Task<bool> SimulateBackButton() => ((IModalDismissible)this).Dismiss();
+    public Task<bool> SimulateBackButton() => ((IDismissible)this).Dismiss();
 
     public Task PublicGoNextAsync() => GoNextAsync();
     public int PublicCurrentIndex => CurrentIndex;
@@ -53,24 +53,24 @@ internal sealed class PresentableWizardHostViewModel(
 [TestFixture]
 public class WizardModalTests
 {
-    private IModalPresenter _presenter = null!;
+    private IStackPresenter _presenter = null!;
     private FakeContentViewFactory _factory = null!;
-    private ModalPresentation<FakeWizardState> _presentation = null!;
+    private Presentation<FakeWizardState> _presentation = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _presenter = Substitute.For<IModalPresenter>();
-        _presenter.DismissAsync(Arg.Any<ModalPresentation>()).Returns(Result.Ok());
+        _presenter = Substitute.For<IStackPresenter>();
+        _presenter.DismissAsync(Arg.Any<Presentation>()).Returns(Result.Ok());
         _factory = new FakeContentViewFactory();
-        _presentation = new ModalPresentation<FakeWizardState>();
+        _presentation = new Presentation<FakeWizardState>();
         _presentation.Open(_presenter, new ContentPage(), new ContentPage());
     }
 
     // Parameters as ModalService + PresentAsync<TViewModel, TResult> pass them
     private PresentableWizardHostViewModel CreateModalSut(int stepCount)
     {
-        var parameters = new NavigationParameters { { NavigationHints.ModalPresentation, _presentation } };
+        var parameters = new NavigationParameters { { NavigationHints.Presentation, _presentation } };
         return CreateSut(stepCount, parameters);
     }
 
@@ -101,7 +101,7 @@ public class WizardModalTests
         Assert.That(dismissed, Is.False);
         Assert.That(sut.CompletionResult?.IsFailure, Is.True);
         Assert.That(sut.CanDismissCallCount, Is.EqualTo(0));
-        await _presenter.DidNotReceive().DismissAsync(Arg.Any<ModalPresentation>());
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
     }
 
     // -----------------------------------------------------------------------
@@ -121,7 +121,7 @@ public class WizardModalTests
         // Then
         Assert.That(sut.PublicIsModal, Is.True);
         Assert.That(await _presentation.Result, Is.EqualTo(new FakeWizardState()));
-        await _presenter.Received(1).DismissAsync(Arg.Any<ModalPresentation>());
+        await _presenter.Received(1).DismissAsync(Arg.Any<Presentation>());
     }
 
     // -----------------------------------------------------------------------
@@ -142,7 +142,7 @@ public class WizardModalTests
         Assert.That(dismissed, Is.False);
         Assert.That(sut.PublicCurrentIndex, Is.EqualTo(0));
         Assert.That(sut.CanDismissCallCount, Is.EqualTo(0));
-        await _presenter.DidNotReceive().DismissAsync(Arg.Any<ModalPresentation>());
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
         Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
@@ -190,7 +190,7 @@ public class WizardModalTests
 
         // Then
         Assert.That(dismissed, Is.False);
-        await _presenter.DidNotReceive().DismissAsync(Arg.Any<ModalPresentation>());
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
         Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
@@ -250,7 +250,7 @@ public class WizardModalTests
     {
         // Given — MAUI may unload the page before PopModalAsync returns
         var sut = CreateModalSut(stepCount: 1);
-        _presenter.DismissAsync(Arg.Any<ModalPresentation>()).Returns(_ =>
+        _presenter.DismissAsync(Arg.Any<Presentation>()).Returns(_ =>
         {
             sut.SimulateUnload();
             return Result.Ok();

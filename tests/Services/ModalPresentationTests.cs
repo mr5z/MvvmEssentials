@@ -3,6 +3,7 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
@@ -80,7 +81,9 @@ public class ModalPresentationTests
 
         // The caller awaits the modal's result, so wait for the modal to be on screen instead
         for (var i = 0; i < 100 && (first is null || _window.Navigation.ModalStack.Count == 0); i++)
+        {
             await Task.Delay(10);
+        }
 
         Assert.That(first, Is.Not.Null, "The modal wasn't presented");
         return (first, caller);

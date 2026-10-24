@@ -1,6 +1,6 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
-using Nkraft.MvvmEssentials.Services.Modals;
+using Nkraft.MvvmEssentials.Services.Presentations;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
@@ -11,22 +11,22 @@ using NUnit.Framework;
 namespace Nkraft.MvvmEssentials.UnitTest.ViewModels;
 
 /// <summary>
-/// ModalViewModel against its ModalPresentation; the platform work (IModalPresenter) is substituted.
+/// ModalViewModel against its Presentation; the platform work (IStackPresenter) is substituted.
 /// </summary>
 [TestFixture]
 public class ModalViewModelTests
 {
     private IModalService _modalService = null!;
-    private IModalPresenter _presenter = null!;
-    private ModalPresentation<TestModalResult> _presentation = null!;
+    private IStackPresenter _presenter = null!;
+    private Presentation<TestModalResult> _presentation = null!;
     private TestModalViewModel _sut = null!;
 
     [SetUp]
     public void SetUp()
     {
         _modalService = Substitute.For<IModalService>();
-        _presenter = Substitute.For<IModalPresenter>();
-        _presentation = new ModalPresentation<TestModalResult>();
+        _presenter = Substitute.For<IStackPresenter>();
+        _presentation = new Presentation<TestModalResult>();
         _presentation.Open(_presenter, new ContentPage(), new ContentPage());
         _sut = CreatePage<TestModalViewModel>();
     }
@@ -35,7 +35,7 @@ public class ModalViewModelTests
     private T CreatePage<T>() where T : TestModalViewModel
     {
         var page = (T)Activator.CreateInstance(typeof(T), _modalService)!;
-        ((IParametersSet)page).OnParametersSet(new NavigationParameters { { NavigationHints.ModalPresentation, _presentation } });
+        ((IParametersSet)page).OnParametersSet(new NavigationParameters { { NavigationHints.Presentation, _presentation } });
         return page;
     }
 
@@ -173,7 +173,7 @@ public class ModalViewModelTests
 
         // Then
         Assert.That(dismissed, Is.False);
-        await _presenter.DidNotReceive().DismissAsync(Arg.Any<ModalPresentation>());
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<Presentation>());
         Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
@@ -194,7 +194,7 @@ public class ModalViewModelTests
         Assert.That(second, Is.SameAs(first));
         Assert.That(await first, Is.True);
         Assert.That(_sut.CanDismissCallCount, Is.EqualTo(1));
-        await _presenter.Received(1).DismissAsync(Arg.Any<ModalPresentation>());
+        await _presenter.Received(1).DismissAsync(Arg.Any<Presentation>());
     }
 
     [Test]

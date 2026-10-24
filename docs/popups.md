@@ -71,6 +71,20 @@ if (result.TryGetValue(out var confirmResult))
 > [Strongly-typed navigation parameters](navigation-page.md#navigationextension-examples)
 > for details.
 
+## Dismissal
+
+| Action | `CanDismissAsync` asked? | Caller receives |
+|---|---|---|
+| `Dismiss(result)` (Yes / No / Save) | No | the result |
+| `DismissCommand` (close) | Yes | `Cancelled` |
+| Background tap (`ShouldDismissOnBackgroundTapped`, default `true`) | Yes | `Cancelled` |
+| Android Back (`ShouldDismissOnBackButtonPressed`, default `true`) | Yes | `Cancelled` |
+
+Override `CanDismissAsync` to keep a popup open, for example while it is saving. Return `false` from the
+`ShouldDismissOn...` properties for a tap or Back to do nothing at all.
+
+Popups and [modals](modals.md#dismissal) dismiss the same way: both derive from `PresentedViewModel<TResult>`.
+
 ## Lifecycle
 
 `PopupViewModel` inherits all lifecycle methods from `PageViewModel`

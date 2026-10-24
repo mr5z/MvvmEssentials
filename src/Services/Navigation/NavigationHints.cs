@@ -6,8 +6,6 @@ internal static class NavigationHints
     
     public const string IsFlyoutDetailRoot = "__IsFlyoutDetailRoot";
 
-    public const string PopupCompletionParam = "__PopupCompletion";
-    
-    // The ModalPresentation a page belongs to; set on every page ModalService creates for a modal
-    public const string ModalPresentation = "__ModalPresentation";
+    // The Presentation a page belongs to; set on every page a presenting service creates for a popup or modal
+    public const string Presentation = "__Presentation";
 }

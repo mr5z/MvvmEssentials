@@ -171,6 +171,25 @@ internal partial class TestPopupViewModel(IPopupService popupService)
     public Task<IResult> PublicDismissWithResult(TestPopupResult result) => Dismiss(result);
     public bool PublicShouldDismissOnBackButtonPressed => ShouldDismissOnBackButtonPressed;
     public bool PublicShouldDismissOnBackgroundTapped => ShouldDismissOnBackgroundTapped;
+
+    public bool AllowDismiss { get; set; } = true;
+    public bool DismissOnBackgroundTap { get; set; } = true;
+    public int CanDismissCallCount { get; private set; }
+
+    protected override bool ShouldDismissOnBackgroundTapped => DismissOnBackgroundTap;
+
+    protected override Task<bool> CanDismissAsync()
+    {
+        CanDismissCallCount++;
+        return Task.FromResult(AllowDismiss);
+    }
+}
+
+// Exposes PopupPage's platform hooks, which are protected and sealed
+internal class TestPopupPage : Nkraft.MvvmEssentials.Pages.PopupPage
+{
+    public bool TapBackground() => OnBackgroundClicked();
+    public bool PressBack() => OnBackButtonPressed();
 }
 
 internal record TestModalResult(bool Confirmed);
