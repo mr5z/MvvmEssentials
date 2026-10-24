@@ -206,6 +206,8 @@ internal partial class TestModalViewModel(IModalService modalService)
     public Task<IResult> PublicPushAsync(ModalDestination<TestModalResult> destination) => PushAsync(destination, animated: false);
     public Task<IResult> PublicPushAsync<TNext>() where TNext : IModalViewModel<TestModalResult> => PushAsync<TNext>(animated: false);
     public Task<IResult> PublicPopAsync() => PopAsync(animated: false);
+    public Task<IResult> PublicReplaceAsync(ModalDestination<TestModalResult> destination) => ReplaceAsync(destination, animated: false);
+    public Task<IResult> PublicReplaceAsync<TNext>() where TNext : IModalViewModel<TestModalResult> => ReplaceAsync<TNext>(animated: false);
 
     // Deliberately no base call — cancellation must not depend on it.
     protected override void OnDispose() => DisposeCount++;

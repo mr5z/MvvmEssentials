@@ -182,8 +182,18 @@ internal sealed class ModalService(
     // IStackPresenter: what a presentation asks for (DismissAsync is IPresenter's)
     // -----------------------------------------------------------------------
 
-    async Task<IResult> IStackPresenter.PushAsync(
+    Task<IResult> IStackPresenter.PushAsync(
         Presentation presentation, string pageName, INavigationParameters? parameters, bool animated)
+        => PushInsideAsync(presentation, pageName, parameters, animated, replace: false);
+
+    Task<IResult> IStackPresenter.ReplaceAsync(
+        Presentation presentation, string pageName, INavigationParameters? parameters, bool animated)
+        => PushInsideAsync(presentation, pageName, parameters, animated, replace: true);
+
+    // Replace pushes first and removes the covered page after: MAUI can't remove the page on screen, and the new page
+    // slides in over it as a push would.
+    private async Task<IResult> PushInsideAsync(
+        Presentation presentation, string pageName, INavigationParameters? parameters, bool animated, bool replace)
     {
         if (ResolveSinglePage(pageName, out var pageInfo) is { } invalidName)
             return invalidName;
@@ -204,8 +214,20 @@ internal sealed class ModalService(
             }
             pageParameters[NavigationHints.Presentation] = presentation;
 
+            var covered = stack.CurrentPage;
             await stack.PushAsync(lease.Create(pageInfo, pageParameters), animated);
             lease.Commit(presentation.Host!);
+
+            if (replace)
+            {
+                // Out of the tree, so PageFactory releases its scope
+                stack.Navigation.RemovePage(covered);
+                if (ReferenceEquals(covered, presentation.FirstPage))
+                {
+                    presentation.ReplaceFirstPage(stack.RootPage);
+                }
+            }
+
             return Result.Ok();
         }
         catch (Exception ex)

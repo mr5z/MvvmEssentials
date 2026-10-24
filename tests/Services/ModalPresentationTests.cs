@@ -209,6 +209,85 @@ public class ModalPresentationTests
         Assert.That(pushed.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
     }
 
+    [Test]
+    public async Task ReplaceAsync_OnTheFirstPage_LeavesOnlyTheNewPage()
+    {
+        // Given
+        var (first, caller) = await PresentAsync();
+        var nextPage = NextPage(() => new TestModalSecondViewModel(Modals));
+
+        // When
+        var replaced = await first.PublicReplaceAsync<TestModalSecondViewModel>();
+
+        // Then
+        Assert.That(replaced.IsSuccess, Is.True, replaced.ErrorMessage);
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new[] { nextPage }));
+        Assert.That(caller.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task ReplaceAsync_OnAPushedPage_RemovesOnlyThatPage()
+    {
+        // Given
+        var (first, _) = await PresentAsync();
+        var firstPage = Host.RootPage;
+        var (second, _) = await PushSecondAsync(first);
+        var thirdPage = NextPage(() => new TestModalSecondViewModel(Modals));
+
+        // When
+        await second.PublicReplaceAsync<TestModalSecondViewModel>();
+
+        // Then
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new Page[] { firstPage, thirdPage }));
+    }
+
+    [Test]
+    public async Task ReplaceAsync_ThenPopAsync_ReturnsNotHandled()
+    {
+        // Given: the replaced first page can't be gone back to
+        var (first, _) = await PresentAsync();
+        TestModalSecondViewModel next = null!;
+        NextPage(() => new TestModalSecondViewModel(Modals), vm => next = vm);
+        await first.PublicReplaceAsync<TestModalSecondViewModel>();
+
+        // When
+        var popped = await next.PublicPopAsync();
+
+        // Then
+        Assert.That(popped.ErrorCode, Is.EqualTo(ErrorCode.NotHandled));
+    }
+
+    [Test]
+    public async Task ReplacingPage_DismissWithResult_GivesTheCallerTheResult()
+    {
+        // Given
+        var (first, caller) = await PresentAsync();
+        TestModalSecondViewModel next = null!;
+        NextPage(() => new TestModalSecondViewModel(Modals), vm => next = vm);
+        await first.PublicReplaceAsync<TestModalSecondViewModel>();
+
+        // When
+        await next.PublicDismissWithResult(new TestModalResult(true));
+
+        // Then
+        Assert.That(_window.Navigation.ModalStack, Is.Empty);
+        Assert.That((await caller).TryGetValue(out var value) && value == new TestModalResult(true), Is.True);
+    }
+
+    [Test]
+    public async Task ReplaceAsync_WhenTheModalHasNoNavigationPage_FailsWithNotSupported()
+    {
+        // Given
+        var (first, _) = await PresentAsync(page => Modal.SetWithNavigation(page, false));
+        NextPage(() => new TestModalSecondViewModel(Modals));
+
+        // When
+        var replaced = await first.PublicReplaceAsync<TestModalSecondViewModel>();
+
+        // Then
+        Assert.That(replaced.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
+    }
+
     // -----------------------------------------------------------------------
     // The modal going away by other routes
     // -----------------------------------------------------------------------
@@ -287,6 +366,28 @@ public class ModalPresentationTests
 
         // Then
         Assert.That(first.CanDismissCallCount, Is.EqualTo(1));
+        Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+        Assert.That(caller.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task AndroidBack_AfterTheFirstPageWasReplaced_AsksTheNewFirstPagesViewModel()
+    {
+        // Given
+        _service = CreateService(interceptsBackNavigation: true, DispatcherCapturing());
+        var (first, caller) = await PresentAsync();
+        TestModalSecondViewModel next = null!;
+        NextPage(() => new TestModalSecondViewModel(Modals), vm => next = vm);
+        await first.PublicReplaceAsync<TestModalSecondViewModel>();
+        next.AllowDismiss = false;
+
+        // When
+        await _window.Navigation.PopModalAsync();
+        RunDispatched();
+
+        // Then
+        Assert.That(first.CanDismissCallCount, Is.Zero);
+        Assert.That(next.CanDismissCallCount, Is.EqualTo(1));
         Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
         Assert.That(caller.IsCompleted, Is.False);
     }

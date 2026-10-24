@@ -21,10 +21,12 @@ public class PresentationTests
         // When
         var pushed = await presentation.PushAsync("NextPage", null, animated: false);
         var popped = await presentation.PopAsync(animated: false);
+        var replaced = await presentation.ReplaceAsync("NextPage", null, animated: false);
 
         // Then
         Assert.That(pushed.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
         Assert.That(popped.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
+        Assert.That(replaced.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
     }
 
     [Test]

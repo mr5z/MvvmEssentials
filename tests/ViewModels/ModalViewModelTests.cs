@@ -289,6 +289,36 @@ public class ModalViewModelTests
     }
 
     [Test]
+    public async Task ReplaceAsync_WithADestination_ReplacesInsideThisModal()
+    {
+        // Given
+        var parameters = new NavigationParameters { { "Id", 7 } };
+        var destination = new ModalDestination<TestModalResult>("TestModalSecondPage", parameters);
+        _presenter.ReplaceAsync(_presentation, "TestModalSecondPage", parameters, false).Returns(Result.Ok());
+
+        // When
+        var result = await _sut.PublicReplaceAsync(destination);
+
+        // Then
+        Assert.That(result.IsSuccess, Is.True);
+        await _presenter.DidNotReceiveWithAnyArgs().PushAsync(default!, default!, default, default);
+    }
+
+    [Test]
+    public async Task ReplaceAsync_ByViewModelType_ReplacesWithItsPage()
+    {
+        // Given
+        _presenter.ReplaceAsync(_presentation, Arg.Any<string>(), Arg.Any<INavigationParameters?>(), Arg.Any<bool>())
+            .Returns(Result.Ok());
+
+        // When
+        await _sut.PublicReplaceAsync<TestModalSecondViewModel>();
+
+        // Then
+        await _presenter.Received(1).ReplaceAsync(_presentation, "TestModalSecondPage", null, false);
+    }
+
+    [Test]
     public async Task DismissWithResult_FromAPushedPage_GivesTheCallerTheResult()
     {
         // Given: pages pushed inside the modal get the same presentation
@@ -317,10 +347,12 @@ public class ModalViewModelTests
         // When
         var pushed = await sut.PublicPushAsync<TestModalSecondViewModel>();
         var popped = await sut.PublicPopAsync();
+        var replaced = await sut.PublicReplaceAsync<TestModalSecondViewModel>();
 
         // Then
         Assert.That(pushed.ErrorCode, Is.EqualTo(ErrorCode.InvalidState));
         Assert.That(popped.ErrorCode, Is.EqualTo(ErrorCode.InvalidState));
+        Assert.That(replaced.ErrorCode, Is.EqualTo(ErrorCode.InvalidState));
     }
 
     [Test]
