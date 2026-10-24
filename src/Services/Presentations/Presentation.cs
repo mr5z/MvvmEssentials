@@ -55,6 +55,18 @@ internal class Presentation
             : Task.FromResult(NoStack());
 
     /// <summary>
+    /// Pushes a page inside this presentation, then removes the page it covers, so going back skips it. Only
+    /// presenters with a page stack (modals) support it.
+    /// </summary>
+    public Task<IResult> ReplaceAsync(string pageName, INavigationParameters? parameters, bool animated)
+        => Presenter is IStackPresenter stack
+            ? stack.ReplaceAsync(this, pageName, parameters, animated)
+            : Task.FromResult(NoStack());
+
+    /// <summary>The first page was replaced (<see cref="ReplaceAsync"/>): Back on the new one asks its view model.</summary>
+    internal void ReplaceFirstPage(Page page) => FirstPage = page;
+
+    /// <summary>
     /// Removes the page without a result after <paramref name="canDismiss"/> agrees; a waiting caller receives
     /// <c>Cancelled</c>. Calls made while a dismissal is in progress share its outcome.
     /// </summary>

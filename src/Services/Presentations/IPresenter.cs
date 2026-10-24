@@ -24,4 +24,6 @@ internal interface IStackPresenter : IPresenter
     Task<IResult> PushAsync(Presentation presentation, string pageName, INavigationParameters? parameters, bool animated);
 
     Task<IResult> PopAsync(Presentation presentation, bool animated);
+
+    Task<IResult> ReplaceAsync(Presentation presentation, string pageName, INavigationParameters? parameters, bool animated);
 }
