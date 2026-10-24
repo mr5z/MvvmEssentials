@@ -1,6 +1,8 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Modals;
 using Nkraft.MvvmEssentials.Services.Navigation;
+using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
@@ -8,30 +10,39 @@ using NUnit.Framework;
 
 namespace Nkraft.MvvmEssentials.UnitTest.ViewModels;
 
+/// <summary>
+/// ModalViewModel against its ModalPresentation; the platform work (IModalPresenter) is substituted.
+/// </summary>
 [TestFixture]
 public class ModalViewModelTests
 {
     private IModalService _modalService = null!;
+    private IModalPresenter _presenter = null!;
+    private ModalPresentation<TestModalResult> _presentation = null!;
     private TestModalViewModel _sut = null!;
-    private TaskCompletionSource<TestModalResult> _tcs = null!;
 
     [SetUp]
     public void SetUp()
     {
         _modalService = Substitute.For<IModalService>();
-        _sut = new TestModalViewModel(_modalService);
-        _tcs = new TaskCompletionSource<TestModalResult>();
-
-        var parameters = new NavigationParameters();
-        parameters.Add(NavigationHints.ModalCompletionParam, _tcs);
-        ((IParametersSet)_sut).OnParametersSet(parameters);
+        _presenter = Substitute.For<IModalPresenter>();
+        _presentation = new ModalPresentation<TestModalResult>();
+        _presentation.Open(_presenter, new ContentPage(), new ContentPage());
+        _sut = CreatePage<TestModalViewModel>();
     }
 
-    private void SimulateUnload() => ((IDisposable)_sut).Dispose();
+    // What ModalService passes every page it creates for the modal
+    private T CreatePage<T>() where T : TestModalViewModel
+    {
+        var page = (T)Activator.CreateInstance(typeof(T), _modalService)!;
+        ((IParametersSet)page).OnParametersSet(new NavigationParameters { { NavigationHints.ModalPresentation, _presentation } });
+        return page;
+    }
 
-    // -----------------------------------------------------------------------
-    // PageName
-    // -----------------------------------------------------------------------
+    private void PresenterDismisses(IResult result)
+        => _presenter.DismissAsync(_presentation).Returns(result);
+
+    private void SimulateUnload() => ((IDisposable)_sut).Dispose();
 
     [Test]
     public void PageName_UsesPageSuffix()
@@ -44,26 +55,26 @@ public class ModalViewModelTests
     // -----------------------------------------------------------------------
 
     [Test]
-    public async Task DismissWithResult_WhenServiceSucceeds_CompletesTask()
+    public async Task DismissWithResult_WhenModalCloses_GivesTheCallerTheResult()
     {
         // Given
-        _modalService.DismissAsync().Returns(Result.Ok());
+        PresenterDismisses(Result.Ok());
         var expected = new TestModalResult(true);
 
         // When
         await _sut.PublicDismissWithResult(expected);
 
         // Then
-        Assert.That(await _tcs.Task, Is.EqualTo(expected));
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
     }
 
     [Test]
-    public async Task DismissWithResult_WhenUnloadFiresDuringDismissal_StillCompletesWithResult()
+    public async Task DismissWithResult_WhenMauiClosesTheModalDuringThePop_StillGivesTheResult()
     {
-        // Given — MAUI may unload the page before PopModalAsync returns
-        _modalService.DismissAsync().Returns(_ =>
+        // Given: ModalService closes the presentation from ModalPopped, before DismissAsync returns
+        _presenter.DismissAsync(_presentation).Returns(_ =>
         {
-            SimulateUnload();
+            _presentation.OnClosed();
             return Result.Ok();
         });
         var expected = new TestModalResult(true);
@@ -72,127 +83,36 @@ public class ModalViewModelTests
         await _sut.PublicDismissWithResult(expected);
 
         // Then
-        Assert.That(_tcs.Task.IsCompletedSuccessfully, Is.True);
-        Assert.That(await _tcs.Task, Is.EqualTo(expected));
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
     }
 
     [Test]
-    public async Task DismissWithResult_WhenServiceFails_SetsExceptionOnCompletion()
+    public async Task DismissWithResult_WhenTheModalCannotClose_LeavesTheCallerWaiting()
     {
         // Given
-        _modalService.DismissAsync().Returns(Result.Fail(ErrorCode.General, "boom"));
+        PresenterDismisses(Result.Fail(ErrorCode.InvalidState, "another modal is on top"));
 
         // When
+        var result = await _sut.PublicDismissWithResult(new TestModalResult(true));
+
+        // Then
+        Assert.That(result.IsFailure, Is.True);
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task DismissWithResult_AfterAFailedAttempt_CancelDoesNotReturnTheOldResult()
+    {
+        // Given: the first close failed, so the modal is still open; the user then cancels
+        PresenterDismisses(Result.Fail(ErrorCode.InvalidState, "another modal is on top"));
         await _sut.PublicDismissWithResult(new TestModalResult(true));
-
-        // Then
-        Assert.That(_tcs.Task.IsFaulted, Is.True);
-    }
-
-    // -----------------------------------------------------------------------
-    // Dismiss without result
-    // -----------------------------------------------------------------------
-
-    [Test]
-    public async Task Dismiss_WhenServiceSucceeds_CancelsTask()
-    {
-        // Given
-        _modalService.DismissAsync().Returns(Result.Ok());
+        PresenterDismisses(Result.Ok());
 
         // When
-        var dismissed = await _sut.Dismiss();
+        await _sut.Dismiss();
 
         // Then
-        Assert.That(dismissed, Is.True);
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
-    }
-
-    [Test]
-    public async Task Dismiss_WhenServiceFails_LeavesTaskPending()
-    {
-        // Given
-        _modalService.DismissAsync().Returns(Result.Fail(ErrorCode.NotHandled, "none"));
-
-        // When
-        var dismissed = await _sut.Dismiss();
-
-        // Then
-        Assert.That(dismissed, Is.False);
-        Assert.That(_tcs.Task.IsCompleted, Is.False);
-    }
-
-    // -----------------------------------------------------------------------
-    // System dismissal (Android back, iOS swipe-down)
-    // -----------------------------------------------------------------------
-
-    [Test]
-    public void Dispose_WithoutDismiss_CancelsTask()
-    {
-        // When
-        SimulateUnload();
-
-        // Then
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
-    }
-
-    [Test]
-    public void Dispose_WhenSubclassSkipsBaseCall_StillCancelsAndCallsSubclassHook()
-    {
-        // When
-        SimulateUnload();
-
-        // Then
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
-        Assert.That(_sut.DisposeCount, Is.EqualTo(1));
-    }
-
-    [Test]
-    public async Task Dispose_AfterResultWasSet_DoesNotOverrideResult()
-    {
-        // Given
-        _modalService.DismissAsync().Returns(Result.Ok());
-        var expected = new TestModalResult(false);
-        await _sut.PublicDismissWithResult(expected);
-
-        // When — unload arrives after dismissal finished
-        SimulateUnload();
-
-        // Then
-        Assert.That(await _tcs.Task, Is.EqualTo(expected));
-    }
-
-    // -----------------------------------------------------------------------
-    // CanDismissAsync guard
-    // -----------------------------------------------------------------------
-
-    [Test]
-    public async Task Dismiss_WhenCanDismissDeclines_KeepsModalOpenAndTaskPending()
-    {
-        // Given
-        _sut.AllowDismiss = false;
-
-        // When
-        var dismissed = await _sut.Dismiss();
-
-        // Then
-        Assert.That(dismissed, Is.False);
-        await _modalService.DidNotReceive().DismissAsync(Arg.Any<bool>());
-        Assert.That(_tcs.Task.IsCompleted, Is.False);
-    }
-
-    [Test]
-    public async Task Dismiss_WhenCanDismissAllows_DismissesAndCancelsTask()
-    {
-        // Given
-        _modalService.DismissAsync().Returns(Result.Ok());
-
-        // When
-        var dismissed = await _sut.Dismiss();
-
-        // Then
-        Assert.That(dismissed, Is.True);
-        Assert.That(_sut.CanDismissCallCount, Is.EqualTo(1));
-        Assert.That(_tcs.Task.IsCanceled, Is.True);
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
     }
 
     [Test]
@@ -200,15 +120,61 @@ public class ModalViewModelTests
     {
         // Given: saving must never be blocked by the discard guard
         _sut.AllowDismiss = false;
-        _modalService.DismissAsync().Returns(Result.Ok());
-        var expected = new TestModalResult(true);
+        PresenterDismisses(Result.Ok());
 
         // When
-        await _sut.PublicDismissWithResult(expected);
+        await _sut.PublicDismissWithResult(new TestModalResult(true));
 
         // Then
         Assert.That(_sut.CanDismissCallCount, Is.Zero);
-        Assert.That(await _tcs.Task, Is.EqualTo(expected));
+        Assert.That(_presentation.Result.IsCompletedSuccessfully, Is.True);
+    }
+
+    // -----------------------------------------------------------------------
+    // Dismiss without result
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task Dismiss_WhenModalCloses_CancelsTheCaller()
+    {
+        // Given
+        PresenterDismisses(Result.Ok());
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.True);
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
+    }
+
+    [Test]
+    public async Task Dismiss_WhenTheModalCannotClose_LeavesTheCallerWaiting()
+    {
+        // Given
+        PresenterDismisses(Result.Fail(ErrorCode.NotHandled, "none"));
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.False);
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task Dismiss_WhenCanDismissDeclines_KeepsModalOpen()
+    {
+        // Given
+        _sut.AllowDismiss = false;
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.False);
+        await _presenter.DidNotReceive().DismissAsync(Arg.Any<ModalPresentation>());
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
     [Test]
@@ -217,7 +183,7 @@ public class ModalViewModelTests
         // Given: Back pressed twice while a "Discard changes?" prompt is open
         var decision = new TaskCompletionSource<bool>();
         _sut.PendingDecision = decision;
-        _modalService.DismissAsync().Returns(Result.Ok());
+        PresenterDismisses(Result.Ok());
 
         // When
         var first = _sut.Dismiss();
@@ -228,7 +194,7 @@ public class ModalViewModelTests
         Assert.That(second, Is.SameAs(first));
         Assert.That(await first, Is.True);
         Assert.That(_sut.CanDismissCallCount, Is.EqualTo(1));
-        await _modalService.Received(1).DismissAsync(Arg.Any<bool>());
+        await _presenter.Received(1).DismissAsync(Arg.Any<ModalPresentation>());
     }
 
     [Test]
@@ -238,7 +204,7 @@ public class ModalViewModelTests
         _sut.AllowDismiss = false;
         await _sut.Dismiss();
         _sut.AllowDismiss = true;
-        _modalService.DismissAsync().Returns(Result.Ok());
+        PresenterDismisses(Result.Ok());
 
         // When
         var dismissed = await _sut.Dismiss();
@@ -246,5 +212,130 @@ public class ModalViewModelTests
         // Then
         Assert.That(dismissed, Is.True);
         Assert.That(_sut.CanDismissCallCount, Is.EqualTo(2));
+    }
+
+    // -----------------------------------------------------------------------
+    // Closing is the modal's, not the view model's
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public void ModalClosedBySystem_CancelsTheCaller()
+    {
+        // When: Android Back, iOS swipe-down or a direct pop; ModalService reports MAUI's ModalPopped
+        _presentation.OnClosed();
+
+        // Then
+        Assert.That(_presentation.Result.IsCanceled, Is.True);
+    }
+
+    [Test]
+    public void Dispose_DoesNotCompleteTheCaller()
+    {
+        // Given: a page popped inside the modal is disposed while the modal stays open
+
+        // When
+        SimulateUnload();
+
+        // Then
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
+        Assert.That(_sut.DisposeCount, Is.EqualTo(1));
+    }
+
+    // -----------------------------------------------------------------------
+    // Several pages in one modal
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task PushAsync_WithADestination_PushesItInsideThisModal()
+    {
+        // Given
+        var parameters = new NavigationParameters { { "Id", 7 } };
+        var destination = new ModalDestination<TestModalResult>("TestModalSecondPage", parameters);
+        _presenter.PushAsync(_presentation, "TestModalSecondPage", parameters, false).Returns(Result.Ok());
+
+        // When
+        var result = await _sut.PublicPushAsync(destination);
+
+        // Then
+        Assert.That(result.IsSuccess, Is.True);
+        await _presenter.Received(1).PushAsync(_presentation, "TestModalSecondPage", parameters, false);
+    }
+
+    [Test]
+    public async Task PushAsync_ByViewModelType_PushesItsPage()
+    {
+        // Given
+        _presenter.PushAsync(_presentation, Arg.Any<string>(), Arg.Any<INavigationParameters?>(), Arg.Any<bool>())
+            .Returns(Result.Ok());
+
+        // When
+        await _sut.PublicPushAsync<TestModalSecondViewModel>();
+
+        // Then
+        await _presenter.Received(1).PushAsync(_presentation, "TestModalSecondPage", null, false);
+    }
+
+    [Test]
+    public async Task PopAsync_GoesBackInsideThisModal()
+    {
+        // Given
+        _presenter.PopAsync(_presentation, false).Returns(Result.Ok());
+
+        // When
+        var result = await _sut.PublicPopAsync();
+
+        // Then
+        Assert.That(result.IsSuccess, Is.True);
+    }
+
+    [Test]
+    public async Task DismissWithResult_FromAPushedPage_GivesTheCallerTheResult()
+    {
+        // Given: pages pushed inside the modal get the same presentation
+        var page2 = CreatePage<TestModalSecondViewModel>();
+        PresenterDismisses(Result.Ok());
+        var expected = new TestModalResult(true);
+
+        // When
+        await page2.PublicDismissWithResult(expected);
+
+        // Then
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
+    }
+
+    // -----------------------------------------------------------------------
+    // Not presented with IModalService
+    // -----------------------------------------------------------------------
+
+    [Test]
+    public async Task NotPresented_PushAndPopFailWithInvalidState()
+    {
+        // Given
+        var sut = new TestModalViewModel(_modalService);
+        ((IParametersSet)sut).OnParametersSet(new NavigationParameters());
+
+        // When
+        var pushed = await sut.PublicPushAsync<TestModalSecondViewModel>();
+        var popped = await sut.PublicPopAsync();
+
+        // Then
+        Assert.That(pushed.ErrorCode, Is.EqualTo(ErrorCode.InvalidState));
+        Assert.That(popped.ErrorCode, Is.EqualTo(ErrorCode.InvalidState));
+    }
+
+    [Test]
+    public async Task NotPresented_DismissClosesTheTopModal()
+    {
+        // Given: shown with a direct PushModalAsync
+        var sut = new TestModalViewModel(_modalService);
+        ((IParametersSet)sut).OnParametersSet(new NavigationParameters());
+        _modalService.DismissAsync().Returns(Result.Ok());
+
+        // When
+        var dismissed = await sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.True);
+        await _modalService.Received(1).DismissAsync(Arg.Any<bool>());
     }
 }

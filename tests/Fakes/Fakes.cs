@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Attributes;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.ViewModels;
 
@@ -174,12 +175,18 @@ internal partial class TestPopupViewModel(IPopupService popupService)
 
 internal record TestModalResult(bool Confirmed);
 
+// A second page of the same modal (same result type)
+internal partial class TestModalSecondViewModel(IModalService modalService) : TestModalViewModel(modalService);
+
 internal partial class TestModalViewModel(IModalService modalService)
     : ModalViewModel<TestModalResult>(modalService)
 {
     public int DisposeCount { get; private set; }
 
     public Task<IResult> PublicDismissWithResult(TestModalResult result) => Dismiss(result);
+    public Task<IResult> PublicPushAsync(ModalDestination<TestModalResult> destination) => PushAsync(destination, animated: false);
+    public Task<IResult> PublicPushAsync<TNext>() where TNext : IModalViewModel<TestModalResult> => PushAsync<TNext>(animated: false);
+    public Task<IResult> PublicPopAsync() => PopAsync(animated: false);
 
     // Deliberately no base call — cancellation must not depend on it.
     protected override void OnDispose() => DisposeCount++;

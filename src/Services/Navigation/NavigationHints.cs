@@ -8,7 +8,6 @@ internal static class NavigationHints
 
     public const string PopupCompletionParam = "__PopupCompletion";
     
-    public const string ModalCompletionParam = "__ModalCompletion";
-
-    public const string ModalPresenter = "__ModalPresenter";
+    // The ModalPresentation a page belongs to; set on every page ModalService creates for a modal
+    public const string ModalPresentation = "__ModalPresentation";
 }

@@ -17,7 +17,8 @@ public interface INavigationService
     /// - An absolute path (starting with '/') replaces the current root page.
     /// </para>
     /// <para>
-    /// - A relative path navigates within the current page context.
+    /// - A relative path navigates within the current page context. It fails with <c>NotSupported</c> while a modal
+    /// is open: inside a modal, its view models navigate with <c>ModalViewModel.PushAsync</c> / <c>PopAsync</c>.
     /// </para>
     /// </summary>
     /// <param name="path">The navigation path, composed of page names and optional query parameters.</param>
@@ -114,6 +115,9 @@ internal sealed class NavigationService(
             }
             else
             {
+                if (RefuseWhileModalIsOpen() is { } refused)
+                    return refused;
+
                 var currentPage = _applicationContext.MainPage;
                 if (currentPage is null)
                 {
@@ -144,6 +148,9 @@ internal sealed class NavigationService(
 
     async Task<IResult> INavigationService.NavigateBackAsync(bool animated)
     {
+        if (RefuseWhileModalIsOpen() is { } refused)
+            return refused;
+
         if (TryGetCurrentPage(out var currentPage) == false)
         {
             const string message = "Main page is not set for current window.";
@@ -187,6 +194,9 @@ internal sealed class NavigationService(
 
     async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
     {
+        if (RefuseWhileModalIsOpen() is { } refused)
+            return refused;
+
         if (TryGetCurrentPage(out var currentPage) == false)
         {
             const string message = "Main page is not set for current window.";
@@ -279,6 +289,20 @@ internal sealed class NavigationService(
         {
             await navigationPage.PushAsync(page, animated);
         }
+    }
+
+    // The pages behind an open modal are hidden, so navigating them is almost always a mistake (a page inside the
+    // modal meaning to navigate the modal). Absolute paths still replace the root; ModalService then cancels the
+    // modals' callers.
+    private IResult? RefuseWhileModalIsOpen()
+    {
+        if (_applicationContext.Windows.Count == 0 || _applicationContext.Windows[0].Navigation.ModalStack.Count == 0)
+            return null;
+
+        const string message = "A modal is open. Navigate inside it from its view model (ModalViewModel.PushAsync / PopAsync), " +
+            "or dismiss it first.";
+        _logger.LogWarning(message);
+        return Result.Fail(ErrorCode.NotSupported, message);
     }
 
     private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)

@@ -131,7 +131,7 @@ public class ModalServiceTests
     // -----------------------------------------------------------------------
 
     [Test]
-    public async Task PresentAsync_PassesItselfAsModalPresenter()
+    public async Task PresentAsync_GivesThePageItsOpenedPresentation()
     {
         // Given
         var pageFactory = Substitute.For<IPageFactory>();
@@ -149,8 +149,9 @@ public class ModalServiceTests
 
         // Then
         Assert.That(received, Is.Not.Null);
-        Assert.That(received!.TryGetValue<IModalService>(NavigationHints.ModalPresenter, out var presenter), Is.True);
-        Assert.That(presenter, Is.SameAs(sut));
+        Assert.That(received!.TryGetValue<ModalPresentation>(NavigationHints.ModalPresentation, out var presentation), Is.True);
+        Assert.That(presentation!.Host, Is.InstanceOf<NavigationPage>());
+        Assert.That(context.Windows[0].Navigation.ModalStack[^1], Is.SameAs(presentation.Host));
     }
 
     // -----------------------------------------------------------------------

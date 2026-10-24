@@ -114,15 +114,55 @@ Apple's and Google's guidance for modal tasks, and how to follow it here:
 - **Give a clear way out.** iOS: Cancel on the leading edge, Done/Save on the trailing edge. Android: close (X)
   and Save in the top bar. Bind Cancel/close to `DismissCommand`.
 - **Don't lose work silently.** Override `CanDismissAsync` when the modal holds unsaved input.
-- **Keep it to one task.** Keep the modal to a single screen; pushing pages inside a modal isn't supported.
-  For a task that needs several steps, present a [wizard](wizard.md#presenting-the-wizard-modally-optional),
-  which keeps every step inside the one modal page.
+- **Keep it to one task.** A modal can hold several pages ([below](#pages-inside-a-modal)), but they should all
+  serve the task it was opened for. A [wizard](wizard.md#presenting-the-wizard-modally-optional) keeps every
+  step inside one page, which also works in overlays.
 - **One modal at a time.** Close a modal before presenting another one; a popup on top is fine.
 
-## Navigation inside a modal
+## Pages inside a modal
 
-`INavigationService` acts on the main page hierarchy, not on modals. Calling it from inside a modal
-affects the page behind the modal. Leave a modal with `Dismiss()` or `Dismiss(result)`.
+A modal can push further pages, which slide in inside it with their own top bar and Back. Every page is a
+`ModalViewModel<TResult>` with the caller's result type, so any of them can finish the modal:
+
+```cs
+// Caller: unchanged
+var result = await _modalService.PresentAsync(EditAddressViewModel.With(street: "123 Main St"));
+
+public partial class EditAddressViewModel(IModalService modal) : ModalViewModel<DeliveryAddress>(modal)
+{
+    [RelayCommand]
+    private Task Next() => PushAsync(ConfirmAddressViewModel.With(draft: new DeliveryAddress(/* ... */)));
+}
+
+public partial class ConfirmAddressViewModel(IModalService modal) : ModalViewModel<DeliveryAddress>(modal)
+{
+    [NavigationParameter] public DeliveryAddress? Draft { get; set; }
+
+    [RelayCommand] private Task Edit() => PopAsync();          // back to EditAddress
+    [RelayCommand] private Task Confirm() => Dismiss(Draft!);  // the caller receives it
+}
+```
+
+- **`PushAsync(destination)`** pushes the next page; pass its data through its navigation parameters
+  (`With(...)`). It only accepts a destination of the same result type, so a page that returns something else
+  doesn't compile. `PushAsync<TNext>()` pushes a page that has no parameters.
+- **`PopAsync()`** goes back one page, as do the back arrow and Android Back. On the first page it returns
+  `NotHandled`; there, Android Back asks `CanDismissAsync`.
+- **Closing.** `Dismiss(result)` on any page closes the modal and hands over the result; `Dismiss()` on any
+  page closes it with `Cancelled`. Popping a page doesn't affect the caller. If an earlier page's answer
+  should stand whatever happens next, have the later page dismiss with it (`Dismiss(Draft!)`).
+- **Where the stack comes from.** You present a page, not a `NavigationPage`: the `NavigationPage` is the
+  [top bar](#top-bar) host, and pages are pushed onto it. Without it (`Modal.WithNavigation="False"`, as
+  overlays use) the modal is a single page, and `PushAsync` fails with `NotSupported`.
+
+## INavigationService while a modal is open
+
+`INavigationService` navigates the pages behind the modal, which are hidden, so while a modal is open its
+relative navigation (`NavigateAsync("Page")`, `NavigateBackAsync`, `NavigateToRootAsync`) fails with
+`NotSupported`. Navigate inside the modal from its view models, or dismiss it first.
+
+An absolute path (`/Home`) still replaces the main page. MAUI then drops the modal without popping it: the
+caller receives `Cancelled`, and `CanDismissAsync` isn't asked.
 
 ---
 

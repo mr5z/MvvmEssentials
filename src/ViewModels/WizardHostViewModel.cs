@@ -20,8 +20,8 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     private readonly TimeProvider _clock = clock;
     private readonly Dictionary<int, ContentView> _stepCache = [];
 
-    // Set only when ModalService presented this page
-    private ModalSession<TState>? _modalSession;
+    // The modal this wizard is in; set only when ModalService presented it
+    private ModalPresentation? _presentation;
 
     // GoNextAsync awaits CanAdvanceFromAsync and OnCompletedAsync; these let a second Next drop out meanwhile
     private bool _isAdvancing;
@@ -39,11 +39,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     {
         base.HandleParametersSet(parameters);
 
-        if (parameters.TryGetValue<IModalService>(NavigationHints.ModalPresenter, out var modalService))
-        {
-            _modalSession = new ModalSession<TState>(modalService);
-            _modalSession.Attach(parameters);
-        }
+        parameters.TryGetValue(NavigationHints.ModalPresentation, out _presentation);
     }
 
     private protected override void HandleInitialized()
@@ -66,9 +62,6 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
 
         _viewFactory.Dispose();
         _stepCache.Clear();
-
-        // Disposed without going through Dismiss(): Android back button, iOS sheet swipe-down
-        _modalSession?.NotifyDisposed();
     }
 
     // Callers commit the outgoing step first, so ShouldSkipStep can read what it just wrote to State
@@ -331,7 +324,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     protected TState State { get; set; } = new();
 
     /// <summary>Whether <see cref="IModalService"/> presented this wizard, so it can be left with <c>Dismiss</c>.</summary>
-    protected bool IsModal => _modalSession is not null;
+    protected bool IsModal => _presentation is not null;
 
     /// <summary>
     /// Modal only. Asked before the wizard is dismissed without a result: the <see cref="Dismiss()"/> command
@@ -354,7 +347,7 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     /// </summary>
     [RelayCommand]
     public Task<bool> Dismiss()
-        => _modalSession?.DismissAsync(CanDismissAsync) ?? Task.FromResult(false);
+        => _presentation?.CancelAsync(CanDismissAsync) ?? Task.FromResult(false);
 
     /// <summary>
     /// Modal only. Dismisses the wizard and hands <paramref name="state"/> to the caller; call it from
@@ -363,13 +356,13 @@ public abstract partial class WizardHostViewModel<TState>(IContentViewFactory vi
     /// </summary>
     protected Task<IResult> Dismiss(TState state)
     {
-        if (_modalSession is null)
+        if (_presentation is null)
         {
             const string message = "The wizard was not presented with IModalService.";
             return Task.FromResult<IResult>(Result.Fail(ErrorCode.InvalidState, message));
         }
 
-        return _modalSession.DismissAsync(state);
+        return _presentation.CompleteAsync(state);
     }
 
     // Android Back on a modal; the Cancel / close command calls Dismiss() directly.

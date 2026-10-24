@@ -17,11 +17,13 @@ public interface IModalService
     /// The name must resolve to exactly one page.
     /// <para>
     /// The page is hosted in a <see cref="NavigationPage"/> unless it sets
-    /// <c>Modal.WithNavigation="False"</c>.
+    /// <c>Modal.WithNavigation="False"</c>. That host, added for the top bar, is also what lets the modal's view
+    /// models push and pop pages inside it (<c>ModalViewModel.PushAsync</c>).
     /// </para>
     /// <para>
-    /// On Android, the Back button is routed to a <see cref="ViewModels.ModalViewModel{TResult}"/>'s
-    /// <c>Dismiss()</c>, so its <c>CanDismissAsync</c> can keep the modal open.
+    /// On Android, the Back button goes to the previous page inside the modal, and on its first page is routed to a
+    /// <see cref="ViewModels.ModalViewModel{TResult}"/>'s <c>Dismiss()</c>, so its <c>CanDismissAsync</c> can keep
+    /// the modal open.
     /// </para>
     /// </summary>
     Task<IResult> PresentAsync(string modalName, INavigationParameters? parameters = null, bool animated = true);
@@ -41,13 +43,16 @@ internal sealed class ModalService(
     ILogger<ModalService> logger,
     IPageFactory pageFactory,
     IApplicationContext context,
-    IDispatcher dispatcher) : IModalService
+    IDispatcher dispatcher) : IModalService, IModalPresenter
 {
     private readonly ILogger<ModalService> _logger = logger;
     private readonly IPageFactory _pageFactory = pageFactory;
     private readonly IApplicationContext _context = context;
     private readonly IDispatcher _dispatcher = dispatcher;
     private readonly SemaphoreSlim _gate = new(1, 1);
+
+    // The modals this service presented and that are still on screen, keyed by the page pushed with PushModalAsync
+    private readonly Dictionary<Page, ModalPresentation> _presentations = [];
 
     // The modal this service is removing right now. Its pop is let through; any other pop
     // (Android Back) is routed to the view model first.
@@ -63,43 +68,38 @@ internal sealed class ModalService(
         if (TryGetWindow(out var window) == false)
             return WindowNotFound();
 
-        PageInfo[] pageInfoList;
-
-        try
-        {
-            pageInfoList = _pageFactory.GetPageTypesFromPath(modalName);
-        }
-        catch (Exception ex)
-        {
-            const string message = "An error occurred when trying to decode modal name '{ModalName}'.";
-            _logger.LogError(ex, message, modalName);
-            return Result.Fail(ErrorCode.InvalidParameter, ex, message, modalName);
-        }
-
-        if (pageInfoList.Length != 1)
-        {
-            const string message = "Modal name '{ModalName}' must resolve to exactly one page.";
-            _logger.LogWarning(message, modalName);
-            return Result.Fail(ErrorCode.NotSupported, message, modalName);
-        }
+        if (ResolveSinglePage(modalName, out var pageInfo) is { } invalidName)
+            return invalidName;
 
         await _gate.WaitAsync();
         using var lease = new PageLease(_pageFactory, _logger);
+        Page? host = null;
 
         try
         {
+            // PresentAsync<TViewModel, TResult> passes a presentation that the caller awaits; otherwise nobody does
             var modalParameters = parameters ?? new NavigationParameters();
-            modalParameters[NavigationHints.ModalPresenter] = this;
+            if (modalParameters.TryGetValue<ModalPresentation>(NavigationHints.ModalPresentation, out var presentation) == false)
+            {
+                presentation = new ModalPresentation();
+                modalParameters[NavigationHints.ModalPresentation] = presentation;
+            }
 
-            var modalPage = lease.Create(pageInfoList[0], modalParameters);
-            var presentedPage = WrapIfNeeded(modalPage);
-            ObserveModalPopping(window);
-            await window.Navigation.PushModalAsync(presentedPage, animated);
-            lease.Commit(presentedPage);
+            var modalPage = lease.Create(pageInfo, modalParameters);
+            host = WrapIfNeeded(modalPage);
+            presentation.Open(this, modalPage, host);
+
+            ObserveWindow(window);
+            _presentations[host] = presentation;
+            await window.Navigation.PushModalAsync(host, animated);
+            lease.Commit(host);
             return Result.Ok();
         }
         catch (Exception ex)
         {
+            if (host is not null)
+                _presentations.Remove(host);
+
             const string message = "An error occurred while trying to present '{ModalName}'.";
             _logger.LogError(ex, message, modalName);
             return Result.Fail(ErrorCode.General, ex, message, modalName);
@@ -175,6 +175,122 @@ internal sealed class ModalService(
         }
     }
 
+    // -----------------------------------------------------------------------
+    // IModalPresenter: what a presentation asks for
+    // -----------------------------------------------------------------------
+
+    async Task<IResult> IModalPresenter.PushAsync(
+        ModalPresentation presentation, string pageName, INavigationParameters? parameters, bool animated)
+    {
+        if (ResolveSinglePage(pageName, out var pageInfo) is { } invalidName)
+            return invalidName;
+
+        await _gate.WaitAsync();
+        using var lease = new PageLease(_pageFactory, _logger);
+
+        try
+        {
+            if (FindStack(presentation, out var stack) is { } unavailable)
+                return unavailable;
+
+            // A copy, so the caller's parameters aren't changed; the page joins the same presentation
+            var pageParameters = new NavigationParameters();
+            foreach (var (key, value) in parameters ?? new NavigationParameters())
+                pageParameters.Add(key, value);
+            pageParameters[NavigationHints.ModalPresentation] = presentation;
+
+            await stack.PushAsync(lease.Create(pageInfo, pageParameters), animated);
+            lease.Commit(presentation.Host!);
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            const string message = "An error occurred while trying to push '{PageName}' inside the modal.";
+            _logger.LogError(ex, message, pageName);
+            return Result.Fail(ErrorCode.General, ex, message, pageName);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    async Task<IResult> IModalPresenter.PopAsync(ModalPresentation presentation, bool animated)
+    {
+        await _gate.WaitAsync();
+
+        try
+        {
+            if (FindStack(presentation, out var stack) is { } unavailable)
+                return unavailable;
+
+            if (stack.Navigation.NavigationStack.Count <= 1)
+            {
+                const string message = "Already on the modal's first page; leave the modal with Dismiss.";
+                _logger.LogInformation(message);
+                return Result.Fail(ErrorCode.NotHandled, message);
+            }
+
+            await stack.PopAsync(animated);
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            const string message = "An error occurred while trying to go back inside the modal.";
+            _logger.LogError(ex, message);
+            return Result.Fail(ErrorCode.General, ex, message);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    async Task<IResult> IModalPresenter.DismissAsync(ModalPresentation presentation)
+    {
+        if (TryGetWindow(out var window) == false)
+            return WindowNotFound();
+
+        var navigation = window.Navigation;
+
+        await _gate.WaitAsync();
+
+        try
+        {
+            if (presentation.IsClosed)
+            {
+                const string message = "The modal has already closed.";
+                _logger.LogInformation(message);
+                return Result.Fail(ErrorCode.NotHandled, message);
+            }
+
+            // MAUI can only pop the top modal
+            if (navigation.ModalStack.Count == 0 || ReferenceEquals(navigation.ModalStack[^1], presentation.Host) == false)
+            {
+                const string message = "Another modal is on top of this one; close that one first.";
+                _logger.LogWarning(message);
+                return Result.Fail(ErrorCode.InvalidState, message);
+            }
+
+            await PopTopModalAsync(navigation, animated: true);
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            const string message = "An error occurred while trying to dismiss modal page.";
+            _logger.LogError(ex, message);
+            return Result.Fail(ErrorCode.General, ex, message);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
     internal static Page WrapIfNeeded(Page page)
     {
         if (Modal.GetWithNavigation(page) == false || page is NavigationPage or TabbedPage or FlyoutPage)
@@ -186,6 +302,57 @@ internal sealed class ModalService(
             wrapper.SetValue(iOSPage.ModalPresentationStyleProperty, page.GetValue(iOSPage.ModalPresentationStyleProperty));
 
         return wrapper;
+    }
+
+    private IResult? ResolveSinglePage(string name, out PageInfo pageInfo)
+    {
+        pageInfo = null!;
+        PageInfo[] pageInfoList;
+
+        try
+        {
+            pageInfoList = _pageFactory.GetPageTypesFromPath(name);
+        }
+        catch (Exception ex)
+        {
+            const string message = "An error occurred when trying to decode page name '{PageName}'.";
+            _logger.LogError(ex, message, name);
+            return Result.Fail(ErrorCode.InvalidParameter, ex, message, name);
+        }
+
+        if (pageInfoList.Length != 1)
+        {
+            const string message = "Page name '{PageName}' must resolve to exactly one page.";
+            _logger.LogWarning(message, name);
+            return Result.Fail(ErrorCode.NotSupported, message, name);
+        }
+
+        pageInfo = pageInfoList[0];
+        return null;
+    }
+
+    // The NavigationPage hosting the presentation's pages, which exists unless Modal.WithNavigation="False"
+    private IResult? FindStack(ModalPresentation presentation, out NavigationPage stack)
+    {
+        stack = null!;
+
+        if (presentation.IsClosed || presentation.Host is null)
+        {
+            const string message = "The modal has already closed.";
+            _logger.LogInformation(message);
+            return Result.Fail(ErrorCode.InvalidState, message);
+        }
+
+        if (NavigationHelper.FindNavigationPage(presentation.Host) is not { } navigationPage)
+        {
+            const string message = "The modal is a single page (its first page sets Modal.WithNavigation=\"False\"), " +
+                "so there is no NavigationPage to push or pop on.";
+            _logger.LogWarning(message);
+            return Result.Fail(ErrorCode.NotSupported, message);
+        }
+
+        stack = navigationPage;
+        return null;
     }
 
     private async Task PopTopModalAsync(INavigation navigation, bool animated)
@@ -201,14 +368,42 @@ internal sealed class ModalService(
         }
     }
 
-    private void ObserveModalPopping(Window window)
+    // -----------------------------------------------------------------------
+    // Window events: MAUI telling us a modal went away
+    // -----------------------------------------------------------------------
+
+    private void ObserveWindow(Window window)
     {
+        // Remove first, so presenting several modals still subscribes once per window.
+        window.ModalPopped -= OnModalPopped;
+        window.ModalPopped += OnModalPopped;
+        window.PropertyChanging -= OnWindowPropertyChanging;
+        window.PropertyChanging += OnWindowPropertyChanging;
+
         if (InterceptsBackNavigation == false)
             return;
 
-        // Remove first, so presenting several modals still subscribes once per window.
         window.ModalPopping -= OnModalPopping;
         window.ModalPopping += OnModalPopping;
+    }
+
+    // Every removal through MAUI's PopModalAsync: Dismiss, DismissAll, Android Back, a direct PopModalAsync, and
+    // the iOS sheet swipe-down (ControlsModalWrapper.DidDismiss pops through the window).
+    private void OnModalPopped(object? sender, ModalPoppedEventArgs e)
+    {
+        if (_presentations.Remove(e.Modal, out var presentation))
+            presentation.OnClosed();
+    }
+
+    // Replacing the window's page (absolute navigation) makes MAUI clear its modal stack without ModalPopped.
+    private void OnWindowPropertyChanging(object? sender, Microsoft.Maui.Controls.PropertyChangingEventArgs e)
+    {
+        if (e.PropertyName != Window.PageProperty.PropertyName)
+            return;
+
+        var closed = _presentations.Values.ToList();
+        _presentations.Clear();
+        closed.ForEach(presentation => presentation.OnClosed());
     }
 
     private void OnModalPopping(object? sender, ModalPoppingEventArgs e)
@@ -216,7 +411,20 @@ internal sealed class ModalService(
         if (ReferenceEquals(e.Modal, _pagePoppedByService))
             return;
 
-        var page = e.Modal is NavigationPage host ? host.RootPage : e.Modal;
+        // Back with pages pushed inside the modal goes to the previous page, like any NavigationPage
+        if (_presentations.TryGetValue(e.Modal, out var presentation)
+            && NavigationHelper.FindNavigationPage(e.Modal) is { Navigation.NavigationStack.Count: > 1 })
+        {
+            e.Cancel = true;
+            _dispatcher.DispatchAsync(async () => await presentation.PopAsync(animated: true)).FireAndForget(ex =>
+            {
+                const string message = "Going back inside the modal after Back failed.";
+                _logger.LogError(ex, message);
+            });
+            return;
+        }
+
+        var page = presentation?.FirstPage ?? (e.Modal is NavigationPage host ? host.RootPage : e.Modal);
         if (page.BindingContext is not IModalDismissible dismissible)
             return;
 

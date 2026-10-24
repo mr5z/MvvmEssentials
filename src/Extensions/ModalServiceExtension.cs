@@ -1,6 +1,7 @@
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Helpers;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Modals;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.ViewModels;
@@ -33,8 +34,9 @@ public static class ModalServiceExtension
 		private static async Task<Result<TResult>> PresentAsync<TResult>(
 			IModalService modal, string modalName, INavigationParameters parameters, bool animated)
 		{
-			var tcs = new TaskCompletionSource<TResult>();
-			parameters[NavigationHints.ModalCompletionParam] = tcs;
+			// The presentation the caller awaits; ModalService opens it and hands it to the modal's pages
+			var presentation = new ModalPresentation<TResult>();
+			parameters[NavigationHints.ModalPresentation] = presentation;
 
 			var navResult = await modal.PresentAsync(modalName, parameters, animated);
 			if (navResult.IsFailure)
@@ -43,7 +45,7 @@ public static class ModalServiceExtension
 
 			try
 			{
-				var modalResult = await tcs.Task;
+				var modalResult = await presentation.Result;
 				return Result.Ok(modalResult);
 			}
 			catch (TaskCanceledException)
@@ -52,11 +54,6 @@ public static class ModalServiceExtension
 				// Dismissing here would pop whichever modal is now on top.
 				const string message = "Modal '{ModalName}' has been cancelled.";
 				return Result.Fail<TResult>(ErrorCode.Cancelled, message, modalName);
-			}
-			catch (Exception ex)
-			{
-				const string message = "Failed to dismiss modal '{ModalName}'.";
-				return Result.Fail<TResult>(ErrorCode.Unknown, ex, message, modalName);
 			}
 		}
 	}
