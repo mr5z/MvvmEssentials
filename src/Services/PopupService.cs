@@ -107,7 +107,6 @@ internal sealed class PopupService : IPopupService, IPresenter
 			lease.Commit(popupPage);
 			_activePopups[popupType] = new WeakReference<PopupPage>(popupPage);
 			_presentations[popupPage] = presentation;
-			return Result.Ok();
 		}
 		catch (Exception ex)
 		{
@@ -115,6 +114,8 @@ internal sealed class PopupService : IPopupService, IPresenter
 			_logger.LogError(ex, message, popupName);
 			return Result.Fail(ErrorCode.General, ex, message, popupName);
 		}
+		
+		return Result.Ok();
 	}
 
 	async Task<IResult> IPopupService.DismissAsync(string? popupName, bool animated)
@@ -152,8 +153,6 @@ internal sealed class PopupService : IPopupService, IPresenter
 			}
 			
 			await _popupNavigation.RemovePageAsync(popupPage, animated);
-			// Ditto regarding removal from _activePopups.
-			return Result.Ok();
 		}
 		catch (Exception ex)
 		{
@@ -161,6 +160,8 @@ internal sealed class PopupService : IPopupService, IPresenter
 			_logger.LogError(ex, message, popupName);
 			return Result.Fail(ErrorCode.General, ex, message, popupName);
 		}
+		
+		return Result.Ok();
 	}
 
 	async Task<IResult> IPopupService.DismissAllAsync(bool animated)
@@ -171,7 +172,6 @@ internal sealed class PopupService : IPopupService, IPresenter
 			// TODO figure out if this is really needed
 			_activePopups.Clear();
 			CloseAllPresentations();
-			return Result.Ok();
 		}
 		catch (Exception ex)
 		{
@@ -179,6 +179,8 @@ internal sealed class PopupService : IPopupService, IPresenter
 			_logger.LogError(ex, message);
 			return Result.Fail(ErrorCode.General, ex, message);
 		}
+		
+		return Result.Ok();
 	}
 
 	// -----------------------------------------------------------------------
@@ -198,7 +200,6 @@ internal sealed class PopupService : IPopupService, IPresenter
 		{
 			// Removes this popup wherever it is in the popup stack; PageUnloaded then closes the presentation
 			await _popupNavigation.RemovePageAsync(popupPage, animate: true);
-			return Result.Ok();
 		}
 		catch (Exception ex)
 		{
@@ -206,6 +207,8 @@ internal sealed class PopupService : IPopupService, IPresenter
 			_logger.LogError(ex, message, popupPage.GetType().Name);
 			return Result.Fail(ErrorCode.General, ex, message, popupPage.GetType().Name);
 		}
+		
+		return Result.Ok();
 	}
 
 	private void CloseAllPresentations()

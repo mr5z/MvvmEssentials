@@ -95,7 +95,7 @@ public class PageFactoryLifecycleExceptionTests
         // When / Then
         Assert.DoesNotThrow(() => _sut.HandlePageNavigatedTo(page));
         _handler.Received(1).Handle(
-            Arg.Is<Exception>(e => e.Message == ThrowingLifecycleViewModel.NavigatedToMessage),
+            Arg.Is<Exception>(e => e!.Message == ThrowingLifecycleViewModel.NavigatedToMessage),
             nameof(IPageNavigated.OnPageNavigatedTo),
             viewModel);
     }
