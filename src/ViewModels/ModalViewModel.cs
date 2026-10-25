@@ -46,7 +46,9 @@ public class ModalViewModel<TResult>(IModalService modalService)
 	/// <summary>
 	/// Replaces the modal's current page with the next one: pushes it, then removes the page it covers, so Back and
 	/// <see cref="PopAsync"/> skip that page. Use it when going back would make no sense, e.g. from a task's outcome to
-	/// the task it ended. When the replaced page was the modal's first, the new page becomes the first: Android Back
+	/// the task it ended. The covered page goes once the new page is on screen (the push, its animation and the next
+	/// frame are done), so a large page's teardown doesn't hold back the new page's first frame; the returned task
+	/// completes after that. When the replaced page was the modal's first, the new page becomes the first: Android Back
 	/// there goes to its <c>Dismiss()</c>, so its <c>CanDismissAsync</c> decides.
 	/// Fails with <c>ErrorCode.NotSupported</c> when the modal sets <c>Modal.WithNavigation="False"</c>.
 	/// </summary>

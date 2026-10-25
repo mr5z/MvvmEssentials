@@ -150,8 +150,10 @@ public partial class ConfirmAddressViewModel(IModalService modal) : ModalViewMod
   `NotHandled`; there, Android Back asks `CanDismissAsync`.
 - **`ReplaceAsync(destination)`** pushes the next page, then removes the page it covers, so Back and `PopAsync()`
   skip it. Use it when the current page mustn't be gone back to, such as a finished task's outcome after the task
-  (`ReplaceAsync<TNext>()` for a page without parameters). Replacing the first page makes the new page the first:
-  it shows no back arrow, and Android Back there asks its `CanDismissAsync`.
+  (`ReplaceAsync<TNext>()` for a page without parameters). The covered page is removed a frame after the new page is
+  on screen, so tearing down a large page can't delay the new page's first frame; the task completes after that.
+  Replacing the first page makes the new page the first: it shows no back arrow, and Android Back there asks its
+  `CanDismissAsync`.
 - **Closing.** `Dismiss(result)` on any page closes the modal and hands over the result; `Dismiss()` on any
   page closes it with `Cancelled`. Popping a page doesn't affect the caller. If an earlier page's answer
   should stand whatever happens next, have the later page dismiss with it (`Dismiss(Draft!)`).

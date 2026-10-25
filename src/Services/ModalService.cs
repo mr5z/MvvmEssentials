@@ -191,7 +191,9 @@ internal sealed class ModalService(
         => PushInsideAsync(presentation, pageName, parameters, animated, replace: true);
 
     // Replace pushes first and removes the covered page after: MAUI can't remove the page on screen, and the new page
-    // slides in over it as a push would.
+    // slides in over it as a push would. The removal waits for the next turn of the UI loop, so the new page is drawn
+    // before its predecessor is torn down: tearing a page down is synchronous, and for a large page long enough to
+    // hold back a frame.
     private async Task<IResult> PushInsideAsync(
         Presentation presentation, string pageName, INavigationParameters? parameters, bool animated, bool replace)
     {
@@ -220,12 +222,7 @@ internal sealed class ModalService(
 
             if (replace)
             {
-                // Out of the tree, so PageFactory releases its scope
-                stack.Navigation.RemovePage(covered);
-                if (ReferenceEquals(covered, presentation.FirstPage))
-                {
-                    presentation.ReplaceFirstPage(stack.RootPage);
-                }
+                await _dispatcher.DispatchAsync(() => RemoveCovered(presentation, stack, covered));
             }
 
             return Result.Ok();
@@ -239,6 +236,25 @@ internal sealed class ModalService(
         finally
         {
             _gate.Release();
+        }
+    }
+
+    // A frame after the replacing page was pushed. The stack is checked again: the modal may have closed, or the
+    // covered page may be back on top, in which case it stays (removing the page on screen pops it).
+    private static void RemoveCovered(Presentation presentation, NavigationPage stack, Page covered)
+    {
+        if (presentation.IsClosed
+            || ReferenceEquals(stack.CurrentPage, covered)
+            || stack.Navigation.NavigationStack.Contains(covered) == false)
+        {
+            return;
+        }
+
+        // Out of the tree, so PageFactory releases its scope
+        stack.Navigation.RemovePage(covered);
+        if (ReferenceEquals(covered, presentation.FirstPage))
+        {
+            presentation.ReplaceFirstPage(stack.RootPage);
         }
     }
 
