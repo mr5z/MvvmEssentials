@@ -8,6 +8,7 @@ using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
+using Nkraft.MvvmEssentials.ViewModels;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -99,6 +100,26 @@ public class ModalPresentationTests
         var pushed = await from.PublicPushAsync(destination);
         Assert.That(pushed.IsSuccess, Is.True, pushed.ErrorMessage);
         return (second, page);
+    }
+
+    // Replaces, then runs the UI loop turn the covered page's removal waits for
+    private async Task<IResult> ReplaceAsync<TNext>(TestModalViewModel from)
+        where TNext : IModalViewModel<TestModalResult>
+    {
+        var replacing = from.PublicReplaceAsync<TNext>();
+        await RunDispatchedWhenQueuedAsync();
+        return await replacing;
+    }
+
+    private async Task RunDispatchedWhenQueuedAsync()
+    {
+        for (var i = 0; i < 100 && _dispatched.Count == 0; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.That(_dispatched, Is.Not.Empty, "Nothing was dispatched");
+        RunDispatched();
     }
 
     // -----------------------------------------------------------------------
@@ -217,7 +238,7 @@ public class ModalPresentationTests
         var nextPage = NextPage(() => new TestModalSecondViewModel(Modals));
 
         // When
-        var replaced = await first.PublicReplaceAsync<TestModalSecondViewModel>();
+        var replaced = await ReplaceAsync<TestModalSecondViewModel>(first);
 
         // Then
         Assert.That(replaced.IsSuccess, Is.True, replaced.ErrorMessage);
@@ -235,7 +256,7 @@ public class ModalPresentationTests
         var thirdPage = NextPage(() => new TestModalSecondViewModel(Modals));
 
         // When
-        await second.PublicReplaceAsync<TestModalSecondViewModel>();
+        await ReplaceAsync<TestModalSecondViewModel>(second);
 
         // Then
         Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new Page[] { firstPage, thirdPage }));
@@ -248,7 +269,7 @@ public class ModalPresentationTests
         var (first, _) = await PresentAsync();
         TestModalSecondViewModel next = null!;
         NextPage(() => new TestModalSecondViewModel(Modals), vm => next = vm);
-        await first.PublicReplaceAsync<TestModalSecondViewModel>();
+        await ReplaceAsync<TestModalSecondViewModel>(first);
 
         // When
         var popped = await next.PublicPopAsync();
@@ -264,7 +285,7 @@ public class ModalPresentationTests
         var (first, caller) = await PresentAsync();
         TestModalSecondViewModel next = null!;
         NextPage(() => new TestModalSecondViewModel(Modals), vm => next = vm);
-        await first.PublicReplaceAsync<TestModalSecondViewModel>();
+        await ReplaceAsync<TestModalSecondViewModel>(first);
 
         // When
         await next.PublicDismissWithResult(new TestModalResult(true));
@@ -272,6 +293,54 @@ public class ModalPresentationTests
         // Then
         Assert.That(_window.Navigation.ModalStack, Is.Empty);
         Assert.That((await caller).TryGetValue(out var value) && value == new TestModalResult(true), Is.True);
+    }
+
+    [Test]
+    public async Task ReplaceAsync_ShowsTheNewPageBeforeTheCoveredPageGoes()
+    {
+        // Given
+        var (first, _) = await PresentAsync();
+        var firstPage = Host.RootPage;
+        var nextPage = NextPage(() => new TestModalSecondViewModel(Modals));
+
+        // When: pushed, but the UI loop turn the removal waits for hasn't run
+        var replacing = first.PublicReplaceAsync<TestModalSecondViewModel>();
+        for (var i = 0; i < 100 && _dispatched.Count == 0; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        // Then
+        Assert.That(Host.CurrentPage, Is.SameAs(nextPage));
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new Page[] { firstPage, nextPage }));
+        Assert.That(replacing.IsCompleted, Is.False);
+
+        RunDispatched();
+        await replacing;
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new[] { nextPage }));
+    }
+
+    [Test]
+    public async Task ReplaceAsync_WhenTheModalClosesBeforeThatTurn_LeavesItAlone()
+    {
+        // Given
+        var (first, caller) = await PresentAsync();
+        NextPage(() => new TestModalSecondViewModel(Modals));
+        var replacing = first.PublicReplaceAsync<TestModalSecondViewModel>();
+        for (var i = 0; i < 100 && _dispatched.Count == 0; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        // When: the modal goes (iOS swipe-down, a direct pop) before the removal runs
+        await _window.Navigation.PopModalAsync(animated: false);
+        RunDispatched();
+
+        // Then
+        var replaced = await replacing;
+        Assert.That(replaced.IsSuccess, Is.True, replaced.ErrorMessage);
+        Assert.That(_window.Navigation.ModalStack, Is.Empty);
+        Assert.That((await caller).ErrorCode, Is.EqualTo(ErrorCode.Cancelled));
     }
 
     [Test]
@@ -378,7 +447,7 @@ public class ModalPresentationTests
         var (first, caller) = await PresentAsync();
         TestModalSecondViewModel next = null!;
         NextPage(() => new TestModalSecondViewModel(Modals), vm => next = vm);
-        await first.PublicReplaceAsync<TestModalSecondViewModel>();
+        await ReplaceAsync<TestModalSecondViewModel>(first);
         next.AllowDismiss = false;
 
         // When
