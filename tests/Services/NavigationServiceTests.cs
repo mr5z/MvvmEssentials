@@ -15,21 +15,24 @@ namespace Nkraft.MvvmEssentials.UnitTest.Services;
 public class NavigationServiceTests
 {
     private IPageFactory _pageFactory = null!;
-    private IApplicationContext _applicationContext = null!;
+    private IApplicationContext _appContext = null!;
+    private ILifecycleExceptionHandler _exceptionHandler = null!;
     private INavigationService _sut = null!;
 
     [SetUp]
     public void SetUp()
     {
         _pageFactory = Substitute.For<IPageFactory>();
-        _applicationContext = Substitute.For<IApplicationContext>();
+        _appContext = Substitute.For<IApplicationContext>();
+        _exceptionHandler = Substitute.For<ILifecycleExceptionHandler>();
 
         // NullLogger avoids Castle DynamicProxy issues with ILogger<NavigationService>
         // where NavigationService is internal
         _sut = new NavigationService(
             NullLogger<NavigationService>.Instance,
             _pageFactory,
-            _applicationContext);
+            _appContext,
+            _exceptionHandler);
         
         DispatcherProvider.SetCurrent(new TestDispatcherProvider());
     }
@@ -146,7 +149,7 @@ public class NavigationServiceTests
 
         // Then
         Assert.That(result.IsSuccess, Is.True);
-        Assert.That(_applicationContext.MainPage, Is.SameAs(page));
+        Assert.That(_appContext.MainPage, Is.SameAs(page));
     }
 
     // -----------------------------------------------------------------------
@@ -165,7 +168,7 @@ public class NavigationServiceTests
             .CreatePage(Arg.Any<PageInfo>(), Arg.Any<INavigationParameters>())
             .Returns(page);
 
-        _applicationContext.Windows.Returns([]);
+        _appContext.Windows.Returns([]);
 
         // When
         var result = await _sut.NavigateAsync("FakePage");
@@ -188,7 +191,7 @@ public class NavigationServiceTests
 
         // Real Window with a plain Page — Window.Page is not virtual so we can't substitute it
         var window = new Window(new Page());
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateAsync("FakePage");
@@ -205,7 +208,7 @@ public class NavigationServiceTests
     public async Task NavigateBackAsync_WhenNoWindowExists_ReturnsInvalidState()
     {
         // Given
-        _applicationContext.Windows.Returns([]);
+        _appContext.Windows.Returns([]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -220,7 +223,7 @@ public class NavigationServiceTests
     {
         // Given — real Window with plain Page; SendBackButtonPressed returns false in tests
         var window = new Window(new Page());
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -237,7 +240,7 @@ public class NavigationServiceTests
     public async Task NavigateToRootAsync_WhenNoWindowExists_ReturnsInvalidState()
     {
         // Given
-        _applicationContext.Windows.Returns([]);
+        _appContext.Windows.Returns([]);
 
         // When
         var result = await _sut.NavigateToRootAsync();
@@ -252,7 +255,7 @@ public class NavigationServiceTests
     {
         // Given — real Window with plain Page, not a NavigationPage
         var window = new Window(new Page());
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateToRootAsync();
@@ -268,7 +271,7 @@ public class NavigationServiceTests
         // Given — NavigationPage with only 1 page (nothing to pop to root from)
         var navigationPage = new NavigationPage(new Page());
         var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateToRootAsync();
@@ -286,7 +289,7 @@ public class NavigationServiceTests
         await navigationPage.PushAsync(new Page());
 
         var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateToRootAsync();
@@ -307,7 +310,7 @@ public class NavigationServiceTests
         await navigationPage.PushAsync(new Page());
 
         var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         var parameters = new NavigationParameters { { "Key", "Value" } };
 
@@ -332,7 +335,7 @@ public class NavigationServiceTests
         await navigationPage.PushAsync(new Page());
 
         var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         await _sut.NavigateToRootAsync(parameters: null);
@@ -341,29 +344,6 @@ public class NavigationServiceTests
         Assert.That(rootViewModel.LastParameters, Is.Not.Null);
         Assert.That(rootViewModel.LastParameters!.IsEmpty, Is.True);
     }
-
-    [Test]
-    public async Task NavigateToRootAsync_WhenLifecycleHookThrows_ReturnsGeneral()
-    {
-        // Given — root ViewModel throws during OnNavigatedToRootAsync
-        var rootViewModel = new TrackableRootPageNavigatedViewModel { ThrowOnAsync = true };
-        var rootPage = new Page { BindingContext = rootViewModel };
-
-        var navigationPage = new NavigationPage(rootPage);
-        await navigationPage.PushAsync(new Page());
-
-        var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
-
-        // When
-        var result = await _sut.NavigateToRootAsync();
-
-        // Then
-        Assert.That(result.IsFailure, Is.True);
-        Assert.That(result.ErrorCode, Is.EqualTo(ErrorCode.General));
-        Assert.That(result.Exception, Is.Not.Null);
-    }
-    
     
     // -----------------------------------------------------------------------
     // NavigateBackAsync — page-hierarchy resolution matrix
@@ -377,7 +357,7 @@ public class NavigationServiceTests
         await navigationPage.PushAsync(new Page());
 
         var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -393,7 +373,7 @@ public class NavigationServiceTests
         // Given — NavigationPage with only 1 page (nothing to pop)
         var navigationPage = new NavigationPage(new Page());
         var window = new Window(navigationPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -414,7 +394,7 @@ public class NavigationServiceTests
         tabbedPage.Children.Add(navigationPage);
 
         var window = new Window(tabbedPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -432,7 +412,7 @@ public class NavigationServiceTests
         tabbedPage.Children.Add(new Page());
 
         var window = new Window(tabbedPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -456,7 +436,7 @@ public class NavigationServiceTests
         };
 
         var window = new Window(flyoutPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -485,7 +465,7 @@ public class NavigationServiceTests
         };
 
         var window = new Window(flyoutPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();
@@ -506,7 +486,7 @@ public class NavigationServiceTests
         };
 
         var window = new Window(flyoutPage);
-        _applicationContext.Windows.Returns([window]);
+        _appContext.Windows.Returns([window]);
 
         // When
         var result = await _sut.NavigateBackAsync();

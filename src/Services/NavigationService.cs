@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Nkraft.CrossUtility.Patterns;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Handlers;
 using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
@@ -56,11 +57,13 @@ public interface INavigationService
 internal sealed class NavigationService(
     ILogger<NavigationService> logger,
     IPageFactory pageFactory,
-    IApplicationContext applicationContext) : INavigationService
+    IApplicationContext appContext,
+    ILifecycleExceptionHandler exceptionHandler) : INavigationService
 {
     private readonly ILogger<NavigationService> _logger = logger;
     private readonly IPageFactory _pageFactory = pageFactory;
-    private readonly IApplicationContext _applicationContext = applicationContext;
+    private readonly IApplicationContext _appContext = appContext;
+    private readonly ILifecycleExceptionHandler _exceptionHandler = exceptionHandler;
 
     // Handle support nested NavigationPage if needed in the future.
     async Task<IResult> INavigationService.NavigateAsync(string path, INavigationParameters? parameters, bool animated)
@@ -106,7 +109,7 @@ internal sealed class NavigationService(
                 var mainPageResult = await BuildRootPageAsync(firstPage, pages, animated);
                 if (mainPageResult.TryGetValue(out var mainPage))
                 {
-                    _applicationContext.MainPage = mainPage;
+                    _appContext.MainPage = mainPage;
                 }
                 else
                 {
@@ -118,7 +121,7 @@ internal sealed class NavigationService(
                 if (RefuseWhileModalIsOpen() is { } refused)
                     return refused;
 
-                var currentPage = _applicationContext.MainPage;
+                var currentPage = _appContext.MainPage;
                 if (currentPage is null)
                 {
                     const string message = "Current page is null.";
@@ -136,13 +139,13 @@ internal sealed class NavigationService(
         }
         finally
         {
-            if (request.ReleaseUnreachablePages(root: _applicationContext.MainPage) is {} ex)
+            if (request.ReleaseUnreachablePages(root: _appContext.MainPage) is {} ex)
             {
                 const string message = "One or more page scopes failed to dispose during navigation (Path: {Path}).";
                 _logger.LogWarning(ex, message, path);
             }
         }
-
+            
         return Result.Ok();
     }
 
@@ -158,38 +161,50 @@ internal sealed class NavigationService(
             return Result.Fail(ErrorCode.InvalidState, message);
         }
 
-        var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
-        if (navigationPage is not null)
+        try
         {
-            var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
-            if (isRootPage)
+            var navigationPage = NavigationHelper.FindNavigationPage(currentPage);
+            if (navigationPage is not null)
             {
-                const string message = "Already at the root of the navigation stack; nothing to navigate back to.";
+                var isRootPage = navigationPage.Navigation.NavigationStack.Count <= 1;
+                if (isRootPage)
+                {
+                    const string message = "Already at the root of the navigation stack; nothing to navigate back to.";
+                    _logger.LogInformation(message);
+                    return Result.Fail(ErrorCode.NotHandled, message);
+                }
+
+                var previousPage = await navigationPage.PopAsync(animated);
+                if (previousPage is null)
+                {
+                    const string message = "Popped page returns null.";
+                    _logger.LogWarning(message);
+                    return Result.Fail(ErrorCode.InvalidState, message);
+                }
+
+                return Result.Ok();
+            }
+
+            var navigatedBack = currentPage.SendBackButtonPressed();
+            if (navigatedBack == false)
+            {
+                // Nobody handled it and there's no stack to pop, so it's not really "canceled"
+                // it's just not our problem anymore. Android might exit the app here, iOS
+                // probably just does nothing. Either way, not up to us.
+                const string message = 
+                    "Back navigation was not handled within the app; platform default behavior may apply.";
                 _logger.LogInformation(message);
                 return Result.Fail(ErrorCode.NotHandled, message);
             }
-
-            var previousPage = await navigationPage.PopAsync(animated);
-            if (previousPage is null)
-            {
-                const string message = "Popped page returns null.";
-                _logger.LogWarning(message);
-                return Result.Fail(ErrorCode.InvalidState, message);
-            }
-
-            return Result.Ok();
         }
-
-        var navigatedBack = currentPage.SendBackButtonPressed();
-        if (navigatedBack)
-            return Result.Ok();
+        catch (Exception ex)
+        {
+            const string message = "An error occured while trying to navigate back.";
+            _logger.LogError(ex, message);
+            return Result.Fail(ErrorCode.General, ex, message);
+        }
         
-        // Nobody handled it and there's no stack to pop, so it's not really "canceled"
-        // it's just not our problem anymore. Android might exit the app here, iOS
-        // probably just does nothing. Either way, not up to us.
-        const string messageInfo = "Back navigation was not handled within the app; platform default behavior may apply.";
-        _logger.LogInformation(messageInfo);
-        return Result.Fail(ErrorCode.NotHandled, messageInfo);
+        return Result.Ok();
     }
 
     async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
@@ -224,18 +239,23 @@ internal sealed class NavigationService(
         try
         {
             await navigationPage.PopToRootAsync(animated);
-            var rootPage = navigationPage.CurrentPage;
-            if (rootPage.BindingContext is IRootPageNavigated vm)
-            {
-                vm.OnNavigatedToRoot(parameters ?? new NavigationParameters());
-                await vm.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
-            }
         }
         catch (Exception ex)
         {
             const string message = "An error occurred while trying to navigate to root.";
             _logger.LogError(ex, message);
             return Result.Fail(ErrorCode.General, ex, message);
+        }
+
+        var rootPage = navigationPage.CurrentPage;
+        if (rootPage.BindingContext is IRootPageNavigated vm)
+        {
+            _exceptionHandler.Invoke(
+                action: vm.OnNavigatedToRoot,
+                param: parameters ?? new NavigationParameters(),
+                methodName: nameof(IPageAppearing.OnPageDisappearing), 
+                source: vm);
+            await vm.OnNavigatedToRootAsync(parameters ?? new NavigationParameters());
         }
 
         return Result.Ok();
@@ -296,7 +316,7 @@ internal sealed class NavigationService(
     // modals' callers.
     private IResult? RefuseWhileModalIsOpen()
     {
-        if (_applicationContext.Windows.Count == 0 || _applicationContext.Windows[0].Navigation.ModalStack.Count == 0)
+        if (_appContext.Windows.Count == 0 || _appContext.Windows[0].Navigation.ModalStack.Count == 0)
             return null;
 
         const string message = "A modal is open. Navigate inside it from its view model (ModalViewModel.PushAsync / PopAsync), " +
@@ -307,7 +327,7 @@ internal sealed class NavigationService(
 
     private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
     {
-        if (_applicationContext.Windows.Count > 0 && _applicationContext.Windows[0].Page is { } currentPage)
+        if (_appContext.Windows.Count > 0 && _appContext.Windows[0].Page is { } currentPage)
         {
             page = currentPage;
             return true;

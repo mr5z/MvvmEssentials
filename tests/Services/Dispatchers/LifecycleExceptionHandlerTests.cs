@@ -24,7 +24,7 @@ public class LifecycleExceptionHandlerTests
         });
     }
 
-    private LifecycleExceptionHandler CreateSut(Action<MvvmEssentialsOptions>? configure = null)
+    private ILifecycleExceptionHandler CreateSut(Action<MvvmEssentialsOptions>? configure = null)
     {
         var options = new MvvmEssentialsOptions();
         configure?.Invoke(options);
@@ -65,7 +65,7 @@ public class LifecycleExceptionHandlerTests
         sut.Handle(exception, "OnPageAppearing");
 
         // Then
-        Assert.That(_dispatchedAction, Is.Not.Null, "crash was not dispatched");
+        Assert.IsNotNull(_dispatchedAction, "crash was not dispatched");
         var thrown = Assert.Throws<InvalidOperationException>(() => _dispatchedAction!());
         Assert.That(thrown, Is.SameAs(exception));
     }
@@ -80,7 +80,7 @@ public class LifecycleExceptionHandlerTests
         sut.Handle(new InvalidOperationException("boom"), "OnPageAppearing");
 
         // Then
-        _dispatcher.DidNotReceiveWithAnyArgs().Dispatch(default!);
+        _dispatcher.DidNotReceiveWithAnyArgs().Dispatch(null!);
     }
 
     [Test]
@@ -130,7 +130,7 @@ public class LifecycleExceptionHandlerTests
 
         // Then
         Assert.That(dispatchedWhenCallbackRan, Is.False);
-        Assert.That(_dispatchedAction, Is.Not.Null);
+        Assert.IsNotNull(_dispatchedAction);
     }
 
     [Test]
@@ -143,7 +143,7 @@ public class LifecycleExceptionHandlerTests
         sut.Handle(new InvalidOperationException("boom"), "OnPageAppearing");
 
         // Then
-        _dispatcher.DidNotReceiveWithAnyArgs().Dispatch(default!);
+        _dispatcher.DidNotReceiveWithAnyArgs().Dispatch(null!);
     }
 
     [Test]
@@ -172,7 +172,7 @@ public class LifecycleExceptionHandlerTests
 
         // When / Then
         Assert.DoesNotThrow(() => sut.Handle(new InvalidOperationException("boom"), "OnPageAppearing"));
-        Assert.That(_dispatchedAction, Is.Not.Null);
+        Assert.IsNotNull(_dispatchedAction);
     }
 
     // -----------------------------------------------------------------------
@@ -201,7 +201,7 @@ public class LifecycleExceptionHandlerTests
 
         // When / Then
         Assert.DoesNotThrow(() => handler.InvokeAsync(() => throw exception, "OnPageAppearingAsync", null));
-        handler.Received(1).Handle(exception, "OnPageAppearingAsync", null);
+        handler.Received(1).Handle(exception, "OnPageAppearingAsync");
     }
 
     [Test]
@@ -211,7 +211,7 @@ public class LifecycleExceptionHandlerTests
         var handler = Substitute.For<ILifecycleExceptionHandler>();
         var exception = new InvalidOperationException("boom");
         var reported = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        handler.When(h => h.Handle(exception, "OnPageAppearingAsync", null)).Do(_ => reported.TrySetResult());
+        handler.When(h => h.Handle(exception, "OnPageAppearingAsync")).Do(_ => reported.TrySetResult());
 
         // When
         handler.InvokeAsync(async () => { await Task.Yield(); throw exception; }, "OnPageAppearingAsync", null);
