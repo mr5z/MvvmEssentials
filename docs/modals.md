@@ -137,7 +137,9 @@ Apple's and Google's guidance for modal tasks, and how to follow it here:
 - **Keep it to one task.** A modal can hold several pages ([below](#pages-inside-a-modal)), but they should all
   serve the task it was opened for. A [wizard](wizard.md#presenting-the-wizard-modally-optional) keeps every
   step inside one page, which also works in overlays.
-- **One modal at a time.** Close a modal before presenting another one; a popup on top is fine.
+- **Don't stack modals without a reason.** A modal may present another one when it needs a result back from it,
+  such as a picker: each has its own caller and its own result type. Otherwise close a modal before presenting
+  another one. A popup on top is fine.
 
 ## Pages inside a modal
 
