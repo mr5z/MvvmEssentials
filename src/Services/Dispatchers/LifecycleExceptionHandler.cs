@@ -24,7 +24,7 @@ internal sealed class LifecycleExceptionHandler(
 	private readonly IDispatcher _dispatcher = dispatcher;
 	private readonly MvvmEssentialsOptions _options = options.Value;
 
-	public void Handle(Exception exception, string methodName, object? source = null)
+	void ILifecycleExceptionHandler.Handle(Exception exception, string methodName, object? source)
 	{
 		_logger.LogError(exception,
 			"An error occurred while invoking '{MethodName}' on '{SourceType}'.",
@@ -72,9 +72,15 @@ internal static class LifecycleExceptionHandlerExtension
 		/// <summary>Runs a synchronous lifecycle method; any exception goes to the handler instead of the caller.</summary>
 		public void Invoke(Action action, string methodName, object? source)
 		{
+			handler.Invoke(_ => action(), false, methodName, source);
+		}
+		
+		/// <summary>Runs a synchronous lifecycle method; any exception goes to the handler instead of the caller.</summary>
+		public void Invoke<TParam>(Action<TParam> action, TParam param, string methodName, object? source)
+		{
 			try
 			{
-				action();
+				action(param);
 			}
 			catch (Exception ex)
 			{
@@ -88,10 +94,19 @@ internal static class LifecycleExceptionHandlerExtension
 		/// </summary>
 		public void InvokeAsync(Func<Task> action, string methodName, object? source)
 		{
+			handler.InvokeAsync(_ => action(), false, methodName, source);
+		}
+
+		/// <summary>
+		/// Starts an async lifecycle method without awaiting it. Covers both a faulted task and a
+		/// non-async override that throws before returning a task.
+		/// </summary>
+		public void InvokeAsync<TParam>(Func<TParam, Task> action, TParam param, string methodName, object? source)
+		{
 			Task task;
 			try
 			{
-				task = action();
+				task = action(param);
 			}
 			catch (Exception ex)
 			{

@@ -3,8 +3,6 @@ using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
 using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Modals;
-using Nkraft.MvvmEssentials.Services.Presentations;
-using Nkraft.MvvmEssentials.Services.Navigation;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.Services.Pages.Lifecycles;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
@@ -21,7 +19,8 @@ namespace Nkraft.MvvmEssentials.UnitTest.Services;
 public class ModalPresentationTests
 {
     private IPageFactory _pageFactory = null!;
-    private IApplicationContext _applicationContext = null!;
+    private IApplicationContext _appContext = null!;
+    private ILifecycleExceptionHandler _exceptionHandler = null!;
     private Window _window = null!;
     private NavigationPage _mainPage = null!;
     private List<Action> _dispatched = null!;
@@ -33,11 +32,12 @@ public class ModalPresentationTests
     public void SetUp()
     {
         _pageFactory = Substitute.For<IPageFactory>();
-        _applicationContext = Substitute.For<IApplicationContext>();
+        _appContext = Substitute.For<IApplicationContext>();
+        _exceptionHandler = Substitute.For<ILifecycleExceptionHandler>();
         _mainPage = new NavigationPage(new ContentPage());
         _window = new Window(_mainPage);
-        _applicationContext.Windows.Returns([_window]);
-        _applicationContext.MainPage.Returns(_mainPage);
+        _appContext.Windows.Returns([_window]);
+        _appContext.MainPage.Returns(_mainPage);
 
         _dispatched = [];
         var dispatcher = Substitute.For<IDispatcher>();
@@ -48,7 +48,7 @@ public class ModalPresentationTests
     }
 
     private ModalService CreateService(bool interceptsBackNavigation, IDispatcher? dispatcher = null) => new(
-        NullLogger<ModalService>.Instance, _pageFactory, _applicationContext, dispatcher ?? Substitute.For<IDispatcher>())
+        NullLogger<ModalService>.Instance, _pageFactory, _appContext, dispatcher ?? Substitute.For<IDispatcher>())
     {
         InterceptsBackNavigation = interceptsBackNavigation
     };
@@ -87,7 +87,7 @@ public class ModalPresentationTests
         }
 
         Assert.That(first, Is.Not.Null, "The modal wasn't presented");
-        return (first, caller);
+        return (first!, caller);
     }
 
     private NavigationPage Host => (NavigationPage)_window.Navigation.ModalStack[^1];
@@ -242,7 +242,7 @@ public class ModalPresentationTests
 
         // Then
         Assert.That(replaced.IsSuccess, Is.True, replaced.ErrorMessage);
-        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new[] { nextPage }));
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo([nextPage]));
         Assert.That(caller.IsCompleted, Is.False);
     }
 
@@ -259,7 +259,7 @@ public class ModalPresentationTests
         await ReplaceAsync<TestModalSecondViewModel>(second);
 
         // Then
-        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new Page[] { firstPage, thirdPage }));
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo([firstPage, thirdPage]));
     }
 
     [Test]
@@ -312,12 +312,12 @@ public class ModalPresentationTests
 
         // Then
         Assert.That(Host.CurrentPage, Is.SameAs(nextPage));
-        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new Page[] { firstPage, nextPage }));
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo([firstPage, nextPage]));
         Assert.That(replacing.IsCompleted, Is.False);
 
         RunDispatched();
         await replacing;
-        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo(new[] { nextPage }));
+        Assert.That(Host.Navigation.NavigationStack, Is.EqualTo([nextPage]));
     }
 
     [Test]
@@ -471,7 +471,7 @@ public class ModalPresentationTests
         // Given
         await PresentAsync();
         INavigationService navigation = new NavigationService(
-            NullLogger<NavigationService>.Instance, _pageFactory, _applicationContext);
+            NullLogger<NavigationService>.Instance, _pageFactory, _appContext, _exceptionHandler);
 
         // When
         var pushed = await navigation.NavigateAsync("SomePage");

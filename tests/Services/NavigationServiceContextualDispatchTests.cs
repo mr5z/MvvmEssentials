@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Nkraft.CrossUtility.Patterns;
 using Nkraft.MvvmEssentials.Services;
+using Nkraft.MvvmEssentials.Services.Dispatchers;
 using Nkraft.MvvmEssentials.Services.Pages;
 using Nkraft.MvvmEssentials.UnitTest.Fakes;
 using NSubstitute;
@@ -12,19 +13,22 @@ namespace Nkraft.MvvmEssentials.UnitTest.Services;
 public class NavigationServiceContextualDispatchTests
 {
     private IPageFactory _pageFactory = null!;
-    private IApplicationContext _applicationContext = null!;
+    private IApplicationContext _appContext = null!;
+    private ILifecycleExceptionHandler _exceptionHandler = null!;
     private INavigationService _sut = null!;
 
     [SetUp]
     public void SetUp()
     {
         _pageFactory = Substitute.For<IPageFactory>();
-        _applicationContext = Substitute.For<IApplicationContext>();
+        _appContext = Substitute.For<IApplicationContext>();
+        _exceptionHandler = Substitute.For<ILifecycleExceptionHandler>();
 
         _sut = new NavigationService(
             NullLogger<NavigationService>.Instance,
             _pageFactory,
-            _applicationContext);
+            _appContext,
+            _exceptionHandler);
 
         DispatcherProvider.SetCurrent(new TestDispatcherProvider());
 
@@ -37,7 +41,7 @@ public class NavigationServiceContextualDispatchTests
             .Returns(pushedPage);
     }
 
-    private void SetMainPage(Page page) => _applicationContext.MainPage.Returns(page);
+    private void SetMainPage(Page page) => _appContext.MainPage.Returns(page);
 
     // -----------------------------------------------------------------------
     // Switch arms — one handler type per current-page type
