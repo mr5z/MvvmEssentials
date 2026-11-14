@@ -20,6 +20,11 @@ public interface IModalViewModel<TResult> : IModalViewModel;
 /// that mustn't be gone back to.
 /// </para>
 /// <para>
+/// A page that doesn't return the modal's result (any <see cref="PageViewModel"/>, such as one the app also shows
+/// outside the modal) is pushed with <see cref="INavigationService"/>, which navigates inside the modal while it is
+/// open. Such a page can't finish the modal; going back from it leaves the caller waiting.
+/// </para>
+/// <para>
 /// Android Back goes to the previous page inside the modal, and on the first page is routed to <c>Dismiss()</c>, so
 /// <c>CanDismissAsync</c> can keep the modal open. The iOS sheet swipe-down can't be intercepted.
 /// </para>

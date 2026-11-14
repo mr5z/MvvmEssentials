@@ -102,6 +102,26 @@ The library adds no presentation setting of its own; the page's platform setting
 
 Pressing Back again while a confirmation is open doesn't start a second one.
 
+### Returning a result on Cancel
+
+Some modals change things as the user goes (a draft that saves itself, items added one by one), so the caller
+must hear what happened however the modal is left. Say what the caller receives then with `SetCancelResult`,
+each time it changes:
+
+```cs
+[RelayCommand]
+private async Task Add(Item item)
+{
+    await _items.AddAsync(item);
+    _added.Add(item);
+    SetCancelResult(new Picked(_added));
+}
+```
+
+From then on every row above that reads `Cancelled` hands the caller that value instead, including the iOS
+swipe-down, which no view model is asked about. `CanDismissAsync` is asked where it was, and `Dismiss(result)`
+still hands over its own result. Without `SetCancelResult`, nothing changes.
+
 Close modals with `IModalService` or the view model's `Dismiss`. On Android, any other pop of a modal
 backed by a `ModalViewModel`, including calling `Navigation.PopModalAsync()` directly, is treated like
 Back and goes through `CanDismissAsync`; on iOS it isn't.
@@ -121,8 +141,8 @@ Apple's and Google's guidance for modal tasks, and how to follow it here:
 
 ## Pages inside a modal
 
-A modal can push further pages, which slide in inside it with their own top bar and Back. Every page is a
-`ModalViewModel<TResult>` with the caller's result type, so any of them can finish the modal:
+A modal can push further pages, which slide in inside it with their own top bar and Back. A page that is part of
+the modal's task is a `ModalViewModel<TResult>` with the caller's result type, so any of them can finish the modal:
 
 ```cs
 // Caller: unchanged
@@ -155,7 +175,8 @@ public partial class ConfirmAddressViewModel(IModalService modal) : ModalViewMod
   Replacing the first page makes the new page the first: it shows no back arrow, and Android Back there asks its
   `CanDismissAsync`.
 - **Closing.** `Dismiss(result)` on any page closes the modal and hands over the result; `Dismiss()` on any
-  page closes it with `Cancelled`. Popping a page doesn't affect the caller. If an earlier page's answer
+  page closes it with `Cancelled`, or with what any page set with
+  [`SetCancelResult`](#returning-a-result-on-cancel). Popping a page doesn't affect the caller. If an earlier page's answer
   should stand whatever happens next, have the later page dismiss with it (`Dismiss(Draft!)`).
 - **Where the stack comes from.** You present a page, not a `NavigationPage`: the `NavigationPage` is the
   [top bar](#top-bar) host, and pages are pushed onto it. Without it (`Modal.WithNavigation="False"`, as
@@ -163,9 +184,32 @@ public partial class ConfirmAddressViewModel(IModalService modal) : ModalViewMod
 
 ## INavigationService while a modal is open
 
-`INavigationService` navigates the pages behind the modal, which are hidden, so while a modal is open its
-relative navigation (`NavigateAsync("Page")`, `NavigateBackAsync`, `NavigateToRootAsync`) fails with
-`NotSupported`. Navigate inside the modal from its view models, or dismiss it first.
+The modal on top covers every page behind it, so while a modal is open `INavigationService`'s relative navigation
+applies to that modal, not to the hidden pages:
+
+| Call | While a modal is open |
+|---|---|
+| `NavigateAsync("Page")` | Pushes the page inside the modal. `NotSupported` when the modal has no `NavigationPage` (`Modal.WithNavigation="False"`). |
+| `NavigateBackAsync()` | Goes back one page inside the modal. `NotHandled` on its first page: leave a modal with `Dismiss`. |
+| `NavigateToRootAsync()` | Goes back to the modal's first page. |
+
+This is how a modal shows a page that isn't a `ModalViewModel<TResult>`: any `PageViewModel`, such as a detail
+page the app also opens from elsewhere. The page stays what it is, and its own `NavigateAsync` and
+`NavigateBackAsync` calls keep working inside the modal:
+
+```cs
+public partial class PickProductViewModel(IModalService modal, INavigationService navigation)
+    : ModalViewModel<Product>(modal)
+{
+    // ProductDetailViewModel is a plain PageViewModel, also opened from the catalog
+    [RelayCommand]
+    private Task ShowDetail(Product product) => navigation.NavigateAsync(ProductDetailViewModel.With(id: product.Id));
+}
+```
+
+Such a page can't finish the modal: going back from it returns to the page that pushed it, and the caller keeps
+waiting. A page that should be able to hand over the result is a `ModalViewModel<TResult>`, pushed with
+[`PushAsync`](#pages-inside-a-modal).
 
 An absolute path (`/Home`) still replaces the main page. MAUI then drops the modal without popping it: the
 caller receives `Cancelled`, and `CanDismissAsync` isn't asked.

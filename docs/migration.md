@@ -16,8 +16,9 @@
 ### Navigation while a modal is open
 
 `INavigationService`'s relative navigation (`NavigateAsync("Page")`, `NavigateBackAsync`, `NavigateToRootAsync`)
-fails with `NotSupported` while a modal is open. Before, it navigated the hidden pages behind the modal. Inside a
-modal, navigate from its view models with `PushAsync` / `PopAsync`; see [Modals](modals.md#pages-inside-a-modal).
+navigates inside the modal on top while one is open. Before, it navigated the hidden pages behind the modal. Dismiss
+the modal first if those are the pages you mean; see
+[Modals](modals.md#inavigationservice-while-a-modal-is-open).
 
 ## 1.8.0 → 1.9.0
 

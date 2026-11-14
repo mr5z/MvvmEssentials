@@ -84,6 +84,8 @@ Override `CanDismissAsync` to keep a popup open, for example while it is saving.
 `ShouldDismissOn...` properties for a tap or Back to do nothing at all.
 
 Popups and [modals](modals.md#dismissal) dismiss the same way: both derive from `PresentedViewModel<TResult>`.
+That includes `SetCancelResult`, for a popup whose caller must receive a value however it is closed; see
+[Returning a result on Cancel](modals.md#returning-a-result-on-cancel).
 
 ## Lifecycle
 

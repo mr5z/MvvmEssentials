@@ -11,7 +11,8 @@ namespace Nkraft.MvvmEssentials.ViewModels;
 /// that returns a <typeparamref name="TResult"/> to the caller of <c>PresentAsync&lt;TViewModel, TResult&gt;</c>.
 /// <para>
 /// Dismissing is the same for both: <see cref="Dismiss()"/> closes with <c>Cancelled</c> after
-/// <see cref="CanDismissAsync"/> agrees, <see cref="Dismiss(TResult)"/> closes with a result. What differs (where
+/// <see cref="CanDismissAsync"/> agrees, <see cref="Dismiss(TResult)"/> closes with a result. A page whose caller
+/// must hear what happened however it is left says so with <see cref="SetCancelResult"/>. What differs (where
 /// the page lives, how the platform removes it) is the service's business.
 /// </para>
 /// </summary>
@@ -38,7 +39,8 @@ public abstract partial class PresentedViewModel<TResult> : PageViewModel, IDism
 	protected virtual Task<bool> CanDismissAsync() => Task.FromResult(true);
 
 	/// <summary>
-	/// Dismisses without a result (Cancel / close); the caller awaiting the page receives <c>ErrorCode.Cancelled</c>.
+	/// Dismisses without a result (Cancel / close); the caller awaiting the page receives <c>ErrorCode.Cancelled</c>,
+	/// or what <see cref="SetCancelResult"/> set.
 	/// Returns <c>false</c> if <see cref="CanDismissAsync"/> declined or the page could not be dismissed.
 	/// Calls made while a dismissal is in progress share its outcome.
 	/// </summary>
@@ -51,6 +53,19 @@ public abstract partial class PresentedViewModel<TResult> : PageViewModel, IDism
 	/// </summary>
 	protected Task<IResult> Dismiss(TResult result)
 		=> _presentation?.CompleteAsync(result) ?? DismissTopAsync();
+
+	/// <summary>
+	/// Sets what the caller receives when the page is removed without <see cref="Dismiss(TResult)"/>, in place of
+	/// <c>ErrorCode.Cancelled</c>. It applies to every such route, including the ones no view model is asked about:
+	/// <see cref="Dismiss()"/> (Cancel / close), Android Back, a popup's background tap, the iOS sheet swipe-down,
+	/// and a dismissal through the service.
+	/// <para>
+	/// Call it when what the caller must hear changes, e.g. after each change the user makes that is already kept;
+	/// the last value set, by any page of the presentation, is the one returned. <see cref="CanDismissAsync"/> is
+	/// asked as before, and <see cref="Dismiss(TResult)"/> still hands over its own result.
+	/// </para>
+	/// </summary>
+	protected void SetCancelResult(TResult result) => _presentation?.SetCancelResult(result);
 
 	/// <summary>
 	/// Removes whatever the service shows on top, for a page shown other than through the service

@@ -151,6 +151,22 @@ public class PopupViewModelTests
         Assert.That(_presentation.Result.IsCompleted, Is.False);
     }
 
+    [Test]
+    public async Task Dismiss_AfterSetCancelResult_GivesTheCallerThatResult()
+    {
+        // Given
+        PresenterDismisses(Result.Ok());
+        var expected = new TestPopupResult(false);
+        _sut.PublicSetCancelResult(expected);
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.True);
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
+    }
+
     // -----------------------------------------------------------------------
     // Platform dismissal: background tap and Back go through the view model
     // -----------------------------------------------------------------------

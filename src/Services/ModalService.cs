@@ -18,8 +18,9 @@ public interface IModalService
     /// The name must resolve to exactly one page.
     /// <para>
     /// The page is hosted in a <see cref="NavigationPage"/> unless it sets
-    /// <c>Modal.WithNavigation="False"</c>. That host, added for the top bar, is also what lets the modal's view
-    /// models push and pop pages inside it (<c>ModalViewModel.PushAsync</c>).
+    /// <c>Modal.WithNavigation="False"</c>. That host, added for the top bar, is also what lets pages be pushed and
+    /// popped inside the modal: <c>ModalViewModel.PushAsync</c> for a page that returns the modal's result,
+    /// <see cref="INavigationService"/> for any other.
     /// </para>
     /// <para>
     /// On Android, the Back button goes to the previous page inside the modal, and on its first page is routed to a

@@ -68,7 +68,8 @@ internal class Presentation
 
     /// <summary>
     /// Removes the page without a result after <paramref name="canDismiss"/> agrees; a waiting caller receives
-    /// <c>Cancelled</c>. Calls made while a dismissal is in progress share its outcome.
+    /// <c>Cancelled</c>, or what <see cref="SetCancelResult{TResult}"/> set. Calls made while a dismissal is in
+    /// progress share its outcome.
     /// </summary>
     public Task<bool> CancelAsync(Func<Task<bool>> canDismiss)
     {
@@ -86,6 +87,19 @@ internal class Presentation
         => this is Presentation<TResult> awaited
             ? awaited.CompleteWithResultAsync(result)
             : DismissAsync();
+
+    /// <summary>
+    /// Sets what the caller receives if the page is removed without a result, by any route, in place of
+    /// <c>Cancelled</c>, when one awaits a <typeparamref name="TResult"/> (<see cref="Presentation{TResult}"/>).
+    /// Otherwise nobody awaits one, and there is nothing to set.
+    /// </summary>
+    public void SetCancelResult<TResult>(TResult result)
+    {
+        if (this is Presentation<TResult> awaited)
+        {
+            awaited.ReturnOnCancel(result);
+        }
+    }
 
     /// <summary>The page was removed, by any route. Completes a waiting caller.</summary>
     internal virtual void OnClosed() => IsClosed = true;
@@ -135,7 +149,14 @@ internal sealed class Presentation<TResult> : Presentation
     private bool _hasResult;
     private TResult? _result;
 
-    /// <summary>The caller's result: completed when the page is removed, cancelled if it was removed without one.</summary>
+    // What the caller receives if the page is removed without a result; without one, a cancellation
+    private bool _hasCancelResult;
+    private TResult? _cancelResult;
+
+    /// <summary>
+    /// The caller's result: completed when the page is removed, cancelled if it was removed without one and no page
+    /// said what to return then (<see cref="ReturnOnCancel"/>).
+    /// </summary>
     public Task<TResult> Result => _caller.Task;
 
     internal async Task<IResult> CompleteWithResultAsync(TResult result)
@@ -165,6 +186,14 @@ internal sealed class Presentation<TResult> : Presentation
         _hasResult = false;
     }
 
+    // Kept apart from the pending result: it outlives a failed Dismiss(result), and applies to routes no view model
+    // is asked about (the iOS sheet swipe-down)
+    internal void ReturnOnCancel(TResult result)
+    {
+        _cancelResult = result;
+        _hasCancelResult = true;
+    }
+
     internal override void OnClosed()
     {
         if (IsClosed)
@@ -175,6 +204,10 @@ internal sealed class Presentation<TResult> : Presentation
         if (_hasResult)
         {
             _caller.TrySetResult(_result!);
+        }
+        else if (_hasCancelResult)
+        {
+            _caller.TrySetResult(_cancelResult!);
         }
         else
         {

@@ -12,14 +12,14 @@
   <PropertyGroup>
     <Company>Nkraft</Company>
     <Authors>Mark L</Authors>
-    <Version>1.10.0-alpha.3</Version>
+    <Version>1.10.0-alpha.4</Version>
     <Copyright>Copyright (c) 2026 Mark L. All rights reserved.</Copyright>
     <Company>Nkraft</Company>
     <Description>MAUI's Shell Alternative</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/mr5z/MvvmEssentials</RepositoryUrl>
-    <PackageReleaseNotes>Modals can hold several pages: ModalViewModel.PushAsync/PopAsync/ReplaceAsync navigate inside the modal, and any page of it can finish it with Dismiss(result). Popups and modals share PresentedViewModel; popups gain CanDismissAsync, and a background tap or Back now dismisses through the view model. Breaking: INavigationService relative navigation fails while a modal is open. See docs/migration.md.</PackageReleaseNotes>
+    <PackageReleaseNotes>Modals can now hold several pages, show any page of your app, and return a value even when cancelled. Breaking: while a modal is open, INavigationService navigates inside it instead of the pages behind it; see docs/migration.md.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/mr5z/MvvmEssentials</PackageProjectUrl>
   </PropertyGroup>
 
