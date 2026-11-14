@@ -169,6 +169,7 @@ internal partial class TestPopupViewModel(IPopupService popupService)
     : PopupViewModel<TestPopupResult>(popupService)
 {
     public Task<IResult> PublicDismissWithResult(TestPopupResult result) => Dismiss(result);
+    public void PublicSetCancelResult(TestPopupResult result) => SetCancelResult(result);
     public bool PublicShouldDismissOnBackButtonPressed => ShouldDismissOnBackButtonPressed;
     public bool PublicShouldDismissOnBackgroundTapped => ShouldDismissOnBackgroundTapped;
 
@@ -203,6 +204,7 @@ internal partial class TestModalViewModel(IModalService modalService)
     public int DisposeCount { get; private set; }
 
     public Task<IResult> PublicDismissWithResult(TestModalResult result) => Dismiss(result);
+    public void PublicSetCancelResult(TestModalResult result) => SetCancelResult(result);
     public Task<IResult> PublicPushAsync(ModalDestination<TestModalResult> destination) => PushAsync(destination, animated: false);
     public Task<IResult> PublicPushAsync<TNext>() where TNext : IModalViewModel<TestModalResult> => PushAsync<TNext>(animated: false);
     public Task<IResult> PublicPopAsync() => PopAsync(animated: false);

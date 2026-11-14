@@ -375,6 +375,49 @@ public class ModalPresentationTests
     }
 
     [Test]
+    public async Task SystemPop_AfterSetCancelResult_GivesTheCallerThatResult()
+    {
+        // Given
+        var (first, caller) = await PresentAsync();
+        first.PublicSetCancelResult(new TestModalResult(false));
+
+        // When: the iOS swipe-down, which no view model is asked about
+        await _window.Navigation.PopModalAsync(animated: false);
+
+        // Then
+        Assert.That((await caller).TryGetValue(out var value) && value == new TestModalResult(false), Is.True);
+    }
+
+    [Test]
+    public async Task SystemPop_AfterAPushedPageSetACancelResult_GivesTheCallerThatResult()
+    {
+        // Given: every page of the modal shares its presentation
+        var (first, caller) = await PresentAsync();
+        var (second, _) = await PushSecondAsync(first);
+        second.PublicSetCancelResult(new TestModalResult(false));
+
+        // When
+        await _window.Navigation.PopModalAsync(animated: false);
+
+        // Then
+        Assert.That((await caller).TryGetValue(out var value) && value == new TestModalResult(false), Is.True);
+    }
+
+    [Test]
+    public async Task ReplacingTheWindowsPage_AfterSetCancelResult_GivesTheCallerThatResult()
+    {
+        // Given
+        var (first, caller) = await PresentAsync();
+        first.PublicSetCancelResult(new TestModalResult(false));
+
+        // When: absolute navigation; MAUI clears the modal stack without ModalPopped
+        _window.Page = new ContentPage();
+
+        // Then
+        Assert.That((await caller).TryGetValue(out var value) && value == new TestModalResult(false), Is.True);
+    }
+
+    [Test]
     public async Task ReplacingTheWindowsPage_CancelsTheCaller()
     {
         // Given
@@ -466,27 +509,170 @@ public class ModalPresentationTests
     // -----------------------------------------------------------------------
 
     [Test]
-    public async Task NavigationService_WhileAModalIsOpen_RefusesToNavigateThePagesBehindIt()
+    public async Task NavigationService_NavigateAsync_PushesInsideTheModalNotBehindIt()
+    {
+        // Given
+        var (_, caller) = await PresentAsync();
+        var navigation = CreateNavigationService();
+        var plainPage = NextPage(() => new FakeViewModel());
+
+        // When: a page that doesn't return the modal's result
+        var pushed = await navigation.NavigateAsync("SomePage", animated: false);
+
+        // Then
+        Assert.Multiple(() =>
+        {
+            Assert.That(pushed.IsSuccess, Is.True, pushed.ErrorMessage);
+            Assert.That(Host.CurrentPage, Is.SameAs(plainPage));
+            Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+            Assert.That(_mainPage.Navigation.NavigationStack, Has.Count.EqualTo(1));
+            Assert.That(caller.IsCompleted, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task NavigationService_NavigateAsync_KeepsThePushedPageScope()
     {
         // Given
         await PresentAsync();
-        INavigationService navigation = new NavigationService(
-            NullLogger<NavigationService>.Instance, _pageFactory, _appContext, _exceptionHandler);
+        var navigation = CreateNavigationService();
+        var plainPage = NextPage(() => new FakeViewModel());
 
         // When
-        var pushed = await navigation.NavigateAsync("SomePage");
-        var back = await navigation.NavigateBackAsync();
-        var root = await navigation.NavigateToRootAsync();
+        await navigation.NavigateAsync("SomePage", animated: false);
+
+        // Then: the page hangs off the modal, not the main page
+        _pageFactory.DidNotReceive().ReleasePage(plainPage);
+    }
+
+    [Test]
+    public async Task NavigationService_NavigateAsync_WhenTheModalHasNoNavigationPage_FailsWithNotSupported()
+    {
+        // Given: Modal.WithNavigation="False", as overlays use
+        await PresentAsync(page => Modal.SetWithNavigation(page, false));
+        var navigation = CreateNavigationService();
+        NextPage(() => new FakeViewModel());
+
+        // When
+        var pushed = await navigation.NavigateAsync("SomePage", animated: false);
 
         // Then
         Assert.Multiple(() =>
         {
             Assert.That(pushed.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
-            Assert.That(back.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
-            Assert.That(root.ErrorCode, Is.EqualTo(ErrorCode.NotSupported));
             Assert.That(_mainPage.Navigation.NavigationStack, Has.Count.EqualTo(1));
         });
     }
+
+    [Test]
+    public async Task NavigationService_NavigateBackAsync_GoesBackInsideTheModalAndLeavesTheCallerWaiting()
+    {
+        // Given
+        var (_, caller) = await PresentAsync();
+        var firstPage = Host.RootPage;
+        var navigation = CreateNavigationService();
+        NextPage(() => new FakeViewModel());
+        await navigation.NavigateAsync("SomePage", animated: false);
+
+        // When
+        var back = await navigation.NavigateBackAsync(animated: false);
+
+        // Then
+        Assert.Multiple(() =>
+        {
+            Assert.That(back.IsSuccess, Is.True, back.ErrorMessage);
+            Assert.That(Host.CurrentPage, Is.SameAs(firstPage));
+            Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+            Assert.That(caller.IsCompleted, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task NavigationService_NavigateBackAsync_OnTheFirstPage_ReturnsNotHandled()
+    {
+        // Given
+        var (_, caller) = await PresentAsync();
+        var navigation = CreateNavigationService();
+
+        // When
+        var back = await navigation.NavigateBackAsync(animated: false);
+
+        // Then: a modal is left with Dismiss
+        Assert.Multiple(() =>
+        {
+            Assert.That(back.ErrorCode, Is.EqualTo(ErrorCode.NotHandled));
+            Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+            Assert.That(caller.IsCompleted, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task NavigationService_NavigateBackAsync_WhenTheModalHasNoNavigationPage_ReturnsNotHandled()
+    {
+        // Given: Modal.WithNavigation="False"; Back there would pop the modal itself
+        var (_, caller) = await PresentAsync(page => Modal.SetWithNavigation(page, false));
+        var navigation = CreateNavigationService();
+
+        // When
+        var back = await navigation.NavigateBackAsync(animated: false);
+
+        // Then
+        Assert.Multiple(() =>
+        {
+            Assert.That(back.ErrorCode, Is.EqualTo(ErrorCode.NotHandled));
+            Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+            Assert.That(caller.IsCompleted, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task NavigationService_NavigateToRootAsync_GoesBackToTheModalsFirstPage()
+    {
+        // Given: two pages pushed inside the modal
+        var (_, caller) = await PresentAsync();
+        var firstPage = Host.RootPage;
+        var navigation = CreateNavigationService();
+        NextPage(() => new FakeViewModel());
+        await navigation.NavigateAsync("SomePage", animated: false);
+        NextPage(() => new FakeSecondViewModel());
+        await navigation.NavigateAsync("OtherPage", animated: false);
+
+        // When
+        var root = await navigation.NavigateToRootAsync(animated: false);
+
+        // Then
+        Assert.Multiple(() =>
+        {
+            Assert.That(root.IsSuccess, Is.True, root.ErrorMessage);
+            Assert.That(Host.CurrentPage, Is.SameAs(firstPage));
+            Assert.That(Host.Navigation.NavigationStack, Has.Count.EqualTo(1));
+            Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+            Assert.That(caller.IsCompleted, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task AndroidBack_OnAPagePushedByTheNavigationService_GoesBackInsideTheModal()
+    {
+        // Given
+        _service = CreateService(interceptsBackNavigation: true, DispatcherCapturing());
+        var (_, caller) = await PresentAsync();
+        var firstPage = Host.RootPage;
+        NextPage(() => new FakeViewModel());
+        await CreateNavigationService().NavigateAsync("SomePage", animated: false);
+
+        // When: MAUI pops the modal itself on Back
+        await _window.Navigation.PopModalAsync();
+        RunDispatched();
+
+        // Then
+        Assert.That(_window.Navigation.ModalStack, Has.Count.EqualTo(1));
+        Assert.That(Host.CurrentPage, Is.SameAs(firstPage));
+        Assert.That(caller.IsCompleted, Is.False);
+    }
+
+    private INavigationService CreateNavigationService() => new NavigationService(
+        NullLogger<NavigationService>.Instance, _pageFactory, _appContext, _exceptionHandler);
 
     private IDispatcher DispatcherCapturing()
     {

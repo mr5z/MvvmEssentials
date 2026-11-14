@@ -62,6 +62,60 @@ public class PresentationTests
     }
 
     [Test]
+    public void OnClosed_WithACancelResult_GivesTheCallerThatResult()
+    {
+        // Given: a page said what the caller receives if it is removed without a result
+        var presentation = new Presentation<int>();
+        presentation.SetCancelResult(2);
+
+        // When: removed by a route no view model is asked about, e.g. the iOS sheet swipe-down
+        presentation.OnClosed();
+
+        // Then
+        Assert.That(presentation.Result.Result, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void OnClosed_WithAResultAndACancelResult_GivesTheCallerTheResult()
+    {
+        // Given: Dismiss(result) on a page that had set a cancel result
+        var presentation = new Presentation<int>();
+        presentation.SetCancelResult(2);
+        presentation.SetPendingResult(1);
+
+        // When
+        presentation.OnClosed();
+
+        // Then
+        Assert.That(presentation.Result.Result, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void SetCancelResult_Again_ReplacesTheEarlierOne()
+    {
+        // Given
+        var presentation = new Presentation<int>();
+        presentation.SetCancelResult(2);
+        presentation.SetCancelResult(3);
+
+        // When
+        presentation.OnClosed();
+
+        // Then
+        Assert.That(presentation.Result.Result, Is.EqualTo(3));
+    }
+
+    [Test]
+    public void SetCancelResult_WhenNobodyAwaitsAResult_DoesNothing()
+    {
+        // Given: PresentAsync(name)
+        var presentation = new Presentation();
+
+        // Then
+        Assert.DoesNotThrow(() => presentation.SetCancelResult("ignored"));
+    }
+
+    [Test]
     public void Operations_BeforeOpen_Throw()
     {
         // Given: a view model could only get a presentation from a presenting service, so this is a library bug

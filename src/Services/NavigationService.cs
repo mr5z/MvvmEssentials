@@ -18,8 +18,9 @@ public interface INavigationService
     /// - An absolute path (starting with '/') replaces the current root page.
     /// </para>
     /// <para>
-    /// - A relative path navigates within the current page context. It fails with <c>NotSupported</c> while a modal
-    /// is open: inside a modal, its view models navigate with <c>ModalViewModel.PushAsync</c> / <c>PopAsync</c>.
+    /// - A relative path navigates within the current page context. While a modal is open that is the modal on top,
+    /// which covers every page behind it: the page is pushed inside the modal, and can be any page, not only one
+    /// that returns the modal's result.
     /// </para>
     /// </summary>
     /// <param name="path">The navigation path, composed of page names and optional query parameters.</param>
@@ -36,6 +37,10 @@ public interface INavigationService
     /// <para>
     /// - If not within a <see cref="NavigationPage"/>, this will call <see cref="Page.SendBackButtonPressed()"/> on the current page.
     /// </para>
+    /// <para>
+    /// - While a modal is open, this goes back inside the modal on top, and returns <c>NotHandled</c> on its first
+    /// page: a modal is left with <c>Dismiss</c>.
+    /// </para>
     /// </summary>
     /// <param name="animated">Whether to animate the navigation transition.</param>
     /// <returns>An <see cref="IResult"/> indicating success or failure of the navigation operation.</returns>
@@ -47,6 +52,9 @@ public interface INavigationService
     /// - If the root page implements <see cref="IRootPageNavigated"/>, the corresponding event will be delivered.
     /// </para>
     /// - Only supported when the current page is a <see cref="NavigationPage"/> or the current tab of a <see cref="TabbedPage"/> is a <see cref="NavigationPage"/>.
+    /// <para>
+    /// - While a modal is open, the stack is that of the modal on top: this goes back to the modal's first page.
+    /// </para>
     /// </summary>
     /// <param name="parameters">Optional navigation parameters to pass to the root page's view model.</param>
     /// <param name="animated">Whether to animate the navigation transition.</param>
@@ -90,6 +98,9 @@ internal sealed class NavigationService(
 
         var request = new NavigationRequest(pageInfoList, parameters ?? new NavigationParameters(), _pageFactory);
 
+        // Set when the pages are pushed inside a modal: they end up under it, not under the main page
+        Page? modal = null;
+
         try
         {
             var replaceCurrentPage = path.StartsWith('/');
@@ -118,10 +129,8 @@ internal sealed class NavigationService(
             }
             else
             {
-                if (RefuseWhileModalIsOpen() is { } refused)
-                    return refused;
-
-                var currentPage = _appContext.MainPage;
+                modal = TopModal();
+                var currentPage = modal ?? _appContext.MainPage;
                 if (currentPage is null)
                 {
                     const string message = "Current page is null.";
@@ -139,7 +148,7 @@ internal sealed class NavigationService(
         }
         finally
         {
-            if (request.ReleaseUnreachablePages(root: _appContext.MainPage) is {} ex)
+            if (request.ReleaseUnreachablePages(root: modal ?? _appContext.MainPage) is {} ex)
             {
                 const string message = "One or more page scopes failed to dispose during navigation (Path: {Path}).";
                 _logger.LogWarning(ex, message, path);
@@ -151,9 +160,6 @@ internal sealed class NavigationService(
 
     async Task<IResult> INavigationService.NavigateBackAsync(bool animated)
     {
-        if (RefuseWhileModalIsOpen() is { } refused)
-            return refused;
-
         if (TryGetCurrentPage(out var currentPage) == false)
         {
             const string message = "Main page is not set for current window.";
@@ -185,6 +191,14 @@ internal sealed class NavigationService(
                 return Result.Ok();
             }
 
+            // Back on a modal that has no stack pops the modal itself, which is its view model's call (Dismiss)
+            if (ReferenceEquals(currentPage, TopModal()))
+            {
+                const string message = "Already on the modal's first page; leave the modal with Dismiss.";
+                _logger.LogInformation(message);
+                return Result.Fail(ErrorCode.NotHandled, message);
+            }
+
             var navigatedBack = currentPage.SendBackButtonPressed();
             if (navigatedBack == false)
             {
@@ -209,9 +223,6 @@ internal sealed class NavigationService(
 
     async Task<IResult> INavigationService.NavigateToRootAsync(INavigationParameters? parameters, bool animated)
     {
-        if (RefuseWhileModalIsOpen() is { } refused)
-            return refused;
-
         if (TryGetCurrentPage(out var currentPage) == false)
         {
             const string message = "Main page is not set for current window.";
@@ -311,22 +322,26 @@ internal sealed class NavigationService(
         }
     }
 
-    // The pages behind an open modal are hidden, so navigating them is almost always a mistake (a page inside the
-    // modal meaning to navigate the modal). Absolute paths still replace the root; ModalService then cancels the
-    // modals' callers.
-    private IResult? RefuseWhileModalIsOpen()
+    // The modal on top covers every page behind it, so while one is open relative navigation applies to it: a page
+    // inside the modal that navigates means the modal, not the hidden pages. Absolute paths still replace the root;
+    // ModalService then cancels the modals' callers.
+    private Page? TopModal()
     {
-        if (_appContext.Windows.Count == 0 || _appContext.Windows[0].Navigation.ModalStack.Count == 0)
+        if (_appContext.Windows.Count == 0)
             return null;
 
-        const string message = "A modal is open. Navigate inside it from its view model (ModalViewModel.PushAsync / PopAsync), " +
-            "or dismiss it first.";
-        _logger.LogWarning(message);
-        return Result.Fail(ErrorCode.NotSupported, message);
+        var modalStack = _appContext.Windows[0].Navigation.ModalStack;
+        return modalStack.Count > 0 ? modalStack[^1] : null;
     }
 
     private bool TryGetCurrentPage([NotNullWhen(true)] out Page? page)
     {
+        if (TopModal() is { } modal)
+        {
+            page = modal;
+            return true;
+        }
+
         if (_appContext.Windows.Count > 0 && _appContext.Windows[0].Page is { } currentPage)
         {
             page = currentPage;

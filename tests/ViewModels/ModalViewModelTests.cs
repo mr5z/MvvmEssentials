@@ -149,6 +149,70 @@ public class ModalViewModelTests
     }
 
     [Test]
+    public async Task Dismiss_AfterSetCancelResult_GivesTheCallerThatResult()
+    {
+        // Given: the caller must hear what happened however the modal is left
+        PresenterDismisses(Result.Ok());
+        var expected = new TestModalResult(false);
+        _sut.PublicSetCancelResult(expected);
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.True);
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task Dismiss_AfterSetCancelResult_StillConsultsCanDismiss()
+    {
+        // Given
+        _sut.AllowDismiss = false;
+        _sut.PublicSetCancelResult(new TestModalResult(false));
+
+        // When
+        var dismissed = await _sut.Dismiss();
+
+        // Then
+        Assert.That(dismissed, Is.False);
+        Assert.That(_sut.CanDismissCallCount, Is.EqualTo(1));
+        Assert.That(_presentation.Result.IsCompleted, Is.False);
+    }
+
+    [Test]
+    public async Task DismissWithResult_AfterSetCancelResult_GivesTheCallerTheResult()
+    {
+        // Given
+        PresenterDismisses(Result.Ok());
+        _sut.PublicSetCancelResult(new TestModalResult(false));
+        var expected = new TestModalResult(true);
+
+        // When
+        await _sut.PublicDismissWithResult(expected);
+
+        // Then
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task DismissWithResult_AfterAFailedAttempt_CancelReturnsTheCancelResult()
+    {
+        // Given: the first close failed, so the modal is still open; the user then cancels
+        var expected = new TestModalResult(false);
+        _sut.PublicSetCancelResult(expected);
+        PresenterDismisses(Result.Fail(ErrorCode.InvalidState, "another modal is on top"));
+        await _sut.PublicDismissWithResult(new TestModalResult(true));
+        PresenterDismisses(Result.Ok());
+
+        // When
+        await _sut.Dismiss();
+
+        // Then
+        Assert.That(await _presentation.Result, Is.EqualTo(expected));
+    }
+
+    [Test]
     public async Task Dismiss_WhenTheModalCannotClose_LeavesTheCallerWaiting()
     {
         // Given
